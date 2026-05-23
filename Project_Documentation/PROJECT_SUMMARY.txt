@@ -1,0 +1,198 @@
+# 📱 Stationery Management & Sales System (SMSS)
+### Mobile-Based Business Operations Platform
+
+---
+
+## 1. Executive Summary
+
+**SMSS** is a cross-platform mobile application designed to streamline the day-to-day operations of a stationery business operating across **multiple service centres**. It empowers the business owner to manage centres, workers, stock inventory, and service provision trends from a single dashboard — while enabling workers on the ground to log service transactions, manage stock, and receive notices in real time.
+
+The system solves the critical pain points of:
+- Manual record-keeping of stock across dispersed centres
+- Lack of real-time visibility into service trends and worker activity
+- Inefficient communication between the owner and workers
+
+---
+
+## 2. Project Goals & Objectives
+
+| # | Goal | Success Metric |
+|---|------|---------------|
+| 1 | Centralised multi-centre management | Owner can add/manage ≥2 centres from one account |
+| 2 | Real-time stock tracking | Stock levels update instantly on item entry |
+| 3 | Service event logging | Workers log photocopy/print/lamination events per transaction |
+| 4 | Owner-to-worker communication | Notices/instructions delivered within 5 seconds |
+| 5 | Business insights | Owner sees daily/weekly service provision trend reports |
+
+---
+
+## 3. User Roles & Core Features
+
+### 3.1 — Owner / Employer
+
+| Module | Features |
+|--------|---------|
+| **Manage Centres** | Add centre (Centre No e.g. STN001, Centre ID, Name, Location) · Remove/delete centre |
+| **Manage Workers** | Register worker (Name, NIM, Phone) · Assign worker to centre · Transfer worker between centres · Remove worker |
+| **Reports Dashboard** | View reports across all centres · Stock levels per centre · Service provision trends (printing, scanning, designing, lamination, etc.) · Worker activity per centre |
+| **Communication** | Send instructions/notices to workers of a specific centre · View notice delivery status |
+
+### 3.2 — Worker / Employee
+
+| Module | Features |
+|--------|---------|
+| **Authentication** | Login using assigned Centre ID |
+| **Stock Management** | Enter/register new stock items (Item name, Qty in pcs/boxes, Net price in Tshs) · View stock trends for their centre |
+| **Service Provision** | Log service events: Service type (photocopy/print/laminate/scan/design) · Sub-type (B&W / Colour) · Pages count · Price per page → auto-calculate total |
+| **Notices** | View instructions/notices sent by owner/employer |
+
+---
+
+## 4. Recommended Tech Stack
+
+> **Selection Principle:** Favour tools that maximise development speed, reduce infrastructure overhead, and support rapid iteration for a small team.
+
+### 4.1 Mobile Frontend
+
+| Technology | Choice | Justification |
+|-----------|--------|--------------|
+| Framework | **React Native + Expo (Managed Workflow)** | Single codebase for Android & iOS; Expo's pre-built modules eliminate native setup friction; OTA (Over-The-Air) updates without app store resubmission |
+| Language | **TypeScript** | Type safety reduces runtime bugs, better IDE support |
+| Navigation | **Expo Router v3** | File-based routing (like Next.js), simple and scalable |
+| UI Components | **React Native Paper + NativeWind (Tailwind CSS)** | Material Design components + utility-first styling for speed |
+| State Management | **Zustand** | Lightweight, minimal boilerplate compared to Redux |
+| Forms & Validation | **React Hook Form + Zod** | Fast, schema-driven validation |
+| Charts/Graphs | **Victory Native XL** | Performant charts for trends/reports |
+| Push Notifications | **Expo Notifications** | Native push on both platforms from one API |
+
+### 4.2 Backend & Database
+
+| Technology | Choice | Justification |
+|-----------|--------|--------------|
+| Backend-as-a-Service | **Supabase** | PostgreSQL database + Auth + Realtime + Storage + Edge Functions in one platform — eliminates need to build/host a custom backend server |
+| Database | **PostgreSQL (via Supabase)** | Relational DB with Row-Level Security (RLS) for role-based data access |
+| Authentication | **Supabase Auth** | Built-in phone/email auth with JWT; Centre-ID-based login via custom claims |
+| Realtime | **Supabase Realtime** | WebSocket subscriptions for live notices and stock updates |
+| File Storage | **Supabase Storage** | For any future receipt/invoice uploads |
+| Serverless Functions | **Supabase Edge Functions (Deno)** | Notification dispatch, scheduled report generation |
+
+### 4.3 Development Infrastructure
+
+| Technology | Choice | Justification |
+|-----------|--------|--------------|
+| Monorepo Tool | **Turborepo** | Fast incremental builds, simple pipeline config |
+| Version Control | **Git + GitHub** | Industry standard; GitHub Actions for CI/CD |
+| CI/CD | **GitHub Actions + Expo EAS** | Automated builds triggered by PR merge to `main` |
+| Code Quality | **ESLint + Prettier + Husky** | Pre-commit hooks enforce code standards |
+| Testing | **Jest + React Native Testing Library** | Unit & integration tests |
+| API Client | **Supabase JS Client + React Query (TanStack)** | Auto-caching, background refetch, loading/error states |
+| Package Manager | **pnpm** | Faster installs, better monorepo support |
+
+### 4.4 Deployment & Hosting
+
+| Layer | Platform | Notes |
+|-------|---------|-------|
+| Mobile App | **Expo EAS Build + EAS Submit** | Cloud builds; submit to Google Play & Apple App Store |
+| Backend/DB | **Supabase Cloud (Free → Pro)** | Managed PostgreSQL, zero-config hosting |
+| CI/CD Trigger | **GitHub Actions** | PR to `main` → EAS production build |
+
+---
+
+## 5. Monorepo Repository Structure
+
+```
+smss-monorepo/
+├── apps/
+│   └── mobile/                     # React Native Expo application
+│       ├── app/                    # Expo Router screens (file-based)
+│       │   ├── (auth)/             # Login screens
+│       │   ├── (owner)/            # Owner dashboard tabs
+│       │   │   ├── centres/
+│       │   │   ├── workers/
+│       │   │   └── reports/
+│       │   └── (worker)/           # Worker dashboard tabs
+│       │       ├── stock/
+│       │       ├── services/
+│       │       └── notices/
+│       ├── components/             # Reusable UI components
+│       ├── hooks/                  # Custom React hooks
+│       ├── stores/                 # Zustand state stores
+│       ├── lib/                    # Supabase client, utilities
+│       └── constants/              # Colors, config, enums
+│
+├── packages/
+│   ├── shared-types/               # TypeScript interfaces/types shared across packages
+│   ├── supabase/                   # Supabase migrations, seeds, generated types
+│   └── config/                     # Shared ESLint, TypeScript, Prettier configs
+│
+├── .github/
+│   └── workflows/
+│       ├── pr-checks.yml           # Lint, test on every PR
+│       └── deploy-production.yml   # EAS build on merge to main
+│
+├── turbo.json                      # Turborepo pipeline config
+├── pnpm-workspace.yaml             # pnpm monorepo workspaces
+├── package.json
+└── README.md
+```
+
+---
+
+## 6. Git Branching Strategy
+
+```
+main          ← Production-ready code only. Protected branch.
+  └── develop ← Active development integration branch
+        ├── feature/owner-centre-management
+        ├── feature/worker-auth
+        ├── feature/stock-management
+        ├── feature/service-events
+        └── feature/reports-dashboard
+```
+
+**Workflow:**
+1. Developer creates `feature/*` branch from `develop`
+2. Opens Pull Request → `develop` (code review required)
+3. After sprint completion, `develop` → PR → `main`
+4. Merge to `main` triggers GitHub Actions → EAS production build
+
+---
+
+## 7. Project Timeline Overview
+
+| Phase | Duration | Milestone |
+|-------|---------|----------|
+| Phase 0: Setup & Architecture | Week 1 | Monorepo, Supabase project, CI/CD pipeline live |
+| Phase 1: Authentication | Week 2 | Owner login, Worker Centre-ID login |
+| Phase 2: Centre & Worker Management | Weeks 3–4 | Owner can manage centres and workers |
+| Phase 3: Stock Management | Weeks 5–6 | Worker stock entry, owner stock view |
+| Phase 4: Service Provision Tracking | Weeks 7–8 | Service event logging, trend summaries |
+| Phase 5: Reports & Notices | Weeks 9–10 | Owner dashboard reports, worker notice inbox |
+| Phase 6: QA, Polish & Deployment | Weeks 11–12 | Testing, bug fixes, EAS store submission |
+
+**Total Estimated Duration: 12 Weeks (3 Months)**
+
+---
+
+## 8. Non-Functional Requirements
+
+- **Performance:** Screens load within 2 seconds on 3G connectivity
+- **Offline Support:** Stock entry and service events queue offline (sync on reconnect) via Expo SQLite + sync strategy
+- **Security:** Role-based access via Supabase RLS; JWT tokens; no plaintext passwords
+- **Scalability:** Supabase supports horizontal scaling; architecture supports adding new centre types
+- **Currency:** All monetary values in **Tanzanian Shillings (Tshs)**
+
+---
+
+## 9. Future Enhancements (Post-MVP)
+
+- Customer-facing receipt generation (PDF/WhatsApp share)
+- Sales invoicing and revenue tracking
+- Worker performance analytics
+- Low-stock automated alerts
+- Multi-language support (Swahili/English)
+- Web admin dashboard (Next.js)
+
+---
+
+*Document Version: 1.0 | Prepared: May 2026*

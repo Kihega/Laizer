@@ -1,0 +1,257 @@
+# ✅ Definition of Done & Scrum Ceremony Templates
+### Stationery Management & Sales System (SMSS)
+
+---
+
+## PART 1: Definition of Done (DoD)
+
+A User Story is **DONE** only when ALL of the following are true:
+
+### Code Quality
+- [ ] Code written in TypeScript with no `any` types unless explicitly justified
+- [ ] No ESLint errors or warnings (enforced by pre-commit hook)
+- [ ] Code formatted with Prettier
+- [ ] No commented-out code left in the codebase
+- [ ] No hardcoded credentials, URLs, or secrets (use `.env` variables)
+
+### Functionality
+- [ ] All acceptance criteria for the story are met
+- [ ] Feature works correctly on Android (physical device or emulator)
+- [ ] Edge cases handled (empty states, invalid inputs, network errors)
+- [ ] Error messages are user-friendly, not raw error codes
+
+### Data & Security
+- [ ] Supabase RLS policies tested for the affected tables
+- [ ] Unauthorised access to data is blocked (tested by simulating wrong user)
+- [ ] No sensitive data stored in plain text (use Expo SecureStore for tokens)
+
+### Testing
+- [ ] Unit tests written for any business logic functions
+- [ ] Manual test of the full user flow for the story (happy path + error path)
+- [ ] No regressions in previously working features
+
+### Git & CI/CD
+- [ ] Code committed to a `feature/*` branch (not directly to `develop`)
+- [ ] Pull Request opened against `develop` with clear description
+- [ ] PR title follows Conventional Commits format (e.g. `feat: add centre creation`)
+- [ ] GitHub Actions CI checks pass (lint + test)
+- [ ] At least 1 peer review approval on the PR
+- [ ] PR merged with "Squash and Merge"
+
+### Documentation
+- [ ] Any new environment variables documented in README
+- [ ] New database tables/views documented in architecture doc
+- [ ] Complex logic includes inline code comments
+
+---
+
+## PART 2: Scrum Ceremony Templates
+
+---
+
+### 📅 Sprint Planning Meeting Template
+
+**Meeting:** Sprint [X] Planning
+**Date:** _______________
+**Attendees:** _______________
+**Duration:** 1–2 hours
+
+#### Agenda
+
+1. **Review Sprint Goal (5 min)**
+   - Product Owner states the sprint goal in one sentence
+   - Team confirms they understand and agree
+
+2. **Capacity Check (10 min)**
+   - Total available working days this sprint: ___
+   - Days off / blockers: ___
+   - Available capacity (story points): ___
+
+3. **Story Selection (40 min)**
+   - Product Owner presents top backlog items
+   - Team estimates/confirms story points
+   - Team confirms stories fit in capacity
+   - Stories moved to Sprint Backlog
+
+4. **Task Breakdown (20 min)**
+   - Each story broken into tasks (1–4 hours each)
+   - Tasks assigned to team members
+
+5. **Sprint Goal Confirmation (5 min)**
+
+#### Sprint [X] Goal Statement:
+> _"By end of this sprint, we will ________________________________."_
+
+#### Stories Committed:
+
+| Story ID | Title | Points |
+|---------|-------|--------|
+| | | |
+| | | |
+| **Total** | | |
+
+---
+
+### ☀️ Daily Standup Template
+
+**Format:** 3 questions — each person answers in under 2 minutes
+
+1. **What did I complete since last standup?**
+   - [ ] Story/Task: _______________
+
+2. **What will I work on today?**
+   - [ ] Story/Task: _______________
+
+3. **Any blockers?**
+   - [ ] None / Blocker: _______________
+
+**Blockers to resolve:**
+| Blocker | Raised By | Resolution Owner | Deadline |
+|---------|----------|----------------|---------|
+| | | | |
+
+---
+
+### 🎯 Sprint Review Template
+
+**Meeting:** Sprint [X] Review
+**Date:** _______________
+**Attendees:** _______________
+**Duration:** 1 hour
+
+#### Demo Agenda
+
+| Story ID | Feature Demo | Demoed By | Accepted? |
+|---------|-------------|----------|----------|
+| | | | ☐ Yes ☐ No |
+| | | | ☐ Yes ☐ No |
+| | | | ☐ Yes ☐ No |
+
+#### Stories NOT Completed (Carryover)
+
+| Story ID | Reason Not Completed | Action |
+|---------|---------------------|--------|
+| | | |
+
+#### Metrics
+
+| Metric | Value |
+|--------|-------|
+| Stories planned | |
+| Stories completed | |
+| Story points planned | |
+| Story points completed | |
+| Sprint velocity | |
+
+#### Product Owner Feedback
+
+_Notes from PO:_
+_______________________________________________
+_______________________________________________
+
+#### Updated Backlog Priority Changes (if any)
+
+_______________________________________________
+
+---
+
+### 🔄 Sprint Retrospective Template
+
+**Meeting:** Sprint [X] Retrospective
+**Date:** _______________
+**Duration:** 45 minutes
+
+#### Format: Start / Stop / Continue
+
+| Category | Item | Action Owner | Due |
+|---------|------|-------------|-----|
+| **START** (new things to try) | | | |
+| **START** | | | |
+| **STOP** (things not helping) | | | |
+| **STOP** | | | |
+| **CONTINUE** (what's working well) | | | |
+| **CONTINUE** | | | |
+
+#### Top 3 Action Items for Next Sprint
+
+| # | Action | Owner | Done By |
+|---|--------|-------|--------|
+| 1 | | | |
+| 2 | | | |
+| 3 | | | |
+
+#### Team Happiness Score (1–5)
+
+| Team Member | Score | Comment |
+|------------|-------|---------|
+| | | |
+
+**Average Score:** _____ / 5
+
+---
+
+### 🔍 Backlog Refinement Session Template
+
+**Meeting:** Backlog Refinement — Sprint [X] mid-point
+**Date:** _______________
+**Duration:** 45 minutes
+
+#### Stories Reviewed
+
+| Story ID | Action Taken | New Points | Ready? |
+|---------|-------------|-----------|--------|
+| | Clarified AC | | ☐ Yes ☐ No |
+| | Split into 2 stories | | ☐ Yes ☐ No |
+| | Re-estimated | | ☐ Yes ☐ No |
+| | Added to backlog | | ☐ Yes ☐ No |
+
+#### New Stories Added
+
+| Story ID | Title | Points | Epic |
+|---------|-------|--------|------|
+| | | | |
+
+---
+
+## PART 3: Pull Request Template
+
+Create this file at `.github/PULL_REQUEST_TEMPLATE.md` in the repo:
+
+```markdown
+## Description
+<!-- What does this PR do? Which user story does it address? -->
+
+Closes #[Story/Issue Number]
+
+## Type of Change
+- [ ] feat: New feature
+- [ ] fix: Bug fix
+- [ ] chore: Config/tooling change
+- [ ] docs: Documentation only
+- [ ] refactor: Code refactor
+- [ ] test: Tests only
+
+## Testing Done
+- [ ] Tested on Android device/emulator
+- [ ] Happy path works
+- [ ] Error states handled (invalid input, network error)
+- [ ] No regressions in existing features
+
+## Definition of Done Checklist
+- [ ] All acceptance criteria met
+- [ ] No TypeScript errors
+- [ ] ESLint passes
+- [ ] Unit tests written (if applicable)
+- [ ] RLS policies tested (if DB changes)
+- [ ] PR title follows conventional commits format
+
+## Screenshots / Screen Recordings
+<!-- Attach screenshots or Loom recording if UI changes -->
+
+## Notes for Reviewer
+<!-- Anything specific the reviewer should pay attention to -->
+```
+
+---
+
+*Document Version: 1.0 | May 2026*

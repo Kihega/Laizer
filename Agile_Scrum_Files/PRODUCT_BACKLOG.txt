@@ -1,0 +1,132 @@
+# 📋 Product Backlog
+### Stationery Management & Sales System (SMSS)
+
+> **Priority Scale:** 🔴 Must Have | 🟡 Should Have | 🟢 Could Have | ⚪ Won't Have (MVP)
+> **Status:** 📭 Not Started | 🔄 In Progress | ✅ Done
+
+---
+
+## EPIC 1: Authentication & Onboarding
+
+| ID | User Story | Points | Priority | Status |
+|----|-----------|--------|---------|--------|
+| US-001 | As an owner, I want to register an account with email & password so I can access the system | 3 | 🔴 | 📭 |
+| US-002 | As an owner, I want to log in with my email & password so I can manage my business | 2 | 🔴 | 📭 |
+| US-003 | As a worker, I want to log in using my Centre ID so I can access my centre's workspace | 5 | 🔴 | 📭 |
+| US-004 | As any user, I want to stay logged in between app sessions so I don't re-login every time | 2 | 🔴 | 📭 |
+| US-005 | As any user, I want to log out securely from the app | 1 | 🔴 | 📭 |
+| US-006 | As an owner, I want to reset my password via email so I can recover my account | 3 | 🟡 | 📭 |
+
+---
+
+## EPIC 2: Centre Management (Owner)
+
+| ID | User Story | Points | Priority | Status |
+|----|-----------|--------|---------|--------|
+| US-010 | As an owner, I want to add a new centre (name, centre no, centre ID, location) so I can track it | 5 | 🔴 | 📭 |
+| US-011 | As an owner, I want to view a list of all my centres so I can quickly navigate between them | 3 | 🔴 | 📭 |
+| US-012 | As an owner, I want to edit a centre's details so I can keep information accurate | 3 | 🟡 | 📭 |
+| US-013 | As an owner, I want to deactivate/delete a centre so I can remove closed locations | 3 | 🔴 | 📭 |
+| US-014 | As an owner, I want to see the number of active workers per centre at a glance | 2 | 🟡 | 📭 |
+
+---
+
+## EPIC 3: Worker Management (Owner)
+
+| ID | User Story | Points | Priority | Status |
+|----|-----------|--------|---------|--------|
+| US-020 | As an owner, I want to register a new worker (name, NIM, phone) so they can use the system | 5 | 🔴 | 📭 |
+| US-021 | As an owner, I want to assign a worker to a specific centre so they can log in there | 3 | 🔴 | 📭 |
+| US-022 | As an owner, I want to view all workers across all my centres | 3 | 🔴 | 📭 |
+| US-023 | As an owner, I want to transfer a worker from one centre to another | 5 | 🔴 | 📭 |
+| US-024 | As an owner, I want to remove/deactivate a worker so they can no longer access the system | 3 | 🔴 | 📭 |
+| US-025 | As an owner, I want to view which workers are currently assigned to a specific centre | 2 | 🔴 | 📭 |
+| US-026 | As an owner, I want to edit a worker's profile information | 3 | 🟡 | 📭 |
+
+---
+
+## EPIC 4: Stock Management (Worker)
+
+| ID | User Story | Points | Priority | Status |
+|----|-----------|--------|---------|--------|
+| US-030 | As a worker, I want to register a new stock item (name, quantity, unit, price) for my centre | 5 | 🔴 | 📭 |
+| US-031 | As a worker, I want to view all stock items currently registered at my centre | 3 | 🔴 | 📭 |
+| US-032 | As a worker, I want to update the quantity of an existing stock item | 3 | 🔴 | 📭 |
+| US-033 | As a worker, I want to view stock trend charts for items at my centre (over time) | 8 | 🟡 | 📭 |
+| US-034 | As an owner, I want to view stock levels across all my centres from the dashboard | 5 | 🔴 | 📭 |
+| US-035 | As an owner, I want to see live stock updates per centre | 5 | 🟡 | 📭 |
+| US-036 | As a worker, I want to delete/remove an incorrect stock entry | 2 | 🟡 | 📭 |
+
+---
+
+## EPIC 5: Service Provision Tracking (Worker)
+
+| ID | User Story | Points | Priority | Status |
+|----|-----------|--------|---------|--------|
+| US-040 | As a worker, I want to log a service event (type, subtype, pages, price/page) when a customer arrives | 8 | 🔴 | 📭 |
+| US-041 | As a worker, I want the total amount to be auto-calculated from pages × price per page | 3 | 🔴 | 📭 |
+| US-042 | As a worker, I want to select a service type from: photocopy, printing, lamination, scanning, designing | 3 | 🔴 | 📭 |
+| US-043 | As a worker, I want to select service subtype (Black & White / Colour) | 2 | 🔴 | 📭 |
+| US-044 | As a worker, I want to view my recent service events (today's log) at my centre | 3 | 🔴 | 📭 |
+| US-045 | As an owner, I want to see all service events across all centres from my dashboard | 5 | 🔴 | 📭 |
+| US-046 | As a worker, I want to edit or delete an incorrectly entered service event | 3 | 🟡 | 📭 |
+
+---
+
+## EPIC 6: Reports & Analytics (Owner)
+
+| ID | User Story | Points | Priority | Status |
+|----|-----------|--------|---------|--------|
+| US-050 | As an owner, I want a daily summary report per centre (total services, revenue) | 8 | 🔴 | 📭 |
+| US-051 | As an owner, I want a weekly summary report per centre | 5 | 🔴 | 📭 |
+| US-052 | As an owner, I want to view service provision trends by type (photocopy vs printing etc.) via charts | 8 | 🟡 | 📭 |
+| US-053 | As an owner, I want to filter reports by date range and centre | 5 | 🟡 | 📭 |
+| US-054 | As an owner, I want to compare revenue/performance across centres | 5 | 🟢 | 📭 |
+
+---
+
+## EPIC 7: Notices & Communication
+
+| ID | User Story | Points | Priority | Status |
+|----|-----------|--------|---------|--------|
+| US-060 | As an owner, I want to compose and send a notice/instruction to workers of a specific centre | 5 | 🔴 | 📭 |
+| US-061 | As a worker, I want to see notices sent by the owner in an inbox on my app | 5 | 🔴 | 📭 |
+| US-062 | As a worker, I want to receive a push notification when a new notice arrives | 8 | 🟡 | 📭 |
+| US-063 | As an owner, I want to mark a notice with priority (normal / urgent) | 2 | 🟡 | 📭 |
+| US-064 | As an owner, I want to see which workers have read a notice (read receipts) | 5 | 🟢 | 📭 |
+| US-065 | As an owner, I want to broadcast a notice to all centres at once | 3 | 🟢 | 📭 |
+
+---
+
+## EPIC 8: App Quality & Infrastructure
+
+| ID | User Story | Points | Priority | Status |
+|----|-----------|--------|---------|--------|
+| US-070 | As a developer, I want CI/CD with GitHub Actions so PRs are automatically linted and tested | 5 | 🔴 | 📭 |
+| US-071 | As a developer, I want EAS Production builds to trigger on merge to main | 5 | 🔴 | 📭 |
+| US-072 | As a user, I want the app to work offline for stock entry and service logging (sync on reconnect) | 13 | 🟡 | 📭 |
+| US-073 | As a developer, I want all DB tables to have RLS policies enforced | 5 | 🔴 | 📭 |
+| US-074 | As a developer, I want unit tests for critical business logic (total calc, validation) | 5 | 🟡 | 📭 |
+| US-075 | As any user, I want clear error messages when something goes wrong | 3 | 🔴 | 📭 |
+| US-076 | As any user, I want loading states shown when data is being fetched | 2 | 🔴 | 📭 |
+
+---
+
+## Backlog Summary
+
+| Epic | # Stories | Total Points | MVP Must-Have Points |
+|------|----------|-------------|---------------------|
+| Authentication | 6 | 16 | 13 |
+| Centre Management | 5 | 16 | 11 |
+| Worker Management | 7 | 24 | 21 |
+| Stock Management | 7 | 31 | 16 |
+| Service Provision | 7 | 31 | 24 |
+| Reports & Analytics | 5 | 31 | 13 |
+| Notices & Communication | 6 | 28 | 10 |
+| Infrastructure | 7 | 38 | 20 |
+| **TOTAL** | **50** | **215** | **128** |
+
+---
+
+*Backlog Version: 1.0 | Last Updated: May 2026*
+*Backlog is a living document — stories are added/refined each Sprint.*

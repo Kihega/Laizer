@@ -1,0 +1,159 @@
+# 🏃 Agile Scrum Methodology
+### Stationery Management & Sales System (SMSS)
+
+---
+
+## 1. Methodology Overview
+
+SMSS adopts the **Scrum framework** — an Agile methodology built on short, time-boxed iterations called **Sprints** — to deliver a working, testable mobile application incrementally.
+
+### Why Scrum for SMSS?
+
+| Principle | How It Applies to SMSS |
+|----------|------------------------|
+| **Iterative delivery** | Ship working features every 2 weeks, not a big-bang release after months |
+| **Early feedback** | Owner/stakeholder tests features early; catches issues before they compound |
+| **Flexibility** | Requirements from handwritten notes are still evolving; Scrum embraces change |
+| **Transparency** | Sprint boards make progress visible to the owner/sponsor at all times |
+| **Risk reduction** | Small increments mean bugs are caught early, not at the end |
+
+---
+
+## 2. Scrum Team Roles
+
+| Role | Person(s) | Responsibilities |
+|------|----------|----------------|
+| **Product Owner** | Business Owner / Sponsor | Owns the Product Backlog; prioritises features; accepts/rejects completed stories; represents end-user needs |
+| **Scrum Master** | Lead Developer | Facilitates ceremonies; removes blockers; ensures the team follows Scrum; shields team from scope creep |
+| **Development Team** | Developer(s) | Designs, codes, tests, and deploys features; self-organising; cross-functional |
+
+> *For a solo/small team: one person may hold multiple roles. The Scrum Master ensures ceremonies still happen.*
+
+---
+
+## 3. Scrum Ceremonies
+
+| Ceremony | When | Duration | Purpose |
+|---------|------|---------|---------|
+| **Sprint Planning** | Day 1 of Sprint | 1–2 hours | Select backlog items for the Sprint; break into tasks; estimate effort |
+| **Daily Standup** | Every morning | 15 minutes | What did I do yesterday? What will I do today? Any blockers? |
+| **Sprint Review** | Last day of Sprint | 1 hour | Demo completed features to Product Owner; get feedback |
+| **Sprint Retrospective** | After Sprint Review | 45 minutes | What went well? What to improve? Action items for next Sprint |
+| **Backlog Refinement** | Mid-Sprint (weekly) | 45 minutes | Clarify, estimate, and prioritise upcoming backlog items |
+
+---
+
+## 4. Sprint Configuration
+
+| Setting | Value |
+|---------|-------|
+| **Sprint Length** | 2 weeks |
+| **Estimation Unit** | Story Points (Fibonacci: 1, 2, 3, 5, 8, 13) |
+| **Velocity Target** | ~20–30 story points per sprint (adjust after Sprint 1 actuals) |
+| **Sprint Start Day** | Monday |
+| **Sprint End Day** | Friday (end of week 2) |
+| **Working Days** | 5 days/week |
+| **Definition of Done** | See `04_DEFINITION_OF_DONE.md` |
+
+---
+
+## 5. Story Point Reference
+
+| Story Points | Effort/Complexity |
+|-------------|-----------------|
+| 1 | Trivial — less than 1 hour (e.g. update a label, fix typo) |
+| 2 | Simple — 1–3 hours (e.g. add a form field, update a query) |
+| 3 | Small — half a day (e.g. build a simple CRUD screen) |
+| 5 | Medium — 1–2 days (e.g. complete feature with API + UI + validation) |
+| 8 | Large — 2–4 days (e.g. complex feature with auth, realtime, and tests) |
+| 13 | Extra Large — needs breakdown into smaller stories |
+
+---
+
+## 6. Sprint Board Columns
+
+```
+┌──────────┬──────────────┬─────────────┬──────────────┬──────────┐
+│ BACKLOG  │   TO DO      │ IN PROGRESS │   REVIEW /   │   DONE   │
+│ (future) │ (this sprint)│             │    TESTING   │          │
+├──────────┼──────────────┼─────────────┼──────────────┼──────────┤
+│ Future   │ Committed    │ Actively    │ PR open or   │ Meets    │
+│ stories  │ for this     │ being coded │ in QA        │ DoD ✅   │
+│          │ sprint       │             │              │          │
+└──────────┴──────────────┴─────────────┴──────────────┴──────────┘
+```
+
+---
+
+## 7. User Story Template
+
+```
+As a [role],
+I want to [action/feature],
+So that [benefit/value].
+
+Acceptance Criteria:
+  - Given [context], When [action], Then [expected outcome]
+  - Given [context], When [action], Then [expected outcome]
+
+Story Points: [1 / 2 / 3 / 5 / 8]
+Priority: [Must Have / Should Have / Could Have / Won't Have this Sprint]
+```
+
+### Example Stories:
+
+```
+Story: Owner can add a new centre
+As an owner,
+I want to register a new stationery centre with a name, location, and centre number,
+So that I can begin assigning workers and tracking that centre's operations.
+
+Acceptance Criteria:
+  - Given I am logged in as owner, When I tap "Add Centre", Then I see a form
+  - Given I fill in all required fields, When I submit, Then a new centre appears in my list
+  - Given I enter a duplicate centre_no, When I submit, Then I see an error message
+
+Story Points: 5
+Priority: Must Have
+```
+
+---
+
+## 8. Definition of Ready (Before a Story Enters a Sprint)
+
+A story is **Ready** if:
+- [ ] It has a clear user story statement
+- [ ] Acceptance criteria are defined
+- [ ] It is estimated in story points
+- [ ] Dependencies are identified
+- [ ] UI/UX wireframe exists (if applicable)
+- [ ] It fits within one sprint
+
+---
+
+## 9. Release Strategy
+
+```
+Sprint 0    → Setup sprint (no releasable feature)
+Sprints 1–5 → Development sprints (internal testing builds via EAS Preview)
+Sprint 6    → Hardening sprint → first production release to Google Play (internal track)
+Post-MVP    → Ongoing sprints for enhancements
+```
+
+**Release cadence:** At the end of every 2 sprints, a release candidate is built from `main` and distributed via **Expo EAS** internal testing channel to the Product Owner for sign-off.
+
+---
+
+## 10. Tools
+
+| Purpose | Tool |
+|---------|------|
+| Backlog & Sprint Board | **GitHub Projects** (free, linked to the repo) |
+| Daily standups (async) | **WhatsApp/Telegram group** or **GitHub Discussions** |
+| Documentation | **Markdown files in `/docs`** in the monorepo |
+| Issue tracking | **GitHub Issues** (linked to user stories) |
+| Time tracking | Optional: **Toggl** or **Clockify** |
+
+---
+
+*Document Version: 1.0 | May 2026*

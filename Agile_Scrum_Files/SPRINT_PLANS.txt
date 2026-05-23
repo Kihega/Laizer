@@ -1,0 +1,242 @@
+# 🏃 Sprint Plans — All Sprints
+### Stationery Management & Sales System (SMSS)
+
+---
+
+## Sprint 0 — Setup & Foundation
+**Dates:** Week 1 (Mon–Fri)
+**Goal:** Get the development environment, monorepo, CI/CD pipeline, and Supabase project fully operational before writing a single app feature.
+
+### Sprint Goal
+> *"By the end of Sprint 0, every developer has a running local environment, the GitHub monorepo is scaffolded with `main` and `develop` branches, CI/CD workflows pass, and a basic Expo app renders on device."*
+
+### Sprint 0 Tasks (Not Story Points — these are setup tasks)
+
+| # | Task | Owner | Done When |
+|---|------|-------|-----------|
+| T-001 | Create GitHub repo `smss-monorepo`, set up `main` + `develop` branches with protection rules | Dev | Branches exist on remote with PR protection enabled |
+| T-002 | Scaffold Turborepo monorepo with pnpm workspaces | Dev | `pnpm install` runs from root without errors |
+| T-003 | Create Expo app in `apps/mobile` with TypeScript template | Dev | `pnpm dev` inside apps/mobile shows Expo Go QR code |
+| T-004 | Set up ESLint + Prettier + Husky pre-commit hooks | Dev | Committing bad code triggers lint error |
+| T-005 | Create Supabase project; run initial DB schema migrations | Dev | All 7 tables created in Supabase dashboard |
+| T-006 | Configure Supabase RLS policies for all tables | Dev | Owner can't read another owner's data |
+| T-007 | Set up GitHub Actions: `pr-checks.yml` and `deploy-production.yml` | Dev | PR to develop triggers lint check in GitHub Actions |
+| T-008 | Configure Expo EAS project; create `development`, `preview`, `production` build profiles | Dev | `eas build --profile development` runs without error |
+| T-009 | Create shared-types package with initial TypeScript interfaces | Dev | Types importable from `@smss/shared-types` |
+| T-010 | Write project README with setup instructions | Dev | New developer can follow README and run the app |
+
+**Sprint 0 Deliverable:** Working skeleton app + fully configured infrastructure
+
+---
+
+## Sprint 1 — Authentication
+**Dates:** Weeks 2–3
+**Sprint Points:** 25
+**Goal:** Both user types (owner and worker) can log in and be routed to their respective dashboards.
+
+### Sprint Goal
+> *"By the end of Sprint 1, an owner can register and log in, and a worker can authenticate using a Centre ID — each landing on their own dashboard home screen."*
+
+### Sprint 1 Backlog
+
+| Story ID | User Story | Points | Assigned To |
+|---------|-----------|--------|------------|
+| US-001 | Owner registration (email + password) | 3 | Dev |
+| US-002 | Owner login | 2 | Dev |
+| US-003 | Worker login with Centre ID | 5 | Dev |
+| US-004 | Persistent login session (SecureStore) | 2 | Dev |
+| US-005 | Logout functionality | 1 | Dev |
+| US-073 | RLS policies enforced on all tables | 5 | Dev |
+| US-075 | Global error message component | 3 | Dev |
+| US-076 | Global loading state component | 2 | Dev |
+| — | Auth screen UI (login + register screens) | 2 | Dev |
+
+**Total: 25 points**
+
+### Sprint 1 Acceptance Criteria Summary
+
+- [ ] Owner can register with email + password; account appears in Supabase Auth
+- [ ] Owner can log in and land on Owner Dashboard (even if empty)
+- [ ] Worker enters Centre ID → validated against DB → if valid, logs in and lands on Worker Dashboard
+- [ ] Invalid Centre ID shows a clear error message
+- [ ] Closing and reopening the app keeps the user logged in
+- [ ] Logout clears the session and returns to login screen
+- [ ] All auth routes protected — unauthenticated users redirected to login
+
+---
+
+## Sprint 2 — Centre & Worker Management
+**Dates:** Weeks 4–5
+**Sprint Points:** 28
+**Goal:** Owner can fully manage centres and workers from the app.
+
+### Sprint Goal
+> *"By the end of Sprint 2, the owner can create centres, register workers, assign them, transfer them, and view the full roster — all from the mobile app."*
+
+### Sprint 2 Backlog
+
+| Story ID | User Story | Points | Assigned To |
+|---------|-----------|--------|------------|
+| US-010 | Add new centre (name, no, ID, location) | 5 | Dev |
+| US-011 | View list of all centres | 3 | Dev |
+| US-012 | Edit centre details | 3 | Dev |
+| US-013 | Deactivate/delete centre | 3 | Dev |
+| US-020 | Register new worker (name, NIM, phone) | 5 | Dev |
+| US-021 | Assign worker to centre | 3 | Dev |
+| US-022 | View all workers across centres | 3 | Dev |
+| US-023 | Transfer worker between centres | 3 | Dev |
+
+**Total: 28 points**
+
+### Sprint 2 Acceptance Criteria Summary
+
+- [ ] Owner sees empty state on first open ("No centres yet — add one")
+- [ ] Add Centre form validates all required fields before submission
+- [ ] Duplicate centre_no or centre_id rejected with error
+- [ ] Worker registration form validates NIM uniqueness
+- [ ] Worker assignment links worker to a centre in DB
+- [ ] Transfer worker correctly deactivates old assignment and creates new one
+- [ ] Deleted/deactivated centre hides from active list but data is retained (soft delete)
+
+---
+
+## Sprint 3 — Stock Management
+**Dates:** Weeks 6–7
+**Sprint Points:** 26
+**Goal:** Workers can register and manage stock at their centre; owner can view stock across centres.
+
+### Sprint Goal
+> *"By end of Sprint 3, a worker can log into their centre and register stock items with quantity, unit, and price — and the owner can see all stock levels across all centres."*
+
+### Sprint 3 Backlog
+
+| Story ID | User Story | Points | Assigned To |
+|---------|-----------|--------|------------|
+| US-030 | Worker: register new stock item | 5 | Dev |
+| US-031 | Worker: view list of stock items at centre | 3 | Dev |
+| US-032 | Worker: update stock item quantity | 3 | Dev |
+| US-036 | Worker: delete incorrect stock entry | 2 | Dev |
+| US-034 | Owner: view stock levels across all centres | 5 | Dev |
+| US-035 | Owner: live stock updates (Supabase Realtime) | 5 | Dev |
+| — | Stock list sorting (by name / by quantity) | 3 | Dev |
+
+**Total: 26 points**
+
+### Sprint 3 Acceptance Criteria Summary
+
+- [ ] Stock entry form: item name, quantity, unit (pcs/boxes dropdown), price in Tshs
+- [ ] Quantity cannot be negative; price must be a valid positive number
+- [ ] Stock list shows item name, qty, unit, price — sorted alphabetically by default
+- [ ] Owner sees all centres' stock in a scrollable, filterable list
+- [ ] Real-time: when worker adds stock, owner's screen updates without manual refresh
+- [ ] Currency display formatted as "Tshs X,XXX"
+
+---
+
+## Sprint 4 — Service Provision Tracking
+**Dates:** Weeks 8–9
+**Sprint Points:** 27
+**Goal:** Workers can log service events at their centre; totals auto-calculate.
+
+### Sprint Goal
+> *"By end of Sprint 4, a worker can fully log a customer service transaction — selecting service type, subtype, pages, and price — and see a running log of today's events at their centre."*
+
+### Sprint 4 Backlog
+
+| Story ID | User Story | Points | Assigned To |
+|---------|-----------|--------|------------|
+| US-040 | Worker: log a complete service event | 8 | Dev |
+| US-041 | Auto-calculate total (pages × price/page) | 3 | Dev |
+| US-042 | Service type selector (6 types) | 3 | Dev |
+| US-043 | Service subtype selector (B&W / Colour) | 2 | Dev |
+| US-044 | Worker: view today's service event log | 3 | Dev |
+| US-046 | Worker: edit/delete service event | 3 | Dev |
+| US-045 | Owner: view all service events across centres | 5 | Dev |
+
+**Total: 27 points**
+
+### Sprint 4 Acceptance Criteria Summary
+
+- [ ] Service event form: type, subtype, pages, price/page, optional note
+- [ ] Total amount updates in real-time as user types pages or price
+- [ ] Submitted event appears immediately in worker's daily log
+- [ ] Events timestamped and associated with logged-in worker + centre
+- [ ] Owner can filter events by centre, date, and service type
+- [ ] Edit/delete only available within 1 hour of submission (or with owner override)
+
+---
+
+## Sprint 5 — Reports & Notices
+**Dates:** Weeks 10–11
+**Sprint Points:** 26
+**Goal:** Owner can view summary reports and send notices to workers; workers receive notices in-app.
+
+### Sprint Goal
+> *"By end of Sprint 5, the owner has a reports dashboard showing daily/weekly service summaries per centre, and can send notices to workers who receive them in a dedicated inbox."*
+
+### Sprint 5 Backlog
+
+| Story ID | User Story | Points | Assigned To |
+|---------|-----------|--------|------------|
+| US-050 | Owner: daily summary report per centre | 8 | Dev |
+| US-051 | Owner: weekly summary report per centre | 5 | Dev |
+| US-060 | Owner: compose and send notice to centre workers | 5 | Dev |
+| US-061 | Worker: notice inbox screen | 5 | Dev |
+| US-062 | Worker: push notification on new notice | 3 | Dev |
+
+**Total: 26 points**
+
+### Sprint 5 Acceptance Criteria Summary
+
+- [ ] Daily report shows: total service events by type, total revenue, most active service
+- [ ] Weekly report aggregates 7 days of data per centre
+- [ ] Notice form: title, body, priority level, target centre selector
+- [ ] Sent notice appears in target centre workers' inboxes within 5 seconds
+- [ ] Push notification delivered to worker devices when notice is sent
+- [ ] Unread notices shown with a badge indicator
+
+---
+
+## Sprint 6 — QA, Polish & Production Release
+**Dates:** Week 12
+**Sprint Points:** N/A (QA + Bug Fix Sprint)
+**Goal:** Stabilise the app, fix all known bugs, and submit the first production build.
+
+### Sprint Goal
+> *"By end of Sprint 6, the app is bug-free for all core flows, passes QA testing, and a production build is submitted to Google Play internal testing track."*
+
+### Sprint 6 Tasks
+
+| # | Task | Done When |
+|---|------|-----------|
+| QA-001 | End-to-end testing: full owner flow (register → add centre → add worker → view reports) | All screens work without errors |
+| QA-002 | End-to-end testing: full worker flow (login → add stock → log service → view notices) | All screens work without errors |
+| QA-003 | Test on Android physical device | No crashes |
+| QA-004 | Test on iOS simulator (if available) | No crashes |
+| QA-005 | Fix all P1 (critical) bugs from QA | Zero P1 bugs in backlog |
+| QA-006 | Fix all P2 (major) bugs from QA | Zero P2 bugs in backlog |
+| QA-007 | Performance check: screen load times < 2 seconds | Confirmed on 3G simulation |
+| QA-008 | Security review: verify all RLS policies are active | Confirmed via Supabase dashboard |
+| QA-009 | Merge `develop` → `main` via PR | CI passes, production EAS build triggers |
+| QA-010 | Submit Android build to Google Play internal testing | Build visible in Play Console |
+
+---
+
+## Sprint Velocity Chart (Planned)
+
+```
+Sprint    |  Points   | Cumulative
+──────────┼───────────┼───────────
+Sprint 0  | Setup     | —
+Sprint 1  | 25 pts    | 25
+Sprint 2  | 28 pts    | 53
+Sprint 3  | 26 pts    | 79
+Sprint 4  | 27 pts    | 106
+Sprint 5  | 26 pts    | 132
+Sprint 6  | QA        | —
+```
+
+---
+
+*Sprint Plans Version: 1.0 | May 2026*
+*Individual sprint files are maintained as GitHub Project board entries.*

@@ -1,0 +1,467 @@
+# 🏗️ System Architecture & Database Design
+### Stationery Management & Sales System (SMSS)
+
+---
+
+## 1. High-Level System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLIENT LAYER                              │
+│                                                                   │
+│  ┌────────────────────────┐   ┌────────────────────────────┐    │
+│  │   OWNER APP (Mobile)   │   │   WORKER APP (Mobile)      │    │
+│  │   React Native/Expo    │   │   React Native/Expo        │    │
+│  │                        │   │                            │    │
+│  │  • Centre Management   │   │  • Centre-ID Login         │    │
+│  │  • Worker Management   │   │  • Stock Management        │    │
+│  │  • Reports Dashboard   │   │  • Service Event Logger    │    │
+│  │  • Send Notices        │   │  • Notice Inbox            │    │
+│  └────────────┬───────────┘   └────────────┬───────────────┘    │
+└───────────────┼────────────────────────────┼────────────────────┘
+                │                            │
+                │     HTTPS / WebSocket      │
+                ▼                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     SUPABASE PLATFORM                            │
+│                                                                   │
+│  ┌─────────────────┐  ┌────────────────┐  ┌─────────────────┐  │
+│  │  SUPABASE AUTH  │  │   SUPABASE     │  │ SUPABASE EDGE   │  │
+│  │                 │  │   REALTIME     │  │   FUNCTIONS     │  │
+│  │ • JWT Tokens    │  │                │  │                 │  │
+│  │ • Role Claims   │  │ • Live Notices │  │ • Push Notifs   │  │
+│  │ • Centre-ID     │  │ • Stock Sync   │  │ • Daily Reports │  │
+│  │   custom login  │  │ • Event Feed   │  │ • Cron Jobs     │  │
+│  └────────┬────────┘  └───────┬────────┘  └────────┬────────┘  │
+│           │                   │                     │            │
+│           └───────────────────┴─────────────────────┘           │
+│                               │                                   │
+│                               ▼                                   │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │               POSTGRESQL DATABASE (RLS Enabled)            │  │
+│  │                                                            │  │
+│  │  users · centres · worker_assignments · stock_items        │  │
+│  │  service_events · notices · notice_reads                   │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  ┌─────────────────┐                                             │
+│  │ SUPABASE STORAGE│  (Future: receipts, documents)             │
+│  └─────────────────┘                                             │
+└─────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   EXPO PUSH NOTIFICATION SERVICE                  │
+│              (Expo's servers → FCM/APNs → Device)               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Application Architecture Pattern
+
+The mobile app follows a **Feature-Sliced Architecture** within the monorepo:
+
+```
+Layer              Responsibility
+─────────────────────────────────────────────────────
+Screens (Pages)    Expo Router pages; minimal logic, orchestrate components
+Components         Reusable, presentational UI elements
+Hooks              Business logic, data fetching (React Query + Supabase)
+Stores             Global client state (Zustand) — auth session, UI state
+Services/Lib       Supabase client, helper functions, constants
+Types              Shared TypeScript interfaces (from packages/shared-types)
+```
+
+### Data Flow Pattern
+```
+User Action
+    │
+    ▼
+Screen (Expo Router)
+    │
+    ▼
+Custom Hook (useStockItems, useServiceEvents…)
+    │  └─ React Query (caching, loading, error state)
+    │
+    ▼
+Supabase JS Client
+    │
+    ▼
+Supabase (PostgreSQL + RLS + Realtime)
+```
+
+---
+
+## 3. Authentication Architecture
+
+### Owner Login
+```
+Email + Password ──→ Supabase Auth ──→ JWT with custom claim { role: "owner" }
+```
+
+### Worker Login
+```
+Centre ID ──→ Supabase Auth (custom flow via Edge Function)
+            ──→ Validate centre_id exists & worker assigned
+            ──→ JWT with custom claims { role: "worker", centre_id: "STN001" }
+```
+
+### Row Level Security (RLS) Logic
+```sql
+-- Owners only see their own centres
+-- Workers only see data belonging to their assigned centre
+-- Notices only visible to workers of the target centre
+```
+
+---
+
+## 4. Database Design
+
+### 4.1 Entity Relationship Diagram (Text Representation)
+
+```
+users ──────────────────────────── centres
+  │  1                          1    │
+  │  └────── (owner_id) ────────┘    │
+  │                                  │
+  │  (worker)                        │
+  └──── worker_centre_assignments ───┘
+              │ many-to-many
+
+centres ──────────── stock_items (1:many)
+centres ──────────── service_events (1:many)
+centres ──────────── notices (1:many)
+users   ──────────── service_events (1:many, worker)
+users   ──────────── notices (1:many, sender=owner)
+notices ─────────── notice_reads (1:many)
+```
+
+---
+
+### 4.2 Table Schemas
+
+---
+
+#### TABLE: `users`
+Stores all application users (owners and workers).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `uuid` | PK, default `gen_random_uuid()` | Unique user ID (matches Supabase Auth UID) |
+| `email` | `text` | UNIQUE, NULLABLE | Owner email address |
+| `phone` | `text` | UNIQUE, NULLABLE | Worker/owner phone number |
+| `full_name` | `text` | NOT NULL | Full name of user |
+| `nim` | `text` | UNIQUE, NULLABLE | Worker NIM (employee number) |
+| `role` | `text` | NOT NULL, CHECK IN ('owner','worker') | User role |
+| `is_active` | `boolean` | DEFAULT true | Soft delete / deactivation |
+| `created_at` | `timestamptz` | DEFAULT now() | Record creation timestamp |
+| `updated_at` | `timestamptz` | DEFAULT now() | Last update timestamp |
+
+```sql
+CREATE TABLE users (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email       text UNIQUE,
+  phone       text UNIQUE,
+  full_name   text NOT NULL,
+  nim         text UNIQUE,
+  role        text NOT NULL CHECK (role IN ('owner', 'worker')),
+  is_active   boolean DEFAULT true,
+  created_at  timestamptz DEFAULT now(),
+  updated_at  timestamptz DEFAULT now()
+);
+```
+
+---
+
+#### TABLE: `centres`
+Represents each stationery service centre.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `uuid` | PK | Unique centre UUID |
+| `centre_no` | `text` | UNIQUE, NOT NULL | Business number e.g. `STN001` |
+| `centre_id` | `text` | UNIQUE, NOT NULL | Login ID for workers e.g. `CENTRE-ARU-001` |
+| `name` | `text` | NOT NULL | Display name of centre |
+| `location` | `text` | NOT NULL | Physical location e.g. `Arusha University` |
+| `owner_id` | `uuid` | FK → users(id), NOT NULL | The owner of this centre |
+| `is_active` | `boolean` | DEFAULT true | Soft delete |
+| `created_at` | `timestamptz` | DEFAULT now() | — |
+| `updated_at` | `timestamptz` | DEFAULT now() | — |
+
+```sql
+CREATE TABLE centres (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  centre_no   text UNIQUE NOT NULL,
+  centre_id   text UNIQUE NOT NULL,
+  name        text NOT NULL,
+  location    text NOT NULL,
+  owner_id    uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  is_active   boolean DEFAULT true,
+  created_at  timestamptz DEFAULT now(),
+  updated_at  timestamptz DEFAULT now()
+);
+```
+
+---
+
+#### TABLE: `worker_centre_assignments`
+Junction table: maps workers to their assigned centre(s).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `uuid` | PK | — |
+| `worker_id` | `uuid` | FK → users(id) | The worker being assigned |
+| `centre_id` | `uuid` | FK → centres(id) | The centre assigned to |
+| `is_active` | `boolean` | DEFAULT true | Current/past assignment |
+| `assigned_at` | `timestamptz` | DEFAULT now() | When assignment was made |
+| `transferred_from` | `uuid` | NULLABLE, FK → centres(id) | Previous centre if transferred |
+
+```sql
+CREATE TABLE worker_centre_assignments (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  worker_id         uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  centre_id         uuid NOT NULL REFERENCES centres(id) ON DELETE CASCADE,
+  is_active         boolean DEFAULT true,
+  assigned_at       timestamptz DEFAULT now(),
+  transferred_from  uuid REFERENCES centres(id),
+  UNIQUE (worker_id, centre_id, is_active)
+);
+```
+
+---
+
+#### TABLE: `stock_items`
+Tracks inventory stock per centre.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `uuid` | PK | — |
+| `centre_id` | `uuid` | FK → centres(id), NOT NULL | Which centre holds this stock |
+| `registered_by` | `uuid` | FK → users(id) | Worker who registered the item |
+| `item_name` | `text` | NOT NULL | e.g. `Ink Pens`, `A4 Paper Ream` |
+| `quantity` | `numeric` | NOT NULL, ≥ 0 | Amount in stock |
+| `unit` | `text` | NOT NULL, CHECK | `pcs` or `boxes` |
+| `net_stock_price_tshs` | `numeric` | NOT NULL, ≥ 0 | Net purchase price in Tshs |
+| `notes` | `text` | NULLABLE | Additional notes |
+| `created_at` | `timestamptz` | DEFAULT now() | — |
+| `updated_at` | `timestamptz` | DEFAULT now() | — |
+
+```sql
+CREATE TABLE stock_items (
+  id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  centre_id             uuid NOT NULL REFERENCES centres(id) ON DELETE CASCADE,
+  registered_by         uuid REFERENCES users(id),
+  item_name             text NOT NULL,
+  quantity              numeric NOT NULL CHECK (quantity >= 0),
+  unit                  text NOT NULL CHECK (unit IN ('pcs', 'boxes')),
+  net_stock_price_tshs  numeric NOT NULL CHECK (net_stock_price_tshs >= 0),
+  notes                 text,
+  created_at            timestamptz DEFAULT now(),
+  updated_at            timestamptz DEFAULT now()
+);
+```
+
+---
+
+#### TABLE: `service_events`
+Logs each service transaction performed at a centre.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `uuid` | PK | — |
+| `centre_id` | `uuid` | FK → centres(id) | Where service occurred |
+| `worker_id` | `uuid` | FK → users(id) | Worker who logged the event |
+| `service_type` | `text` | NOT NULL, CHECK | `photocopy`, `printing`, `lamination`, `scanning`, `designing`, `other` |
+| `service_subtype` | `text` | NULLABLE | `black_and_white`, `colour` |
+| `category` | `text` | NULLABLE | Additional classification |
+| `pages` | `integer` | NULLABLE, ≥ 1 | Number of pages (if applicable) |
+| `price_per_page_tshs` | `numeric` | NULLABLE, ≥ 0 | Price per page in Tshs |
+| `total_amount_tshs` | `numeric` | NOT NULL, ≥ 0 | Computed: pages × price_per_page |
+| `customer_note` | `text` | NULLABLE | Optional customer reference |
+| `created_at` | `timestamptz` | DEFAULT now() | Transaction timestamp |
+
+```sql
+CREATE TABLE service_events (
+  id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  centre_id             uuid NOT NULL REFERENCES centres(id) ON DELETE CASCADE,
+  worker_id             uuid NOT NULL REFERENCES users(id),
+  service_type          text NOT NULL CHECK (service_type IN (
+                            'photocopy','printing','lamination',
+                            'scanning','designing','other')),
+  service_subtype       text CHECK (service_subtype IN ('black_and_white','colour')),
+  category              text,
+  pages                 integer CHECK (pages >= 1),
+  price_per_page_tshs   numeric CHECK (price_per_page_tshs >= 0),
+  total_amount_tshs     numeric NOT NULL CHECK (total_amount_tshs >= 0),
+  customer_note         text,
+  created_at            timestamptz DEFAULT now()
+);
+```
+
+---
+
+#### TABLE: `notices`
+Messages/instructions sent by the owner to workers of a specific centre.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `uuid` | PK | — |
+| `sender_id` | `uuid` | FK → users(id) | Owner who sent the notice |
+| `centre_id` | `uuid` | FK → centres(id) | Target centre |
+| `title` | `text` | NOT NULL | Notice subject/title |
+| `body` | `text` | NOT NULL | Full message content |
+| `priority` | `text` | DEFAULT `normal` | `low`, `normal`, `urgent` |
+| `created_at` | `timestamptz` | DEFAULT now() | — |
+
+```sql
+CREATE TABLE notices (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  sender_id   uuid NOT NULL REFERENCES users(id),
+  centre_id   uuid NOT NULL REFERENCES centres(id) ON DELETE CASCADE,
+  title       text NOT NULL,
+  body        text NOT NULL,
+  priority    text DEFAULT 'normal' CHECK (priority IN ('low','normal','urgent')),
+  created_at  timestamptz DEFAULT now()
+);
+```
+
+---
+
+#### TABLE: `notice_reads`
+Tracks which workers have read which notices.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `uuid` | PK | — |
+| `notice_id` | `uuid` | FK → notices(id) | The notice read |
+| `worker_id` | `uuid` | FK → users(id) | Worker who read it |
+| `read_at` | `timestamptz` | DEFAULT now() | When it was read |
+
+```sql
+CREATE TABLE notice_reads (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  notice_id   uuid NOT NULL REFERENCES notices(id) ON DELETE CASCADE,
+  worker_id   uuid NOT NULL REFERENCES users(id),
+  read_at     timestamptz DEFAULT now(),
+  UNIQUE (notice_id, worker_id)
+);
+```
+
+---
+
+### 4.3 Key Database Views
+
+```sql
+-- Daily service revenue summary per centre
+CREATE VIEW daily_service_summary AS
+SELECT
+  centre_id,
+  DATE(created_at) AS service_date,
+  service_type,
+  COUNT(*) AS event_count,
+  SUM(total_amount_tshs) AS total_revenue_tshs
+FROM service_events
+GROUP BY centre_id, DATE(created_at), service_type;
+
+-- Active workers per centre
+CREATE VIEW active_workers_per_centre AS
+SELECT
+  c.id AS centre_id,
+  c.name AS centre_name,
+  c.centre_no,
+  COUNT(wca.worker_id) AS active_worker_count
+FROM centres c
+LEFT JOIN worker_centre_assignments wca
+  ON wca.centre_id = c.id AND wca.is_active = true
+GROUP BY c.id, c.name, c.centre_no;
+```
+
+---
+
+## 5. Row Level Security (RLS) Policies Summary
+
+| Table | Owner Access | Worker Access |
+|-------|-------------|---------------|
+| `centres` | Full CRUD on own centres | SELECT own assigned centre only |
+| `worker_centre_assignments` | Full CRUD on own centres | SELECT own assignment |
+| `stock_items` | SELECT all in own centres | Full CRUD in assigned centre |
+| `service_events` | SELECT all in own centres | INSERT + SELECT in assigned centre |
+| `notices` | Full CRUD (sender) | SELECT for their centre |
+| `notice_reads` | SELECT (read status) | INSERT + SELECT own reads |
+
+---
+
+## 6. Real-time Subscriptions
+
+| Event | Channel | Who Listens |
+|-------|---------|------------|
+| New notice sent | `notices` table INSERT | Workers of target centre |
+| Stock item added | `stock_items` table INSERT | Owner dashboard |
+| New service event | `service_events` table INSERT | Owner dashboard (live feed) |
+
+---
+
+## 7. Push Notification Architecture
+
+```
+Owner sends Notice
+      │
+      ▼
+INSERT into `notices` table
+      │
+      ▼
+Supabase Edge Function (triggered by DB webhook)
+      │
+      ├── Query: get all workers of centre_id
+      ├── Query: get their Expo push tokens
+      │
+      ▼
+Expo Push Notification API (https://exp.host/--/api/v2/push/send)
+      │
+      ▼
+FCM (Android) / APNs (iOS)
+      │
+      ▼
+Worker Device — Push Notification appears
+```
+
+#### `expo_push_tokens` Table (Supporting Push Notifications)
+```sql
+CREATE TABLE expo_push_tokens (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token       text NOT NULL UNIQUE,
+  platform    text CHECK (platform IN ('ios','android')),
+  updated_at  timestamptz DEFAULT now()
+);
+```
+
+---
+
+## 8. Offline Strategy
+
+For areas with poor connectivity:
+
+| Data Type | Offline Strategy |
+|-----------|----------------|
+| Stock entries | Queue in **Expo SQLite** → sync to Supabase on reconnect |
+| Service events | Queue in **Expo SQLite** → batch sync on reconnect |
+| Notices | Cached in **React Query** local cache (last-fetched data visible offline) |
+| Auth session | JWT stored in **Expo SecureStore** — valid for session duration |
+
+---
+
+## 9. Environment Configuration
+
+```
+.env.local
+─────────────────────────────────────────
+EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...  ← Edge Functions only, never in client
+```
+
+---
+
+*Document Version: 1.0 | Architecture reviewed: May 2026*
