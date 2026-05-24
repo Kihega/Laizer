@@ -113,7 +113,7 @@ Acceptance Criteria:
 
 Tasks:
   [ ] Build the worker login screen UI (Centre ID input, Login button)
-  [ ] Create Supabase Edge Function to:
+  [ ] Create Express route POST /api/v1/auth/worker/login that:
         Receive the Centre ID
         Query centres table to confirm the ID exists
         Query worker_centre_assignments to confirm at least one active worker

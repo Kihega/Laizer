@@ -3,361 +3,574 @@ STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
 GitHub Monorepo Setup Guide
 ================================================================================
 
-Version 1.0 | May 2026
+Version 1.1 | May 2026 (Updated: Turborepo removed, backend added)
 ================================================================================
 
 
 OVERVIEW
 ---------
-This guide walks you through creating the GitHub repository, setting up local
-branches, scaffolding the monorepo, and configuring CI/CD so that every merge
-to main automatically triggers a production build.
+The GitHub repository is already created. This guide covers:
+  - Confirming the branch structure is correct
+  - Scaffolding the monorepo workspaces with pnpm (no extra tools)
+  - Setting up the Express.js backend
+  - Connecting to Supabase PostgreSQL via Prisma
+  - Connecting to Upstash Redis
+  - Configuring Render for backend hosting
+  - Setting up GitHub Actions CI/CD
 
 Branch structure:
-  main     -- Production-ready code only. Protected. Merge via PR only.
-  develop  -- Integration branch. All feature work merges here first.
-  feature/ -- Short-lived branches. Created per task or user story.
+  main     -- Production-ready. Protected. Merge via PR only.
+  develop  -- Integration branch. All feature work merges here.
+  feature/ -- Short-lived. One branch per task or user story.
 
 
 ================================================================================
-PART 1 : ONE-TIME GITHUB REPOSITORY SETUP
+PART 1 : CONFIRM BRANCH SETUP
 ================================================================================
 
-STEP 1 : Create the Remote Repository
----------------------------------------
-1. Open https://github.com and sign in.
-2. Click the "+" button (top right) then select "New repository".
-3. Fill in the form:
-     Repository name  : smss-monorepo
-     Description      : Mobile-Based Stationery Management & Sales System
-     Visibility       : Private
-     Add README file  : Yes (tick the checkbox)
-     Add .gitignore   : Select "Node" from the dropdown
-4. Click "Create repository".
-
-
-STEP 2 : Protect the main and develop Branches
-------------------------------------------------
-After the repository is created, do this for both branches.
-
-  For the main branch:
-    1. Go to Settings --> Branches --> Add branch protection rule
-    2. Branch name pattern: main
-    3. Enable: Require a pull request before merging
-    4. Enable: Require approvals (set to 1)
-    5. Enable: Require status checks to pass before merging
-    6. Enable: Require branches to be up to date before merging
-    7. Enable: Do not allow bypassing the above settings
-    8. Click Save changes.
-
-  For the develop branch:
-    1. Click Add branch protection rule again
-    2. Branch name pattern: develop
-    3. Enable: Require a pull request before merging
-    4. Enable: Require approvals (set to 1)
-    5. Click Save changes.
-
-
-================================================================================
-PART 2 : LOCAL REPOSITORY SETUP
-================================================================================
-
-STEP 3 : Clone the Repo to Your Computer
+STEP 1 : Verify Branches Exist on Remote
 ------------------------------------------
-Open a terminal and run:
+Since the repository is already created on GitHub, confirm both
+branches exist and are protected.
 
-    git clone https://github.com/YOUR_USERNAME/smss-monorepo.git
-    cd smss-monorepo
+On GitHub:
+  1. Go to your repository
+  2. Click the branch dropdown (shows "main" by default)
+  3. Confirm "develop" is listed
 
-Confirm you are on the main branch:
+If develop does not exist yet:
+  git clone https://github.com/YOUR_USERNAME/smss-monorepo.git
+  cd smss-monorepo
+  git checkout -b develop
+  git push -u origin develop
 
-    git branch
-    (Output should show: * main)
 
+STEP 2 : Confirm Branch Protection Rules
+------------------------------------------
+Go to Settings --> Branches and confirm:
 
-STEP 4 : Create the develop Branch Locally and on Remote
-----------------------------------------------------------
-    git checkout -b develop
-    git push -u origin develop
+  For main:
+    Require pull request before merging: ON
+    Require approvals: 1
+    Require status checks to pass: ON
+    Do not allow bypassing: ON
 
-Verify both branches now exist:
-
-    git branch -a
-    (Output should include: * develop, main, remotes/origin/develop,
-                             remotes/origin/main)
+  For develop:
+    Require pull request before merging: ON
+    Require approvals: 1
 
 
 ================================================================================
-PART 3 : MONOREPO SCAFFOLD
+PART 2 : MONOREPO WORKSPACE SETUP (pnpm only, no extra tools)
 ================================================================================
 
-STEP 5 : Install pnpm (if not already installed)
+STEP 3 : Install pnpm (if not already installed)
 --------------------------------------------------
-    npm install -g pnpm
+  npm install -g pnpm
 
 
-STEP 6 : Scaffold Turborepo
------------------------------
-Make sure you are on the develop branch:
+STEP 4 : Create the Workspace Config
+--------------------------------------
+In the repository root, create the file pnpm-workspace.yaml:
 
-    git checkout develop
-
-Then run:
-
-    pnpm dlx create-turbo@latest . --package-manager pnpm
-    (When prompted, choose the "Empty" starter.)
-
-Create the folder structure:
-
-    mkdir -p apps/mobile
-    mkdir -p packages/shared-types
-    mkdir -p packages/supabase
-    mkdir -p packages/config
-    mkdir -p .github/workflows
+  packages:
+    - "apps/*"
+    - "packages/*"
 
 
-STEP 7 : Configure Root Files
--------------------------------
-Create the file pnpm-workspace.yaml at the root with this content:
+STEP 5 : Create the Root package.json
+---------------------------------------
+Create or update package.json in the repository root:
 
-    packages:
-      - "apps/*"
-      - "packages/*"
+  {
+    "name": "smss-monorepo",
+    "private": true,
+    "scripts": {
+      "dev:mobile":   "pnpm --filter mobile dev",
+      "dev:backend":  "pnpm --filter backend dev",
+      "build:mobile": "pnpm --filter mobile build",
+      "build:backend":"pnpm --filter backend build",
+      "lint":         "pnpm -r lint",
+      "test":         "pnpm -r test",
+      "format":       "prettier --write \"**/*.{ts,tsx}\""
+    },
+    "devDependencies": {
+      "prettier": "^3.0.0",
+      "eslint": "^8.0.0",
+      "typescript": "^5.0.0",
+      "husky": "^9.0.0",
+      "lint-staged": "^15.0.0"
+    },
+    "packageManager": "pnpm@9.0.0"
+  }
 
-Create or update turbo.json at the root:
 
-    {
-      "$schema": "https://turbo.build/schema.json",
-      "pipeline": {
-        "build": {
-          "dependsOn": ["^build"],
-          "outputs": ["dist/**", ".expo/**"]
-        },
-        "dev": {
-          "cache": false,
-          "persistent": true
-        },
-        "lint": { "outputs": [] },
-        "test": { "outputs": ["coverage/**"] }
-      }
-    }
+STEP 6 : Create the Folder Structure
+--------------------------------------
+Run these commands from the repository root:
+
+  mkdir -p apps/mobile
+  mkdir -p apps/backend/src/routes
+  mkdir -p apps/backend/src/middleware
+  mkdir -p apps/backend/src/services
+  mkdir -p apps/backend/src/lib
+  mkdir -p apps/backend/src/utils
+  mkdir -p apps/backend/prisma
+  mkdir -p packages/shared-types
+  mkdir -p packages/config
+  mkdir -p .github/workflows
 
 
-STEP 8 : Create the Expo Mobile App
--------------------------------------
-    cd apps/mobile
-    pnpm dlx create-expo-app@latest . --template tabs
+================================================================================
+PART 3 : EXPO MOBILE APP
+================================================================================
+
+STEP 7 : Create the Expo App
+------------------------------
+  cd apps/mobile
+  pnpm dlx create-expo-app@latest . --template tabs
 
 Install core dependencies:
 
-    pnpm add @supabase/supabase-js
-    pnpm add zustand
-    pnpm add @tanstack/react-query
-    pnpm add react-hook-form zod @hookform/resolvers
-    pnpm add react-native-paper react-native-safe-area-context
-    pnpm add expo-secure-store expo-sqlite expo-notifications
+  pnpm add @supabase/supabase-js
+  pnpm add zustand
+  pnpm add @tanstack/react-query
+  pnpm add axios
+  pnpm add react-hook-form zod @hookform/resolvers
+  pnpm add react-native-paper react-native-safe-area-context
+  pnpm add expo-secure-store expo-sqlite expo-notifications
 
-    cd ../..
+  cd ../..
 
 
 ================================================================================
-PART 4 : GITHUB ACTIONS CI/CD WORKFLOWS
+PART 4 : EXPRESS.JS BACKEND
 ================================================================================
 
-STEP 9 : PR Checks Workflow
+STEP 8 : Initialise the Backend Package
+-----------------------------------------
+  cd apps/backend
+  pnpm init
+  pnpm add express
+  pnpm add @prisma/client ioredis jsonwebtoken bcrypt zod
+  pnpm add -D typescript ts-node nodemon @types/express
+      @types/node @types/jsonwebtoken @types/bcrypt prisma
+
+Create tsconfig.json inside apps/backend:
+
+  {
+    "compilerOptions": {
+      "target": "ES2020",
+      "module": "commonjs",
+      "rootDir": "src",
+      "outDir": "dist",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "dist"]
+  }
+
+Add these scripts to apps/backend/package.json:
+
+  "scripts": {
+    "dev":   "nodemon --watch src --ext ts --exec ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint":  "eslint src/**/*.ts"
+  }
+
+  cd ../..
+
+
+STEP 9 : Create the Backend Entry Point
+-----------------------------------------
+Create the file apps/backend/src/index.ts:
+
+  import express from 'express'
+  import { authRouter }     from './routes/auth.routes'
+  import { centreRouter }   from './routes/centres.routes'
+  import { workerRouter }   from './routes/workers.routes'
+  import { stockRouter }    from './routes/stock.routes'
+  import { serviceRouter }  from './routes/services.routes'
+  import { noticeRouter }   from './routes/notices.routes'
+  import { reportRouter }   from './routes/reports.routes'
+  import { errorHandler }   from './middleware/errorHandler'
+
+  const app = express()
+  app.use(express.json())
+
+  app.use('/api/v1/auth',     authRouter)
+  app.use('/api/v1/centres',  centreRouter)
+  app.use('/api/v1/workers',  workerRouter)
+  app.use('/api/v1/stock',    stockRouter)
+  app.use('/api/v1/services', serviceRouter)
+  app.use('/api/v1/notices',  noticeRouter)
+  app.use('/api/v1/reports',  reportRouter)
+
+  app.use(errorHandler)
+
+  const PORT = process.env.PORT || 3000
+  app.listen(PORT, () => console.log(`SMSS API running on port ${PORT}`))
+
+
+================================================================================
+PART 5 : SUPABASE POSTGRESQL + PRISMA
+================================================================================
+
+STEP 10 : Get the Supabase Connection String
+----------------------------------------------
+1. Go to https://supabase.com and open your project
+2. Go to Settings --> Database
+3. Copy the Connection String under "Connection pooling" mode
+   (use the Transaction pooler URL for Prisma)
+4. Also copy the Direct Connection URL (for migrations)
+
+
+STEP 11 : Initialise Prisma
 -----------------------------
-Create the file .github/workflows/pr-checks.yml with this content:
+  cd apps/backend
+  pnpm prisma init
 
-    name: PR Checks
-
-    on:
-      pull_request:
-        branches:
-          - develop
-          - main
-
-    jobs:
-      lint-and-test:
-        name: Lint and Test
-        runs-on: ubuntu-latest
-        steps:
-          - uses: actions/checkout@v4
-
-          - uses: pnpm/action-setup@v3
-            with:
-              version: 9
-
-          - uses: actions/setup-node@v4
-            with:
-              node-version: '20'
-              cache: 'pnpm'
-
-          - run: pnpm install --frozen-lockfile
-          - run: pnpm lint
-          - run: pnpm test
+This creates prisma/schema.prisma and a .env file.
 
 
-STEP 10 : Production Deploy Workflow
---------------------------------------
-Create the file .github/workflows/deploy-production.yml:
-
-    name: Deploy to Production
-
-    on:
-      push:
-        branches:
-          - main
-
-    jobs:
-      deploy:
-        name: EAS Production Build
-        runs-on: ubuntu-latest
-        steps:
-          - uses: actions/checkout@v4
-
-          - uses: pnpm/action-setup@v3
-            with:
-              version: 9
-
-          - uses: actions/setup-node@v4
-            with:
-              node-version: '20'
-              cache: 'pnpm'
-
-          - run: pnpm install --frozen-lockfile
-
-          - uses: expo/expo-github-action@v8
-            with:
-              eas-version: latest
-              token: ${{ secrets.EXPO_TOKEN }}
-
-          - name: Build for Android (production)
-            run: |
-              cd apps/mobile
-              eas build --platform android --profile production --non-interactive
-
-          - name: Build for iOS (production)
-            run: |
-              cd apps/mobile
-              eas build --platform ios --profile production --non-interactive
-
-IMPORTANT: Add your Expo token as a GitHub Secret.
-  Go to: Repository --> Settings --> Secrets --> Actions --> New repository secret
-  Name  : EXPO_TOKEN
-  Value : Your Expo access token (from expo.dev --> Account Settings --> Access Tokens)
-
-
-================================================================================
-PART 5 : DAILY DEVELOPMENT WORKFLOW
-================================================================================
-
-STEP 11 : Working on a Feature
----------------------------------
-Always start from a fresh develop branch:
-
-    git checkout develop
-    git pull origin develop
-
-Create your feature branch:
-
-    git checkout -b feature/owner-centre-management
-
-Do your work, then commit:
-
-    git add .
-    git commit -m "feat: add centre creation form and API integration"
-
-Push the branch to GitHub:
-
-    git push -u origin feature/owner-centre-management
-
-On GitHub: open a Pull Request from your feature branch into develop.
-After code review and CI checks pass, merge and delete the feature branch.
-
-Clean up locally:
-
-    git checkout develop
-    git pull origin develop
-    git branch -d feature/owner-centre-management
-
-
-STEP 12 : Commit Message Format (Conventional Commits)
----------------------------------------------------------
-Use the following prefix format for all commit messages:
-
-    feat:      New feature
-    fix:       Bug fix
-    chore:     Tooling or configuration change
-    docs:      Documentation only
-    refactor:  Code restructure with no behaviour change
-    test:      Adding or updating tests
-    style:     Formatting only, no logic changes
-
-Examples:
-    feat: add worker login with centre ID
-    fix: correct stock quantity validation on submission
-    chore: configure Husky pre-commit hooks
-    docs: update README with local setup steps
-
-
-STEP 13 : Sprint Release (develop into main)
----------------------------------------------
-At the end of each sprint, open a release pull request on GitHub:
-
-    From:   develop
-    Into:   main
-    Title:  Release: Sprint X -- [Brief summary of sprint]
-
-Add release notes listing the features merged this sprint.
-Get one approval from the Product Owner or a peer.
-Merge the PR.
-GitHub Actions will automatically trigger the EAS production build.
-
-
-================================================================================
-PART 6 : SUPABASE SETUP
-================================================================================
-
-STEP 14 : Create the Supabase Project
+STEP 12 : Configure the Prisma Schema
 ---------------------------------------
-1. Go to https://supabase.com and sign in.
-2. Click "New project".
-3. Fill in:
-     Name     : smss-production
-     Password : Create a strong database password and save it securely
-     Region   : Choose the region closest to Tanzania
-                (East Africa is not listed; use Middle East Bahrain or
-                 EU West as alternatives)
-4. Wait for the project to be created (takes about 1 minute).
-5. Go to Settings --> API and copy:
-     Project URL    --> use as EXPO_PUBLIC_SUPABASE_URL
-     Anon/public key --> use as EXPO_PUBLIC_SUPABASE_ANON_KEY
+Open apps/backend/prisma/schema.prisma and replace the content with
+the full schema. Set the datasource block:
+
+  generator client {
+    provider = "prisma-client-js"
+  }
+
+  datasource db {
+    provider  = "postgresql"
+    url       = env("DATABASE_URL")
+    directUrl = env("DIRECT_URL")
+  }
+
+Then add all 8 model definitions as listed in the Database Design
+section of SYSTEM_ARCHITECTURE_AND_DATABASE_DESIGN.txt.
 
 
-STEP 15 : Add Environment Variables
--------------------------------------
-Create the file apps/mobile/.env.local and add:
+STEP 13 : Create and Apply the Migration
+------------------------------------------
+  cd apps/backend
+  pnpm prisma migrate dev --name init
 
-    EXPO_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-    EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+This generates a SQL migration file and runs it against Supabase.
+All 8 tables are created.
 
-Make sure .env.local is listed in your .gitignore file.
-Never commit this file to GitHub.
+To generate the Prisma Client (TypeScript types):
+  pnpm prisma generate
+
+To view the database in the browser:
+  pnpm prisma studio
+
+
+STEP 14 : Create the Prisma Client Singleton
+---------------------------------------------
+Create apps/backend/src/lib/prisma.ts:
+
+  import { PrismaClient } from '@prisma/client'
+
+  const globalForPrisma = globalThis as unknown as {
+    prisma: PrismaClient | undefined
+  }
+
+  export const prisma = globalForPrisma.prisma ?? new PrismaClient()
+
+  if (process.env.NODE_ENV !== 'production') {
+    globalForPrisma.prisma = prisma
+  }
 
 
 ================================================================================
-SUMMARY OF BRANCH STRUCTURE
+PART 6 : UPSTASH REDIS
 ================================================================================
 
-Remote (GitHub):
-  origin/main      -- Production. Protected. Merge via PR only.
-  origin/develop   -- Integration. Protected. Merge via PR only.
-  origin/feature/* -- Short-lived. Created per task or story.
+STEP 15 : Create an Upstash Redis Database
+--------------------------------------------
+1. Go to https://upstash.com and create an account (free)
+2. Click "Create Database"
+3. Settings:
+     Name   : smss-redis
+     Type   : Regional
+     Region : Choose the closest to Tanzania (e.g. EU-West-1)
+4. After creation, go to the database details page
+5. Copy the "REDIS_URL" shown (starts with rediss://)
 
-Local:
-  main             -- Tracks origin/main
-  develop          -- Tracks origin/develop. Your daily working base.
-  feature/*        -- Your active work branch for each task.
+
+STEP 16 : Create the Redis Client
+-----------------------------------
+Add the REDIS_URL to your apps/backend/.env file.
+
+Create apps/backend/src/lib/redis.ts:
+
+  import Redis from 'ioredis'
+
+  if (!process.env.REDIS_URL) {
+    throw new Error('REDIS_URL environment variable is not set')
+  }
+
+  export const redis = new Redis(process.env.REDIS_URL)
+
+  redis.on('connect', () => console.log('Redis connected'))
+  redis.on('error', (err) => console.error('Redis error:', err))
+
+
+STEP 17 : JWT Session Helpers
+-------------------------------
+Create apps/backend/src/utils/token.ts:
+
+  import jwt from 'jsonwebtoken'
+  import { redis } from '../lib/redis'
+  import { v4 as uuidv4 } from 'uuid'
+
+  const JWT_SECRET = process.env.JWT_SECRET!
+
+  export async function signToken(
+    payload: object,
+    expiry: string
+  ): Promise<string> {
+    const jti = uuidv4()
+    const token = jwt.sign({ ...payload, jti }, JWT_SECRET, {
+      expiresIn: expiry
+    })
+    const decoded = jwt.decode(token) as { exp: number; sub: string }
+    const ttl = decoded.exp - Math.floor(Date.now() / 1000)
+    await redis.set(`session:${decoded.sub}:${jti}`, 'valid', 'EX', ttl)
+    return token
+  }
+
+  export async function verifyToken(token: string) {
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      sub: string; jti: string; role: string; [key: string]: unknown
+    }
+    const session = await redis.get(`session:${decoded.sub}:${decoded.jti}`)
+    if (!session) throw new Error('Session not found or has been revoked')
+    return decoded
+  }
+
+  export async function revokeToken(
+    userId: string,
+    jti: string
+  ): Promise<void> {
+    await redis.del(`session:${userId}:${jti}`)
+  }
+
+
+================================================================================
+PART 7 : RENDER DEPLOYMENT
+================================================================================
+
+STEP 18 : Create a Render Web Service
+---------------------------------------
+1. Go to https://render.com and sign in
+2. Click "New" --> "Web Service"
+3. Connect your GitHub account and select the smss-monorepo repository
+4. Fill in the settings:
+     Name             : smss-api
+     Region           : Closest to Tanzania (e.g. Frankfurt)
+     Branch           : main
+     Root Directory   : apps/backend
+     Runtime          : Node
+     Build Command    : pnpm install && pnpm build
+     Start Command    : node dist/index.js
+     Instance Type    : Free
+
+5. Under "Environment Variables", add all variables from your .env file:
+     DATABASE_URL
+     DIRECT_URL
+     REDIS_URL
+     JWT_SECRET
+     JWT_OWNER_EXPIRY      (e.g. 7d)
+     JWT_WORKER_EXPIRY     (e.g. 12h)
+     NODE_ENV              production
+     PORT                  (leave blank -- Render sets this automatically)
+
+6. Click "Create Web Service"
+
+Render will build and deploy the backend automatically.
+After deployment, note the URL (e.g. https://smss-api.onrender.com)
+Add this URL to apps/mobile/.env.local as EXPO_PUBLIC_API_URL.
+
+
+STEP 19 : Enable Auto-Deploy from main Branch
+-----------------------------------------------
+In Render, go to your web service --> Settings --> Auto-Deploy.
+Enable "Auto-Deploy" so every push to main triggers a redeploy.
+This means merging the sprint PR (develop --> main) automatically
+deploys the latest backend to Render.
+
+
+================================================================================
+PART 8 : GITHUB ACTIONS CI/CD
+================================================================================
+
+STEP 20 : PR Checks Workflow
+------------------------------
+Create .github/workflows/pr-checks.yml:
+
+  name: PR Checks
+
+  on:
+    pull_request:
+      branches:
+        - develop
+        - main
+
+  jobs:
+    lint-and-test:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+
+        - uses: pnpm/action-setup@v3
+          with:
+            version: 9
+
+        - uses: actions/setup-node@v4
+          with:
+            node-version: '20'
+            cache: 'pnpm'
+
+        - run: pnpm install --frozen-lockfile
+        - run: pnpm lint
+        - run: pnpm test
+
+
+STEP 21 : Production Deploy Workflow
+--------------------------------------
+Create .github/workflows/deploy-production.yml:
+
+  name: Deploy to Production
+
+  on:
+    push:
+      branches:
+        - main
+
+  jobs:
+    deploy-mobile:
+      name: EAS Mobile Build
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+
+        - uses: pnpm/action-setup@v3
+          with:
+            version: 9
+
+        - uses: actions/setup-node@v4
+          with:
+            node-version: '20'
+            cache: 'pnpm'
+
+        - run: pnpm install --frozen-lockfile
+
+        - uses: expo/expo-github-action@v8
+          with:
+            eas-version: latest
+            token: ${{ secrets.EXPO_TOKEN }}
+
+        - name: EAS Android Production Build
+          run: |
+            cd apps/mobile
+            eas build --platform android --profile production --non-interactive
+
+  Note: Render auto-deploys the backend when main is updated.
+        No separate GitHub Action is needed for the backend deploy.
+
+Required GitHub Secret:
+  EXPO_TOKEN  -->  Your Expo access token
+                   Found at: expo.dev --> Account Settings --> Access Tokens
+
+
+================================================================================
+PART 9 : CODE QUALITY SETUP
+================================================================================
+
+STEP 22 : Husky Pre-Commit Hooks
+----------------------------------
+  cd smss-monorepo (root)
+  pnpm dlx husky-init
+  pnpm install
+
+Edit .husky/pre-commit to run lint before every commit:
+
+  #!/usr/bin/env sh
+  . "$(dirname -- "$0")/_/husky.sh"
+  pnpm lint-staged
+
+Add lint-staged config to the root package.json:
+
+  "lint-staged": {
+    "*.{ts,tsx}": ["eslint --fix", "prettier --write"]
+  }
+
+
+================================================================================
+PART 10 : DAILY DEVELOPMENT WORKFLOW
+================================================================================
+
+STEP 23 : Working on a Feature
+---------------------------------
+Always start from an updated develop branch:
+
+  git checkout develop
+  git pull origin develop
+
+Create a feature branch:
+
+  git checkout -b feature/backend-auth-routes
+
+Do your work. Run the backend locally:
+
+  cd apps/backend
+  pnpm dev         (starts nodemon on port 3000)
+
+Run the mobile app locally:
+
+  cd apps/mobile
+  pnpm dev         (starts Expo Go QR code)
+
+Commit and push:
+
+  git add .
+  git commit -m "feat: add owner login and JWT session to Redis"
+  git push -u origin feature/backend-auth-routes
+
+Open a Pull Request on GitHub: feature/* --> develop
+After review and CI checks pass, merge and delete the feature branch.
+
+
+STEP 24 : Sprint Release (develop into main)
+---------------------------------------------
+At the end of each sprint:
+
+  1. Open a Pull Request on GitHub: develop --> main
+  2. Title: "Release: Sprint X -- [Summary]"
+  3. Add release notes listing all features completed
+  4. Get one approval, then merge
+  5. Render auto-deploys the backend from main
+  6. GitHub Actions builds the updated Expo app for Android
+
+
+================================================================================
+BRANCH AND ENVIRONMENT SUMMARY
+================================================================================
+
+Branch      Environment    Backend URL                      DB
+----------  -------------  -------------------------------  -------------------
+develop     Development    http://localhost:3000            Supabase (same DB)
+main        Production     https://smss-api.onrender.com   Supabase (same DB)
+
+Note: For MVP, both environments use the same Supabase database.
+When the product grows, separate staging and production databases
+should be used. This is a post-MVP improvement.
 
 
 ================================================================================

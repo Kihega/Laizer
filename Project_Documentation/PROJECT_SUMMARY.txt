@@ -4,7 +4,7 @@ Mobile-Based Business Operations Platform
 ================================================================================
 
 PROJECT SUMMARY
-Version 1.0 | May 2026
+Version 1.1 | May 2026 (Updated: Tech Stack Revision)
 ================================================================================
 
 
@@ -109,151 +109,258 @@ Module: Notices
 ---------------------------------
 
 Selection principle: favour tools that maximise development speed,
-reduce infrastructure overhead, and support fast iteration.
+suit a small team, and keep infrastructure costs at zero during the
+build and early launch phase.
 
 MOBILE FRONTEND
   Framework       : React Native with Expo (Managed Workflow)
-                    Single codebase for Android and iOS. Expo's built-in
-                    modules remove native setup friction. Over-the-air
+                    Single codebase for Android and iOS. Over-the-air
                     updates avoid app store resubmission for minor fixes.
   Language        : TypeScript throughout
-  Navigation      : Expo Router v3 (file-based, like Next.js)
+  Navigation      : Expo Router v3 (file-based routing)
   UI components   : React Native Paper + NativeWind (Tailwind CSS)
   State management: Zustand (lightweight, minimal boilerplate)
   Forms           : React Hook Form + Zod schema validation
-  Charts          : Victory Native XL (performant trend charts)
+  API client      : Axios + TanStack React Query
+                    (auto-caching, background refetch, error states)
+  Charts          : Victory Native XL (for trend reports)
   Notifications   : Expo Notifications (push on Android and iOS)
 
-BACKEND AND DATABASE
-  Backend service : Supabase
-                    Provides PostgreSQL database, authentication,
-                    real-time subscriptions, file storage, and serverless
-                    edge functions in one managed platform — no separate
-                    server to build or host.
-  Database        : PostgreSQL via Supabase with Row-Level Security
-  Authentication  : Supabase Auth (JWT tokens, custom role claims)
-  Real-time       : Supabase Realtime (WebSocket subscriptions)
-  Storage         : Supabase Storage (future receipts and documents)
-  Edge functions  : Supabase Edge Functions on Deno
-                    (push notification dispatch, scheduled reports)
+BACKEND (Custom API Server)
+  Runtime         : Node.js
+  Framework       : Express.js
+  Language        : TypeScript
+  Hosting         : Render (Free Tier)
+                    Always-on web service. Free tier handles low-to-medium
+                    traffic. Spins down after 15 minutes of inactivity on
+                    the free plan -- acceptable for MVP and internal use.
+  Authentication  : Custom JWT (JSON Web Tokens) using the jsonwebtoken
+                    library. The backend generates and validates all tokens.
+                    No third-party auth provider needed.
+  Validation      : Zod (same schema library as the frontend)
+  ORM             : Prisma (type-safe database queries, auto-generated types
+                    from the PostgreSQL schema)
+  Push Notifs     : Expo Push Notification API called directly from the
+                    backend when a notice is sent
 
-DEVELOPMENT INFRASTRUCTURE
-  Monorepo tool   : Turborepo (fast incremental builds)
-  Version control : Git + GitHub
-  CI/CD           : GitHub Actions + Expo EAS
-  Code quality    : ESLint + Prettier + Husky pre-commit hooks
-  Testing         : Jest + React Native Testing Library
-  API client      : Supabase JS Client + TanStack React Query
+CACHING AND SESSION STORAGE
+  Service         : Upstash Redis (Free Tier)
+                    Serverless Redis with a generous free tier:
+                    10,000 commands per day, 256 MB storage.
+                    No server to manage -- accessed via HTTPS REST API
+                    or the official Redis client.
+  Used for        :
+    - JWT session storage: tokens stored with a TTL (time-to-live)
+      matching the token expiry duration. Fast lookup on every request.
+    - Token blacklist on logout: invalidated tokens added to Redis so
+      they cannot be reused even before natural expiry.
+    - API response caching: frequently read data (centre list, worker
+      list) cached in Redis to reduce database load and improve response
+      speed on the free Render tier.
+  Client library  : ioredis or @upstash/redis (official REST client)
+
+DATABASE
+  Provider        : Supabase (Free Tier)
+  Role            : PostgreSQL data storage only.
+                    Supabase is used purely as a managed PostgreSQL host.
+                    Its built-in Auth, Realtime, Edge Functions, and
+                    Row-Level Security features are NOT used -- all of
+                    that logic lives in the custom Express backend.
+  Access          : Prisma connects directly to the Supabase PostgreSQL
+                    connection string (not the Supabase JS client)
+  Free tier       : 500 MB database space, 2 GB bandwidth per month,
+                    unlimited API requests via direct Postgres connection
+
+MONOREPO STRUCTURE
+  Tool            : pnpm Workspaces (no separate monorepo tool)
+                    The GitHub repository is already set up. pnpm workspaces
+                    manage the packages without needing an additional build
+                    pipeline tool.
   Package manager : pnpm
 
-DEPLOYMENT AND HOSTING
-  Mobile app      : Expo EAS Build and EAS Submit
-                    (cloud builds submitted to Google Play and Apple App Store)
-  Backend         : Supabase Cloud (Free tier, upgradeable to Pro)
-  CI/CD trigger   : GitHub Actions — PR merged to main triggers
-                    EAS production build automatically
+CI/CD
+  Pipeline        : GitHub Actions
+  Mobile builds   : Expo EAS (cloud builds for Android and iOS)
+  Backend deploy  : Render auto-deploys from the main branch on GitHub
+                    (connected via Render's GitHub integration)
+  Trigger         : PR merged to main
+                      --> GitHub Actions runs lint and tests
+                      --> Render detects push to main and redeploys backend
+                      --> EAS builds updated mobile app
+
+DEVELOPMENT INFRASTRUCTURE
+  Code quality    : ESLint + Prettier + Husky pre-commit hooks
+  Testing         : Jest + React Native Testing Library (mobile)
+                    Jest + Supertest (backend API tests)
+  Environment     : dotenv for backend (.env file)
+                    Expo's EXPO_PUBLIC_ prefix for mobile env vars
 
 
-5. MONOREPO REPOSITORY STRUCTURE
+5. SYSTEM LAYERS SUMMARY
+--------------------------
+
+  [Mobile App]  --  React Native / Expo
+       |
+       | HTTPS REST API calls
+       v
+  [Backend API]  --  Express.js on Render (Free Tier)
+       |                    |
+       | SQL via Prisma      | Redis commands
+       v                    v
+  [PostgreSQL]          [Redis Cache]
+  Supabase Free Tier    Upstash Free Tier
+  (data storage)        (sessions + cache)
+
+Push notifications flow separately:
+  Backend  -->  Expo Push API  -->  FCM / APNs  -->  Device
+
+
+6. FREE TIER LIMITS AND CONSIDERATIONS
+----------------------------------------
+
+Service         Free Tier Limits            Impact on SMSS
+-----------     -----------------------     ------------------------------------
+Render          Sleeps after 15 min idle    First request after idle takes
+                512 MB RAM, shared CPU      5-10 seconds to wake. Acceptable
+                                            for MVP and internal use. Upgrade
+                to Starter ($7/month) when   the business goes live to paying
+                customers.
+
+Upstash Redis   10,000 commands/day         Sufficient for MVP with a handful
+                256 MB max data             of centres and workers. Monitor
+                                            usage in Upstash dashboard and
+                                            optimise caching TTLs if nearing
+                                            the limit.
+
+Supabase        500 MB database             More than enough for MVP data
+                2 GB bandwidth/month        volumes (stock items, service
+                Unlimited connections       events, users, notices).
+
+
+7. MONOREPO REPOSITORY STRUCTURE
 -----------------------------------
 
-smss-monorepo/
+smss-monorepo/                        (already created on GitHub)
   apps/
-    mobile/                     React Native Expo application
-      app/                      Expo Router screens (file-based routing)
-        (auth)/                 Login screens
-        (owner)/                Owner dashboard tabs
+    mobile/                           React Native Expo application
+      app/                            Expo Router screens (file-based)
+        (auth)/                       Login screens
+        (owner)/                      Owner dashboard tabs
           centres/
           workers/
           reports/
-        (worker)/               Worker dashboard tabs
+        (worker)/                     Worker dashboard tabs
           stock/
           services/
           notices/
-      components/               Reusable UI components
-      hooks/                    Custom React hooks
-      stores/                   Zustand state stores
-      lib/                      Supabase client and utilities
-      constants/                Colours, config values, enums
+      components/                     Reusable UI components
+      hooks/                          Custom React hooks
+      stores/                         Zustand state stores
+      lib/                            API client (Axios), utilities
+      constants/                      Colours, config values, enums
+
+    backend/                          Express.js API server
+      src/
+        routes/                       API route handlers
+          auth.routes.ts
+          centres.routes.ts
+          workers.routes.ts
+          stock.routes.ts
+          services.routes.ts
+          notices.routes.ts
+        middleware/                   JWT validation, error handler
+        services/                     Business logic layer
+        lib/                          Prisma client, Redis client
+        utils/                        Helpers, token generator
+      prisma/
+        schema.prisma                 Database schema (source of truth)
+        migrations/                   Auto-generated migration files
+      .env                            Backend environment variables
+      tsconfig.json
+      package.json
 
   packages/
-    shared-types/               TypeScript interfaces shared across packages
-    supabase/                   DB migrations, seeds, generated types
-    config/                     Shared ESLint, TypeScript, Prettier configs
+    shared-types/                     TypeScript interfaces shared by
+                                      mobile and backend
+    config/                           Shared ESLint and Prettier config
 
   .github/
     workflows/
-      pr-checks.yml             Lint and test on every pull request
-      deploy-production.yml     EAS build triggered on merge to main
+      pr-checks.yml                   Lint and test on every PR
+      deploy-production.yml           Trigger on merge to main
 
-  turbo.json                    Turborepo pipeline config
-  pnpm-workspace.yaml           pnpm monorepo workspaces
-  package.json
+  pnpm-workspace.yaml                 pnpm monorepo workspaces
+  package.json                        Root scripts (lint, test all)
   README.md
 
 
-6. GIT BRANCHING STRATEGY
+8. GIT BRANCHING STRATEGY
 ---------------------------
 
-  main      -- Production-ready code only. Protected branch.
+  main     -- Production-ready code only. Protected.
     |
-    develop  -- Active development integration branch
+    develop  -- Integration branch. All features merge here first.
       |
-      +-- feature/owner-centre-management
-      +-- feature/worker-auth
+      +-- feature/backend-auth-routes
+      +-- feature/worker-login-centre-id
       +-- feature/stock-management
       +-- feature/service-events
       +-- feature/reports-dashboard
 
 Workflow:
   Step 1: Developer creates a feature branch from develop
-  Step 2: Opens a Pull Request to develop (code review required)
+  Step 2: Opens a Pull Request into develop (reviewed before merge)
   Step 3: At end of each sprint, develop is PR'd into main
-  Step 4: Merge to main triggers GitHub Actions and EAS production build
+  Step 4: Merge to main triggers:
+            - Render: auto-redeploys the backend
+            - EAS: builds updated mobile app for distribution
 
 
-7. PROJECT TIMELINE OVERVIEW
+9. PROJECT TIMELINE OVERVIEW
 ------------------------------
 
 Phase 0 : Setup and Architecture (Week 1)
-          Monorepo, Supabase project, CI/CD pipeline live
+          Repo confirmed, backend scaffolded on Render, Upstash Redis
+          connected, Prisma schema migrated to Supabase PostgreSQL
 
 Phase 1 : Authentication (Week 2)
-          Owner login, Worker Centre-ID login
+          Owner JWT login, Worker Centre-ID login, Redis session storage
 
 Phase 2 : Centre and Worker Management (Weeks 3-4)
-          Owner can manage centres and workers
+          Owner can manage centres and workers via the API
 
 Phase 3 : Stock Management (Weeks 5-6)
-          Worker stock entry, owner stock view
+          Worker stock entry, owner stock view with Redis caching
 
 Phase 4 : Service Provision Tracking (Weeks 7-8)
           Service event logging, trend summaries
 
 Phase 5 : Reports and Notices (Weeks 9-10)
-          Owner dashboard reports, worker notice inbox
+          Owner dashboard reports, worker notice inbox, push notifications
 
 Phase 6 : QA, Polish, and Deployment (Weeks 11-12)
-          Testing, bug fixes, EAS store submission
+          Testing, bug fixes, EAS store submission, Render upgrade check
 
 Total Estimated Duration: 12 Weeks (3 Months)
 
 
-8. NON-FUNCTIONAL REQUIREMENTS
---------------------------------
+10. NON-FUNCTIONAL REQUIREMENTS
+---------------------------------
 
-Performance   : All screens load within 2 seconds on a 3G connection
+Performance   : API responses under 500ms for cached endpoints,
+                under 2 seconds for database queries on Render free tier
 Offline       : Stock entry and service events queue locally when
                 offline and sync to the server on reconnect
-Security      : Role-based data access via Supabase RLS; JWT tokens;
-                no plaintext passwords stored
-Scalability   : Supabase supports horizontal scaling; the architecture
-                supports adding new centre types or business locations
+Security      : JWT stored in Redis with TTL. Blacklisted on logout.
+                All routes protected by middleware JWT validation.
+                Passwords hashed with bcrypt before storing.
+Scalability   : Architecture supports upgrading Render to paid tier
+                and increasing Redis capacity without code changes
 Currency      : All monetary values displayed in Tanzanian Shillings (Tshs)
 
 
-9. FUTURE ENHANCEMENTS (POST-MVP)
------------------------------------
+11. FUTURE ENHANCEMENTS (POST-MVP)
+------------------------------------
 
   - Customer-facing receipt generation (PDF / WhatsApp share)
   - Sales invoicing and revenue tracking
@@ -261,6 +368,7 @@ Currency      : All monetary values displayed in Tanzanian Shillings (Tshs)
   - Low-stock automated alerts
   - Multi-language support (Swahili and English)
   - Web admin dashboard built with Next.js
+  - Upgrade Render to paid tier for always-on backend
 
 
 ================================================================================

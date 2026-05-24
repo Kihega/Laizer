@@ -53,9 +53,9 @@ STORIES IN THIS SPRINT
 
 TECHNICAL NOTES FOR THE TEAM
 ------------------------------
-  - Worker Centre ID login requires a Supabase Edge Function.
-    The function receives the Centre ID, validates it exists in the
-    centres table, confirms the worker is assigned there, and returns
+  - Worker Centre ID login requires a backend API route on Render.
+    The route receives the Centre ID, validates it exists in the
+    centres table, confirms a worker is assigned there, and returns
     a JWT. This is the most complex task in this sprint.
 
   - Use Expo SecureStore (not AsyncStorage) for storing the session token.

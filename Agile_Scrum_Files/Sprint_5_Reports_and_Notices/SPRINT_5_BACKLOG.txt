@@ -110,7 +110,7 @@ Acceptance Criteria:
 
 Tasks:
   [ ] On worker login: save or refresh Expo push token in expo_push_tokens
-  [ ] Create Supabase Edge Function triggered on notices INSERT
+  [ ] Create notice.service.ts that dispatches push after DB insert
   [ ] Edge Function: query expo_push_tokens for workers of the centre_id
   [ ] Edge Function: POST to Expo Push API for each token
   [ ] Handle notification tap to navigate to Notice Detail screen
