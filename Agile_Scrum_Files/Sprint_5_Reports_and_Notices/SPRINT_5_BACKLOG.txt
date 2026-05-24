@@ -1,0 +1,122 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 5 -- Reports and Notices
+Sprint Backlog and Acceptance Criteria
+================================================================================
+
+Sprint Points: 26
+================================================================================
+
+
+STORY US-050 : Owner Daily Summary Report (8 pts)
+--------------------------------------------------
+As an owner, I want a daily summary report per centre showing total
+services and revenue so that I can monitor each centre's performance.
+
+Acceptance Criteria:
+  1. The reports section shows today's data per centre by default.
+  2. For each centre, the summary shows:
+       - Total number of service events logged today
+       - Breakdown by service type (e.g. Photocopy: 12, Printing: 8)
+       - Total revenue collected today in Tshs
+       - Name of the most active service type
+  3. Owner can tap a centre to see the detailed event list for the day.
+  4. If no events were logged today, the summary shows zero values.
+
+Tasks:
+  [ ] Build Reports screen on Owner Dashboard
+  [ ] Query daily_service_summary view for today's date per centre
+  [ ] Display per-centre cards with all required summary fields
+  [ ] Navigate to detailed event list on centre card tap
+  [ ] Handle zero-data state for centres with no events today
+
+
+STORY US-051 : Owner Weekly Summary Report (5 pts)
+---------------------------------------------------
+As an owner, I want a weekly summary report per centre so that I can
+identify trends over the past 7 days.
+
+Acceptance Criteria:
+  1. A "Weekly" toggle or tab on the Reports screen switches from daily
+     to weekly view.
+  2. Weekly view shows totals for the last 7 days per centre.
+  3. Revenue and event count are shown for each of the 7 days in a
+     simple list or table (chart is a future enhancement).
+  4. Owner can switch back to daily view without losing state.
+
+Tasks:
+  [ ] Add Daily / Weekly toggle to Reports screen
+  [ ] Query daily_service_summary grouped by date for last 7 days
+  [ ] Display 7-day breakdown per centre (list format)
+  [ ] State management: remember which view (daily/weekly) is active
+
+
+STORY US-060 : Owner Sends Notice to Centre (5 pts)
+----------------------------------------------------
+As an owner, I want to compose and send a notice or instruction to
+workers of a specific centre so that communication is fast and recorded.
+
+Acceptance Criteria:
+  1. An "Send Notice" button is accessible from the Owner Dashboard.
+  2. The compose form has fields for: Title, Message body, Target centre
+     (picker from owner's active centres), Priority (Normal / Urgent).
+  3. All fields except Priority (default Normal) are required.
+  4. On send, the notice is inserted into the notices table.
+  5. A success message confirms the notice was sent.
+
+Tasks:
+  [ ] Build Compose Notice screen with form
+  [ ] Centre picker showing all owner's active centres
+  [ ] Priority toggle (Normal / Urgent)
+  [ ] Insert into notices table on send
+  [ ] Show success confirmation after send
+
+
+STORY US-061 : Worker Notice Inbox (5 pts)
+------------------------------------------
+As a worker, I want to see notices sent by the owner in a dedicated
+inbox so that I never miss an instruction.
+
+Acceptance Criteria:
+  1. The Worker Dashboard has a Notices / Inbox tab or section.
+  2. All notices for this worker's centre are listed, most recent first.
+  3. Each notice shows: title, priority badge (Urgent notices accented),
+     time sent, and a read / unread indicator.
+  4. Tapping a notice opens the full message.
+  5. Opening a notice marks it as read (inserts into notice_reads).
+  6. Unread notices show a badge count on the tab or section header.
+
+Tasks:
+  [ ] Build Notice Inbox screen
+  [ ] Fetch notices filtered by centre_id (RLS + explicit filter)
+  [ ] Sort by created_at descending
+  [ ] Show unread indicator per notice (check notice_reads for current worker)
+  [ ] Build Notice Detail screen showing full title and body
+  [ ] Insert into notice_reads when notice is opened
+  [ ] Update unread badge count after reading
+
+
+STORY US-062 : Worker Push Notification on New Notice (3 pts)
+--------------------------------------------------------------
+As a worker, I want to receive a push notification when the owner sends
+a new notice so that I am alerted even when the app is in the background.
+
+Acceptance Criteria:
+  1. When a new notice is inserted, workers of the target centre receive
+     a push notification within 5 seconds.
+  2. The notification shows the notice title and a short preview.
+  3. Tapping the notification opens the app to the Notice Detail screen.
+  4. Push notifications work on both Android and iOS.
+
+Tasks:
+  [ ] On worker login: save or refresh Expo push token in expo_push_tokens
+  [ ] Create Supabase Edge Function triggered on notices INSERT
+  [ ] Edge Function: query expo_push_tokens for workers of the centre_id
+  [ ] Edge Function: POST to Expo Push API for each token
+  [ ] Handle notification tap to navigate to Notice Detail screen
+  [ ] Test end-to-end: owner sends notice, worker receives notification
+
+
+================================================================================
+End of Document
+================================================================================

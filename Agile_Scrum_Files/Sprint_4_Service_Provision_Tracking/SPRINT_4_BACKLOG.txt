@@ -1,0 +1,146 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 4 -- Service Provision Tracking
+Sprint Backlog and Acceptance Criteria
+================================================================================
+
+Sprint Points: 27
+================================================================================
+
+
+STORY US-040 : Worker Logs a Service Event (8 pts)
+---------------------------------------------------
+As a worker, I want to log a service event so that every customer
+transaction is recorded for reporting and tracking.
+
+Acceptance Criteria:
+  1. A "Log Service" button is prominently available on the Worker Dashboard.
+  2. The form includes: service type, subtype, pages, price per page,
+     and an optional customer note.
+  3. Total amount displays automatically as the worker types.
+  4. On submission, the event is saved and appears in the daily log.
+  5. The event record stores: centre_id, worker_id, all form values,
+     and created_at timestamp.
+
+Tasks:
+  [ ] Build Log Service screen with all form fields
+  [ ] Real-time total calculation as pages or price changes
+  [ ] Insert into service_events table with centre_id and worker_id
+  [ ] Navigate back to Worker Dashboard after successful submission
+  [ ] Show the new event in today's log immediately
+
+
+STORY US-041 : Auto-Calculate Total Amount (3 pts)
+---------------------------------------------------
+As a worker, I want the total to calculate automatically so I do not
+need to compute it manually for every transaction.
+
+Acceptance Criteria:
+  1. Total = pages multiplied by price_per_page, displayed in Tshs.
+  2. The total updates every time pages or price_per_page changes.
+  3. If either field is empty, the total shows 0 or a dash.
+  4. The calculated total is what gets stored in total_amount_tshs.
+
+Tasks:
+  [ ] Wire total calculation to pages and price_per_page field onChange
+  [ ] Format total as "Tshs X,XXX" in the display
+  [ ] Pass calculated total to the insert query (not user-entered)
+  [ ] Unit test the calculation function
+
+
+STORY US-042 : Service Type Selector (3 pts)
+--------------------------------------------
+As a worker, I want to select the type of service from a list so
+that categorisation is consistent and not subject to spelling errors.
+
+Acceptance Criteria:
+  1. The service type field is a picker or set of selectable buttons.
+  2. Available options: Photocopy, Printing, Lamination, Scanning,
+     Designing, Other.
+  3. Selecting "Other" shows an optional free-text description field.
+  4. At least one service type must be selected before the form submits.
+
+Tasks:
+  [ ] Build service type picker (segmented control or bottom sheet)
+  [ ] Show optional description field when "Other" is selected
+  [ ] Validate that a type is selected before allowing submission
+
+
+STORY US-043 : Service Subtype Selector (2 pts)
+------------------------------------------------
+As a worker, I want to select Black and White or Colour for applicable
+services so the pricing difference is correctly captured.
+
+Acceptance Criteria:
+  1. The subtype field shows two options: Black and White, Colour.
+  2. Subtype is optional (not all services have a colour distinction).
+  3. Selecting a subtype stores the value in service_subtype column.
+
+Tasks:
+  [ ] Build subtype selector (radio buttons or toggle)
+  [ ] Make subtype optional (allow nil / unselected state)
+  [ ] Store selected value in service_subtype on submission
+
+
+STORY US-044 : Worker Views Today's Event Log (3 pts)
+------------------------------------------------------
+As a worker, I want to see all service events I have logged today so
+I can review transactions and spot any errors quickly.
+
+Acceptance Criteria:
+  1. A "Today's Log" section on the Worker Dashboard lists all service
+     events created today at this centre.
+  2. Each entry shows: time, service type, subtype, pages, total in Tshs.
+  3. Events are ordered most recent first.
+  4. An empty state is shown when no events have been logged today.
+
+Tasks:
+  [ ] Build Today's Log section on Worker Dashboard
+  [ ] Query service_events filtered by centre_id and today's date
+  [ ] Sort events by created_at descending
+  [ ] Empty state component for no events yet today
+
+
+STORY US-046 : Worker Edits or Deletes a Service Event (3 pts)
+--------------------------------------------------------------
+As a worker, I want to edit or delete an event I logged recently so
+that I can correct mistakes before they affect reports.
+
+Acceptance Criteria:
+  1. An edit option is available on events logged within the last 60 minutes.
+  2. Events older than 60 minutes show as read-only (no edit button visible).
+  3. Edit opens a pre-filled version of the Log Service form.
+  4. Delete shows a confirmation dialog before removing the record.
+
+Tasks:
+  [ ] Check created_at vs current time to show or hide the edit button
+  [ ] Build pre-filled edit form for service events
+  [ ] Implement update query on service_events table
+  [ ] Implement delete with confirmation dialog
+  [ ] Refresh today's log after edit or delete
+
+
+STORY US-045 : Owner Views Events Across All Centres (5 pts)
+------------------------------------------------------------
+As an owner, I want to see all service events across all my centres
+so that I can monitor daily activity and spot trends.
+
+Acceptance Criteria:
+  1. Owner Dashboard has a Service Events section showing recent events.
+  2. Owner can filter events by: centre, date (today / this week / custom),
+     and service type.
+  3. Each event shows: centre name, worker name, service type, total in Tshs.
+  4. Events are ordered most recent first.
+
+Tasks:
+  [ ] Build Service Events section on Owner Dashboard
+  [ ] Fetch service_events for all owner's centres (RLS-filtered)
+  [ ] Centre filter dropdown
+  [ ] Date filter (today / this week / custom date range)
+  [ ] Service type filter
+  [ ] Display formatted results sorted by created_at descending
+
+
+================================================================================
+End of Document
+================================================================================

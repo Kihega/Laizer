@@ -1,392 +1,365 @@
-# 🚀 Monorepo Setup Guide — GitHub + Local
-### Stationery Management & Sales System (SMSS)
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+GitHub Monorepo Setup Guide
+================================================================================
 
----
+Version 1.0 | May 2026
+================================================================================
 
-## PART 1: One-Time GitHub Repository Setup
 
-### Step 1: Create Remote Repository on GitHub
+OVERVIEW
+---------
+This guide walks you through creating the GitHub repository, setting up local
+branches, scaffolding the monorepo, and configuring CI/CD so that every merge
+to main automatically triggers a production build.
 
-1. Go to [github.com](https://github.com) → **New Repository**
-2. Fill in:
-   - **Repository name:** `smss-monorepo`
-   - **Description:** `Mobile-Based Stationery Management & Sales System`
-   - **Visibility:** Private
-   - ✅ Add a README file
-   - ✅ Add .gitignore → select **Node**
-3. Click **Create Repository**
+Branch structure:
+  main     -- Production-ready code only. Protected. Merge via PR only.
+  develop  -- Integration branch. All feature work merges here first.
+  feature/ -- Short-lived branches. Created per task or user story.
 
----
 
-### Step 2: Protect Branches on GitHub
+================================================================================
+PART 1 : ONE-TIME GITHUB REPOSITORY SETUP
+================================================================================
 
-After creating the repo:
+STEP 1 : Create the Remote Repository
+---------------------------------------
+1. Open https://github.com and sign in.
+2. Click the "+" button (top right) then select "New repository".
+3. Fill in the form:
+     Repository name  : smss-monorepo
+     Description      : Mobile-Based Stationery Management & Sales System
+     Visibility       : Private
+     Add README file  : Yes (tick the checkbox)
+     Add .gitignore   : Select "Node" from the dropdown
+4. Click "Create repository".
 
-1. Go to **Settings → Branches → Add branch protection rule**
 
-**For `main` branch:**
-- Branch name pattern: `main`
-- ✅ Require a pull request before merging
-- ✅ Require approvals: **1**
-- ✅ Require status checks to pass before merging
-- ✅ Require branches to be up to date before merging
-- ✅ Do not allow bypassing the above settings
-- Click **Save changes**
+STEP 2 : Protect the main and develop Branches
+------------------------------------------------
+After the repository is created, do this for both branches.
 
-**For `develop` branch:**
-- Branch name pattern: `develop`
-- ✅ Require a pull request before merging
-- ✅ Require approvals: **1**
-- Click **Save changes**
+  For the main branch:
+    1. Go to Settings --> Branches --> Add branch protection rule
+    2. Branch name pattern: main
+    3. Enable: Require a pull request before merging
+    4. Enable: Require approvals (set to 1)
+    5. Enable: Require status checks to pass before merging
+    6. Enable: Require branches to be up to date before merging
+    7. Enable: Do not allow bypassing the above settings
+    8. Click Save changes.
 
----
+  For the develop branch:
+    1. Click Add branch protection rule again
+    2. Branch name pattern: develop
+    3. Enable: Require a pull request before merging
+    4. Enable: Require approvals (set to 1)
+    5. Click Save changes.
 
-## PART 2: Local Repository Setup
 
-### Step 3: Clone & Set Up Local Repo
+================================================================================
+PART 2 : LOCAL REPOSITORY SETUP
+================================================================================
 
-```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/smss-monorepo.git
-cd smss-monorepo
+STEP 3 : Clone the Repo to Your Computer
+------------------------------------------
+Open a terminal and run:
 
-# Verify you're on main
-git branch
-# Output: * main
-```
+    git clone https://github.com/YOUR_USERNAME/smss-monorepo.git
+    cd smss-monorepo
 
-### Step 4: Create the `develop` Branch (Local + Remote)
+Confirm you are on the main branch:
 
-```bash
-# Create develop branch locally from main
-git checkout -b develop
+    git branch
+    (Output should show: * main)
 
-# Push develop to remote (GitHub) and set upstream tracking
-git push -u origin develop
 
-# Verify both branches exist remotely
-git branch -a
-# Output should show:
-# * develop
-#   main
-#   remotes/origin/develop
-#   remotes/origin/main
-```
+STEP 4 : Create the develop Branch Locally and on Remote
+----------------------------------------------------------
+    git checkout -b develop
+    git push -u origin develop
 
----
+Verify both branches now exist:
 
-## PART 3: Initialize Monorepo Structure
+    git branch -a
+    (Output should include: * develop, main, remotes/origin/develop,
+                             remotes/origin/main)
 
-### Step 5: Set Up Turborepo + pnpm Workspaces
 
-Make sure you are on the `develop` branch:
+================================================================================
+PART 3 : MONOREPO SCAFFOLD
+================================================================================
 
-```bash
-git checkout develop
-```
+STEP 5 : Install pnpm (if not already installed)
+--------------------------------------------------
+    npm install -g pnpm
 
-Run the following to scaffold the monorepo:
 
-```bash
-# Install pnpm globally (if not installed)
-npm install -g pnpm
+STEP 6 : Scaffold Turborepo
+-----------------------------
+Make sure you are on the develop branch:
 
-# Initialize Turborepo
-pnpm dlx create-turbo@latest . --package-manager pnpm
-# When prompted, choose "Empty" starter
+    git checkout develop
 
-# Create the folder structure manually
-mkdir -p apps/mobile
-mkdir -p packages/shared-types
-mkdir -p packages/supabase
-mkdir -p packages/config
-mkdir -p .github/workflows
-```
+Then run:
 
-### Step 6: Root `package.json`
+    pnpm dlx create-turbo@latest . --package-manager pnpm
+    (When prompted, choose the "Empty" starter.)
 
-Replace the root `package.json` with:
+Create the folder structure:
 
-```json
-{
-  "name": "smss-monorepo",
-  "private": true,
-  "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
-  },
-  "devDependencies": {
-    "turbo": "latest",
-    "prettier": "^3.0.0",
-    "eslint": "^8.0.0",
-    "typescript": "^5.0.0",
-    "husky": "^9.0.0",
-    "lint-staged": "^15.0.0"
-  },
-  "packageManager": "pnpm@9.0.0"
-}
-```
+    mkdir -p apps/mobile
+    mkdir -p packages/shared-types
+    mkdir -p packages/supabase
+    mkdir -p packages/config
+    mkdir -p .github/workflows
 
-### Step 7: `pnpm-workspace.yaml`
 
-Create this file at the root:
+STEP 7 : Configure Root Files
+-------------------------------
+Create the file pnpm-workspace.yaml at the root with this content:
 
-```yaml
-packages:
-  - "apps/*"
-  - "packages/*"
-```
+    packages:
+      - "apps/*"
+      - "packages/*"
 
-### Step 8: `turbo.json`
+Create or update turbo.json at the root:
 
-```json
-{
-  "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".expo/**"]
-    },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    },
-    "lint": {
-      "outputs": []
-    },
-    "test": {
-      "outputs": ["coverage/**"]
+    {
+      "$schema": "https://turbo.build/schema.json",
+      "pipeline": {
+        "build": {
+          "dependsOn": ["^build"],
+          "outputs": ["dist/**", ".expo/**"]
+        },
+        "dev": {
+          "cache": false,
+          "persistent": true
+        },
+        "lint": { "outputs": [] },
+        "test": { "outputs": ["coverage/**"] }
+      }
     }
-  }
-}
-```
 
-### Step 9: Initialize Expo App
 
-```bash
-cd apps/mobile
+STEP 8 : Create the Expo Mobile App
+-------------------------------------
+    cd apps/mobile
+    pnpm dlx create-expo-app@latest . --template tabs
 
-# Create Expo app with TypeScript template
-pnpm dlx create-expo-app@latest . --template tabs
+Install core dependencies:
 
-# Install core dependencies
-pnpm add @supabase/supabase-js
-pnpm add zustand
-pnpm add @tanstack/react-query
-pnpm add react-hook-form zod @hookform/resolvers
-pnpm add react-native-paper react-native-safe-area-context
-pnpm add expo-secure-store expo-sqlite expo-notifications
+    pnpm add @supabase/supabase-js
+    pnpm add zustand
+    pnpm add @tanstack/react-query
+    pnpm add react-hook-form zod @hookform/resolvers
+    pnpm add react-native-paper react-native-safe-area-context
+    pnpm add expo-secure-store expo-sqlite expo-notifications
 
-cd ../..
-```
+    cd ../..
 
----
 
-## PART 4: GitHub Actions CI/CD Workflow
+================================================================================
+PART 4 : GITHUB ACTIONS CI/CD WORKFLOWS
+================================================================================
 
-### Step 10: PR Checks Workflow
+STEP 9 : PR Checks Workflow
+-----------------------------
+Create the file .github/workflows/pr-checks.yml with this content:
 
-Create `.github/workflows/pr-checks.yml`:
+    name: PR Checks
 
-```yaml
-name: PR Checks
+    on:
+      pull_request:
+        branches:
+          - develop
+          - main
 
-on:
-  pull_request:
-    branches:
-      - develop
-      - main
+    jobs:
+      lint-and-test:
+        name: Lint and Test
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
 
-jobs:
-  lint-and-test:
-    name: Lint & Test
-    runs-on: ubuntu-latest
+          - uses: pnpm/action-setup@v3
+            with:
+              version: 9
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+          - uses: actions/setup-node@v4
+            with:
+              node-version: '20'
+              cache: 'pnpm'
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
+          - run: pnpm install --frozen-lockfile
+          - run: pnpm lint
+          - run: pnpm test
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+STEP 10 : Production Deploy Workflow
+--------------------------------------
+Create the file .github/workflows/deploy-production.yml:
 
-      - name: Run lint
-        run: pnpm lint
+    name: Deploy to Production
 
-      - name: Run tests
-        run: pnpm test
-```
+    on:
+      push:
+        branches:
+          - main
 
-### Step 11: Production Deploy Workflow
+    jobs:
+      deploy:
+        name: EAS Production Build
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
 
-Create `.github/workflows/deploy-production.yml`:
+          - uses: pnpm/action-setup@v3
+            with:
+              version: 9
 
-```yaml
-name: Deploy to Production
+          - uses: actions/setup-node@v4
+            with:
+              node-version: '20'
+              cache: 'pnpm'
 
-on:
-  push:
-    branches:
-      - main
+          - run: pnpm install --frozen-lockfile
 
-jobs:
-  deploy:
-    name: EAS Production Build
-    runs-on: ubuntu-latest
+          - uses: expo/expo-github-action@v8
+            with:
+              eas-version: latest
+              token: ${{ secrets.EXPO_TOKEN }}
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+          - name: Build for Android (production)
+            run: |
+              cd apps/mobile
+              eas build --platform android --profile production --non-interactive
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
+          - name: Build for iOS (production)
+            run: |
+              cd apps/mobile
+              eas build --platform ios --profile production --non-interactive
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
+IMPORTANT: Add your Expo token as a GitHub Secret.
+  Go to: Repository --> Settings --> Secrets --> Actions --> New repository secret
+  Name  : EXPO_TOKEN
+  Value : Your Expo access token (from expo.dev --> Account Settings --> Access Tokens)
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
-      - name: Setup EAS CLI
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+================================================================================
+PART 5 : DAILY DEVELOPMENT WORKFLOW
+================================================================================
 
-      - name: Build for production (Android)
-        run: |
-          cd apps/mobile
-          eas build --platform android --profile production --non-interactive
+STEP 11 : Working on a Feature
+---------------------------------
+Always start from a fresh develop branch:
 
-      - name: Build for production (iOS)
-        run: |
-          cd apps/mobile
-          eas build --platform ios --profile production --non-interactive
-```
+    git checkout develop
+    git pull origin develop
 
-> **Required GitHub Secret:** In GitHub → Settings → Secrets → Actions, add:
-> - `EXPO_TOKEN` → Your Expo access token (from expo.dev → Account Settings → Access Tokens)
+Create your feature branch:
 
----
+    git checkout -b feature/owner-centre-management
 
-## PART 5: Daily Development Workflow
+Do your work, then commit:
 
-### Step 12: Feature Branch Workflow
+    git add .
+    git commit -m "feat: add centre creation form and API integration"
 
-```bash
-# Always start from develop
-git checkout develop
-git pull origin develop
+Push the branch to GitHub:
 
-# Create a feature branch
-git checkout -b feature/owner-centre-management
+    git push -u origin feature/owner-centre-management
 
-# ... do your work ...
+On GitHub: open a Pull Request from your feature branch into develop.
+After code review and CI checks pass, merge and delete the feature branch.
 
-# Stage and commit
-git add .
-git commit -m "feat: add centre creation form and API integration"
+Clean up locally:
 
-# Push feature branch to remote
-git push -u origin feature/owner-centre-management
+    git checkout develop
+    git pull origin develop
+    git branch -d feature/owner-centre-management
 
-# Go to GitHub → Open Pull Request → feature/xxx → develop
-# After review and merge...
 
-# Clean up
-git checkout develop
-git pull origin develop
-git branch -d feature/owner-centre-management
-```
+STEP 12 : Commit Message Format (Conventional Commits)
+---------------------------------------------------------
+Use the following prefix format for all commit messages:
 
-### Commit Message Convention (Conventional Commits)
-
-```
-feat:     New feature
-fix:      Bug fix
-chore:    Tooling, config changes
-docs:     Documentation only
-refactor: Code refactor (no feature/fix)
-test:     Adding or updating tests
-style:    Formatting only (no logic change)
+    feat:      New feature
+    fix:       Bug fix
+    chore:     Tooling or configuration change
+    docs:      Documentation only
+    refactor:  Code restructure with no behaviour change
+    test:      Adding or updating tests
+    style:     Formatting only, no logic changes
 
 Examples:
-feat: add worker login with centre ID
-fix: correct stock quantity validation on submission
-chore: configure husky pre-commit hooks
-```
+    feat: add worker login with centre ID
+    fix: correct stock quantity validation on submission
+    chore: configure Husky pre-commit hooks
+    docs: update README with local setup steps
 
-### Step 13: Sprint Release (develop → main)
 
-At the end of each sprint, create a release PR:
+STEP 13 : Sprint Release (develop into main)
+---------------------------------------------
+At the end of each sprint, open a release pull request on GitHub:
 
-```bash
-# On GitHub:
-# Open Pull Request: develop → main
-# Title: "Release: Sprint X — [Brief description]"
-# Add release notes summarising features merged
-# Get approval → Merge → triggers EAS Production Build automatically
-```
+    From:   develop
+    Into:   main
+    Title:  Release: Sprint X -- [Brief summary of sprint]
 
----
+Add release notes listing the features merged this sprint.
+Get one approval from the Product Owner or a peer.
+Merge the PR.
+GitHub Actions will automatically trigger the EAS production build.
 
-## PART 6: Supabase Setup
 
-### Step 14: Create Supabase Project
+================================================================================
+PART 6 : SUPABASE SETUP
+================================================================================
 
-1. Go to [supabase.com](https://supabase.com) → New Project
-2. Name: `smss-production`
-3. Database password: Save securely
-4. Region: Choose closest to Tanzania (e.g., Middle East - Bahrain or EU West)
-5. After creation, go to **Settings → API** and copy:
-   - `Project URL` → `EXPO_PUBLIC_SUPABASE_URL`
-   - `anon public key` → `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+STEP 14 : Create the Supabase Project
+---------------------------------------
+1. Go to https://supabase.com and sign in.
+2. Click "New project".
+3. Fill in:
+     Name     : smss-production
+     Password : Create a strong database password and save it securely
+     Region   : Choose the region closest to Tanzania
+                (East Africa is not listed; use Middle East Bahrain or
+                 EU West as alternatives)
+4. Wait for the project to be created (takes about 1 minute).
+5. Go to Settings --> API and copy:
+     Project URL    --> use as EXPO_PUBLIC_SUPABASE_URL
+     Anon/public key --> use as EXPO_PUBLIC_SUPABASE_ANON_KEY
 
-### Step 15: Add Environment Variables
 
-Create `apps/mobile/.env.local`:
+STEP 15 : Add Environment Variables
+-------------------------------------
+Create the file apps/mobile/.env.local and add:
 
-```bash
-EXPO_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-```
+    EXPO_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+    EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 
-Add `.env.local` to `.gitignore` (it should already be there).
+Make sure .env.local is listed in your .gitignore file.
+Never commit this file to GitHub.
 
----
 
-## Summary: Branch Structure
+================================================================================
+SUMMARY OF BRANCH STRUCTURE
+================================================================================
 
-```
-GitHub Remote:
-  origin/main      ← Production. Protected. Merge via PR only.
-  origin/develop   ← Integration. Protected. Merge via PR only.
-  origin/feature/* ← Short-lived. Created per task/story.
+Remote (GitHub):
+  origin/main      -- Production. Protected. Merge via PR only.
+  origin/develop   -- Integration. Protected. Merge via PR only.
+  origin/feature/* -- Short-lived. Created per task or story.
 
 Local:
-  main             ← Tracks origin/main
-  develop          ← Tracks origin/develop (your daily working base)
-  feature/*        ← Your active work branch
-```
+  main             -- Tracks origin/main
+  develop          -- Tracks origin/develop. Your daily working base.
+  feature/*        -- Your active work branch for each task.
 
----
 
-*Last updated: May 2026*
+================================================================================
+End of Document
+================================================================================

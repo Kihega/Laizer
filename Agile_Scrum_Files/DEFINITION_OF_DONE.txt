@@ -1,0 +1,133 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Definition of Done (DoD)
+================================================================================
+
+Version 1.0 | May 2026
+================================================================================
+
+A User Story is considered DONE only when every item in this checklist
+is satisfied. A story that meets some but not all criteria is NOT done.
+It stays in the In Review column or is moved back to In Progress.
+
+Use [ ] for incomplete and [X] for complete when filling this out.
+
+
+================================================================================
+SECTION 1 : CODE QUALITY
+================================================================================
+
+  [ ] Code is written in TypeScript. No use of the "any" type unless
+      the reason is clearly documented in a comment.
+
+  [ ] No ESLint errors or warnings. The pre-commit hook must pass
+      without being bypassed.
+
+  [ ] Code is formatted with Prettier. No manual formatting differences.
+
+  [ ] No commented-out blocks of code left in the codebase.
+
+  [ ] No hardcoded credentials, API keys, URLs, or secrets anywhere in
+      the code. All sensitive values are read from .env.local variables.
+
+
+================================================================================
+SECTION 2 : FUNCTIONALITY
+================================================================================
+
+  [ ] Every acceptance criterion defined for the story has been tested
+      and confirmed as working.
+
+  [ ] The feature works correctly on an Android physical device or
+      Android emulator.
+
+  [ ] Edge cases are handled:
+        - Empty state shown when there is no data to display
+        - Invalid or missing inputs show a clear validation error
+        - Network errors show a user-friendly message, not a raw error code
+
+  [ ] No regressions. Features that worked before this change still work.
+
+
+================================================================================
+SECTION 3 : DATA AND SECURITY
+================================================================================
+
+  [ ] Supabase Row-Level Security policies have been tested for any
+      database tables that were added or modified.
+
+  [ ] Confirmed that a user logged in as Owner A cannot read or write
+      data belonging to Owner B.
+
+  [ ] Confirmed that a Worker can only access data for their assigned centre.
+
+  [ ] No sensitive data (passwords, tokens, keys) stored in plain text.
+      Expo SecureStore is used for tokens.
+
+
+================================================================================
+SECTION 4 : TESTING
+================================================================================
+
+  [ ] Unit tests are written for any new business logic functions
+      (e.g. total amount calculation, input validation helpers).
+
+  [ ] Manual test of the full user flow for this story:
+        - Happy path (all inputs correct, expected result achieved)
+        - Error path (invalid input, server error, no internet)
+
+  [ ] All existing automated tests pass. No new test failures introduced.
+
+
+================================================================================
+SECTION 5 : GIT AND CI/CD
+================================================================================
+
+  [ ] All code is committed to a feature branch named feature/[short-description].
+      No code was committed directly to develop or main.
+
+  [ ] A Pull Request has been opened targeting the develop branch.
+
+  [ ] The PR title follows the Conventional Commits format.
+      Example: feat: add centre creation form and Supabase integration
+
+  [ ] GitHub Actions CI checks pass on the PR:
+        - Lint step: passed
+        - Test step: passed
+
+  [ ] At least one peer review approval is recorded on the PR.
+
+  [ ] The PR is merged using Squash and Merge to keep history clean.
+
+
+================================================================================
+SECTION 6 : DOCUMENTATION
+================================================================================
+
+  [ ] Any new environment variables are listed in the README or a
+      dedicated environment variables reference file.
+
+  [ ] Any new database tables or views are described in the System
+      Architecture and Database Design document.
+
+  [ ] Complex or non-obvious logic has inline comments explaining
+      what it does and why.
+
+
+================================================================================
+PRODUCT OWNER ACCEPTANCE
+================================================================================
+
+Before a story is moved to Done, the Product Owner must see a working
+demo of the feature and confirm it meets expectations.
+
+  Story ID    : ____________
+  Story Title : ____________________________________________
+  Demo shown to Product Owner on : ____________
+  Accepted by Product Owner      : Yes / No
+  Notes                          : ____________________________________________
+
+
+================================================================================
+End of Document
+================================================================================

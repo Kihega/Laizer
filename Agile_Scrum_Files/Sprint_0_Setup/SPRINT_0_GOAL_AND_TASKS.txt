@@ -1,0 +1,181 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 0 -- Setup and Foundation
+Goal and Task List
+================================================================================
+
+Duration  : 1 Week (5 working days)
+Start Date: ____________________________
+End Date  : ____________________________
+================================================================================
+
+
+SPRINT GOAL
+-----------
+"By the end of Sprint 0, every developer has a running local environment,
+the GitHub monorepo is scaffolded with main and develop branches protected,
+GitHub Actions CI/CD workflows are passing, Supabase database tables are
+created, and the Expo mobile app renders on a physical or virtual device."
+
+
+WHY THIS SPRINT EXISTS
+-----------------------
+Sprint 0 is a setup sprint. It produces no user-facing features.
+Its job is to remove all infrastructure risks before development begins
+so that Sprint 1 can focus entirely on writing app features. Every hour
+spent here saves many hours of debugging broken environments later.
+
+
+SPRINT 0 DELIVERABLES
+-----------------------
+  1. GitHub repository live with main and develop branches protected
+  2. Monorepo scaffolded with Turborepo and pnpm workspaces
+  3. Expo app running on device (even just a blank screen)
+  4. Supabase project created with all 8 database tables migrated
+  5. Row-Level Security enabled on all tables
+  6. GitHub Actions: pr-checks.yml passing on a test pull request
+  7. GitHub Actions: deploy-production.yml configured with EXPO_TOKEN
+  8. Project README with setup instructions that a new developer can follow
+
+
+TASK LIST
+----------
+Use [ ] for not started and [X] for complete.
+
+GITHUB AND VERSION CONTROL
+  [ ] T-001  Create GitHub repository "smss-monorepo" (private)
+             Done when: Repository visible at github.com/USERNAME/smss-monorepo
+
+  [ ] T-002  Set branch protection on main branch
+             (Require PR, require 1 approval, require CI to pass)
+             Done when: Direct push to main is rejected
+
+  [ ] T-003  Set branch protection on develop branch
+             (Require PR, require 1 approval)
+             Done when: Direct push to develop is rejected
+
+  [ ] T-004  Clone repository to local machine
+             Command: git clone https://github.com/USERNAME/smss-monorepo.git
+
+  [ ] T-005  Create local develop branch and push to remote
+             Commands: git checkout -b develop
+                       git push -u origin develop
+             Done when: Both branches visible in GitHub
+
+MONOREPO SCAFFOLD
+  [ ] T-006  Install pnpm globally
+             Command: npm install -g pnpm
+
+  [ ] T-007  Scaffold Turborepo in the repo root
+             Command: pnpm dlx create-turbo@latest . --package-manager pnpm
+             Done when: pnpm install runs from root without errors
+
+  [ ] T-008  Create folder structure
+             Folders to create:
+               apps/mobile
+               packages/shared-types
+               packages/supabase
+               packages/config
+               .github/workflows
+
+  [ ] T-009  Create pnpm-workspace.yaml at root
+             Done when: pnpm recognises both apps/ and packages/ as workspaces
+
+  [ ] T-010  Create or update turbo.json with build, dev, lint, test pipelines
+             Done when: "pnpm build" runs without pipeline errors
+
+EXPO MOBILE APP
+  [ ] T-011  Create Expo app in apps/mobile using TypeScript template
+             Command: pnpm dlx create-expo-app@latest . --template tabs
+             Done when: Expo Go QR code appears when running "pnpm dev"
+
+  [ ] T-012  Install core dependencies in apps/mobile
+             Packages: @supabase/supabase-js, zustand, @tanstack/react-query,
+             react-hook-form, zod, @hookform/resolvers, react-native-paper,
+             react-native-safe-area-context, expo-secure-store, expo-sqlite,
+             expo-notifications
+             Done when: All packages install without peer dependency errors
+
+  [ ] T-013  Confirm app renders on Android device or emulator
+             Done when: Default Expo screen visible on a real or virtual device
+
+CODE QUALITY TOOLS
+  [ ] T-014  Set up ESLint config at the monorepo root
+             Done when: "pnpm lint" detects errors in intentionally bad code
+
+  [ ] T-015  Set up Prettier config at the monorepo root
+             Done when: "pnpm format" reformats code automatically
+
+  [ ] T-016  Set up Husky and lint-staged pre-commit hooks
+             Command: pnpm dlx husky-init
+             Done when: A commit with lint errors is blocked by the hook
+
+CI/CD WORKFLOWS
+  [ ] T-017  Create .github/workflows/pr-checks.yml
+             (Lint and test on every PR to develop or main)
+             Done when: Opening a test PR triggers the workflow in GitHub Actions
+
+  [ ] T-018  Create .github/workflows/deploy-production.yml
+             (EAS production build on every push to main)
+             Done when: Workflow file exists with correct structure
+
+  [ ] T-019  Create Expo EAS project
+             Command: eas init (run inside apps/mobile)
+             Done when: eas.json file created with development, preview,
+             and production build profiles
+
+  [ ] T-020  Add EXPO_TOKEN to GitHub repository secrets
+             Location: Repository --> Settings --> Secrets --> Actions
+             Done when: Secret visible in the GitHub Secrets list (value hidden)
+
+SUPABASE AND DATABASE
+  [ ] T-021  Create Supabase project named "smss-production"
+             Done when: Project dashboard visible at supabase.com
+
+  [ ] T-022  Run SQL migration: create all 8 tables
+             Tables: users, centres, worker_centre_assignments, stock_items,
+             service_events, notices, notice_reads, expo_push_tokens
+             Done when: All 8 tables visible in Supabase Table Editor
+
+  [ ] T-023  Create database views
+             Views: daily_service_summary, active_workers_per_centre
+             Done when: Views visible in Supabase and return data when queried
+
+  [ ] T-024  Enable Row-Level Security on all 8 tables
+             Done when: RLS badge shows "Enabled" for every table in Supabase
+
+  [ ] T-025  Write and apply basic RLS policies (owner sees own data,
+             worker sees own centre data)
+             Done when: Test query as a different user returns no rows
+
+ENVIRONMENT AND DOCUMENTATION
+  [ ] T-026  Create apps/mobile/.env.local with Supabase URL and anon key
+             Done when: Supabase client can connect from the app
+
+  [ ] T-027  Confirm .env.local is in .gitignore and not committed to Git
+             Done when: "git status" does not show .env.local as a tracked file
+
+  [ ] T-028  Write project README.md
+             Contents: Project overview, prerequisites, step-by-step setup,
+             how to run the app, how to run lint and tests
+             Done when: A new developer can follow the README and run the app
+             in under 30 minutes
+
+  [ ] T-029  Create packages/shared-types/index.ts with initial TypeScript
+             interfaces for User, Centre, StockItem, ServiceEvent, Notice
+             Done when: Types importable from @smss/shared-types in the app
+
+
+SPRINT 0 COMPLETION SUMMARY
+------------------------------
+Total tasks    : 29
+Tasks complete : ______
+Tasks remaining: ______
+Sprint 0 closed on: ____________________________
+Notes: ____________________________________________________________
+       ____________________________________________________________
+
+
+================================================================================
+End of Document
+================================================================================

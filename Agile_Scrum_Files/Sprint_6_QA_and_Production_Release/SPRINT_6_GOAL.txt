@@ -1,0 +1,43 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 6 -- QA and Production Release
+Sprint Goal
+================================================================================
+
+Duration      : 1 Week (5 working days)
+Start Date    : ____________________________
+End Date      : ____________________________
+================================================================================
+
+
+SPRINT GOAL
+-----------
+"By the end of Sprint 6, all core application flows pass QA testing
+with zero critical bugs, the develop branch is merged into main, and
+the first production build is submitted to the Google Play internal
+testing track."
+
+
+WHAT WILL BE TRUE AT THE END OF THIS SPRINT
+---------------------------------------------
+  - All P1 (critical) and P2 (major) bugs found during QA are fixed
+  - All core user flows tested end-to-end on a real Android device
+  - All database RLS policies confirmed active and working correctly
+  - Screen load times confirmed under 2 seconds on a 3G simulation
+  - develop branch merged into main via a reviewed Pull Request
+  - GitHub Actions deploy-production workflow triggered and successful
+  - EAS Production build submitted to Google Play internal testing track
+  - The Product Owner has signed off on the app for release
+
+
+NO NEW FEATURES IN SPRINT 6
+-----------------------------
+Sprint 6 is a hardening sprint. No new features or user stories
+are added. All effort goes toward testing, bug fixing, and release
+preparation. Any features not completed in Sprints 1-5 are logged
+as post-MVP backlog items, not added to Sprint 6.
+
+
+================================================================================
+End of Document
+================================================================================

@@ -1,0 +1,311 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Scrum Ceremony Templates
+================================================================================
+
+Version 1.0 | May 2026
+================================================================================
+
+This file contains fillable templates for all four Scrum ceremonies plus
+the Pull Request template. Print or copy a fresh copy for each sprint.
+
+
+================================================================================
+TEMPLATE 1 : SPRINT PLANNING MEETING
+================================================================================
+
+Meeting      : Sprint [___] Planning
+Date         : ____________________________
+Attendees    : ____________________________
+Duration     : 1 to 2 hours
+
+
+AGENDA
+------
+1. Review sprint goal (5 minutes)
+2. Capacity check (10 minutes)
+3. Story selection (40 minutes)
+4. Task breakdown (20 minutes)
+5. Confirm sprint goal (5 minutes)
+
+
+CAPACITY CHECK
+--------------
+Total working days this sprint          : ______
+Days off or known blockers              : ______
+Estimated available story points        : ______
+(Based on team velocity from last sprint: ______ points)
+
+
+SPRINT GOAL
+-----------
+Complete this sentence to set the sprint goal:
+
+  "By the end of this sprint, we will ________________________________
+   ________________________________________________________________."
+
+
+STORIES COMMITTED TO THIS SPRINT
+---------------------------------
+
+Story ID   Title                                           Points
+--------   ---------------------------------------------   ------
+________   ____________________________________________    ______
+________   ____________________________________________    ______
+________   ____________________________________________    ______
+________   ____________________________________________    ______
+________   ____________________________________________    ______
+________   ____________________________________________    ______
+                                               TOTAL:      ______
+
+
+TASK BREAKDOWN (fill out for each story)
+-----------------------------------------
+
+Story ID: ________   Story Title: ______________________________
+
+  Task                                    Assigned To    Hours Est.
+  ------------------------------------    -----------    ----------
+  ____________________________________    ___________    __________
+  ____________________________________    ___________    __________
+  ____________________________________    ___________    __________
+
+
+Story ID: ________   Story Title: ______________________________
+
+  Task                                    Assigned To    Hours Est.
+  ------------------------------------    -----------    ----------
+  ____________________________________    ___________    __________
+  ____________________________________    ___________    __________
+  ____________________________________    ___________    __________
+
+
+Notes from planning session:
+____________________________________________________________
+____________________________________________________________
+
+
+================================================================================
+TEMPLATE 2 : DAILY STANDUP
+================================================================================
+
+Sprint [___]   Date: ____________________   Day: _______ of 10
+
+
+TEAM MEMBER 1 : ______________________
+  What I completed since last standup:
+    ________________________________________________________
+
+  What I will work on today:
+    ________________________________________________________
+
+  Blockers:
+    ________________________________________________________
+
+
+TEAM MEMBER 2 : ______________________
+  What I completed since last standup:
+    ________________________________________________________
+
+  What I will work on today:
+    ________________________________________________________
+
+  Blockers:
+    ________________________________________________________
+
+
+BLOCKERS TO RESOLVE
+-------------------
+
+Blocker Description            Raised By    Owner        Due Date
+----------------------------   ----------   ----------   --------
+____________________________   __________   __________   ________
+____________________________   __________   __________   ________
+
+
+BOARD STATUS SNAPSHOT
+---------------------
+  To Do         : _____ stories
+  In Progress   : _____ stories
+  In Review     : _____ stories
+  Done          : _____ stories (_____ points completed so far)
+
+
+================================================================================
+TEMPLATE 3 : SPRINT REVIEW
+================================================================================
+
+Meeting      : Sprint [___] Review
+Date         : ____________________________
+Attendees    : ____________________________
+Duration     : 1 hour
+
+
+FEATURES DEMONSTRATED
+----------------------
+
+Story ID   Feature                         Demoed By    Accepted?
+--------   ----------------------------    ---------    ---------
+________   ____________________________    _________    Yes / No
+________   ____________________________    _________    Yes / No
+________   ____________________________    _________    Yes / No
+________   ____________________________    _________    Yes / No
+________   ____________________________    _________    Yes / No
+
+
+STORIES NOT COMPLETED (CARRYOVER)
+-----------------------------------
+
+Story ID   Reason Not Completed            Action for Next Sprint
+--------   ----------------------------    -----------------------
+________   ____________________________    _______________________
+________   ____________________________    _______________________
+
+
+SPRINT METRICS
+--------------
+  Stories planned this sprint       : ______
+  Stories completed this sprint     : ______
+  Story points planned              : ______
+  Story points completed            : ______
+  Sprint velocity (actual)          : ______ points
+
+
+PRODUCT OWNER FEEDBACK
+-----------------------
+  ____________________________________________________________
+  ____________________________________________________________
+  ____________________________________________________________
+
+
+BACKLOG CHANGES AFTER THIS REVIEW
+-----------------------------------
+  New stories added      : ____________________________________________
+  Priority changes       : ____________________________________________
+  Stories removed        : ____________________________________________
+
+
+================================================================================
+TEMPLATE 4 : SPRINT RETROSPECTIVE
+================================================================================
+
+Meeting      : Sprint [___] Retrospective
+Date         : ____________________________
+Attendees    : ____________________________
+Duration     : 45 minutes
+
+
+Format: Start / Stop / Continue
+Note: This meeting is about HOW we worked, not WHAT we built.
+
+
+START -- Things we should begin doing next sprint
+---------------------------------------------------
+1. ________________________________________________________
+2. ________________________________________________________
+3. ________________________________________________________
+
+
+STOP -- Things that are not helping and should be dropped
+----------------------------------------------------------
+1. ________________________________________________________
+2. ________________________________________________________
+3. ________________________________________________________
+
+
+CONTINUE -- Things that worked well and must keep happening
+------------------------------------------------------------
+1. ________________________________________________________
+2. ________________________________________________________
+3. ________________________________________________________
+
+
+TOP 3 ACTION ITEMS FOR NEXT SPRINT
+------------------------------------
+
+  1. Action  : ________________________________________________
+     Owner   : ________________
+     Due     : ________________
+
+  2. Action  : ________________________________________________
+     Owner   : ________________
+     Due     : ________________
+
+  3. Action  : ________________________________________________
+     Owner   : ________________
+     Due     : ________________
+
+
+TEAM SATISFACTION SCORE (circle one per person)
+
+  Team Member 1  :  1   2   3   4   5
+  Team Member 2  :  1   2   3   4   5
+  Average score  :  ______
+
+  (1 = very unhappy, 5 = very happy with how the sprint went)
+
+
+Additional notes:
+____________________________________________________________
+____________________________________________________________
+
+
+================================================================================
+TEMPLATE 5 : PULL REQUEST DESCRIPTION
+================================================================================
+
+Use this template when opening a Pull Request on GitHub.
+Copy this text into the PR description box.
+
+
+PULL REQUEST DESCRIPTION
+-------------------------
+
+Story / Issue Reference: Closes #[Story ID or Issue Number]
+
+What does this PR do?
+  ____________________________________________________________
+  ____________________________________________________________
+
+Type of change (tick all that apply):
+  [ ] feat     -- New feature
+  [ ] fix      -- Bug fix
+  [ ] chore    -- Configuration or tooling change
+  [ ] docs     -- Documentation only
+  [ ] refactor -- Code restructure, no behaviour change
+  [ ] test     -- Tests only
+
+
+TESTING DONE
+------------
+  [ ] Tested on Android device or emulator
+  [ ] Happy path works correctly
+  [ ] Error states handled (invalid input, network failure)
+  [ ] No regressions found in existing features
+
+
+DEFINITION OF DONE CHECKLIST
+------------------------------
+  [ ] All acceptance criteria met
+  [ ] No TypeScript errors
+  [ ] ESLint passes
+  [ ] Unit tests written where applicable
+  [ ] RLS policies tested if database changes were made
+  [ ] PR title follows Conventional Commits format
+
+
+SCREENSHOTS OR SCREEN RECORDING
+---------------------------------
+  Attach screenshots or a short screen recording if the PR includes
+  any visible UI changes.
+
+
+NOTES FOR REVIEWER
+-------------------
+  ____________________________________________________________
+  ____________________________________________________________
+
+
+================================================================================
+End of Document
+================================================================================

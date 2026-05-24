@@ -1,0 +1,75 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 2 -- Centre and Worker Management
+Sprint Goal
+================================================================================
+
+Duration      : 2 Weeks (10 working days)
+Start Date    : ____________________________
+End Date      : ____________________________
+Points Planned: 28
+================================================================================
+
+
+SPRINT GOAL
+-----------
+"By the end of Sprint 2, the owner can add and manage centres, register
+workers, assign them to centres, transfer them between centres, and view
+the complete worker roster -- all from the mobile app."
+
+
+WHAT WILL BE TRUE AT THE END OF THIS SPRINT
+---------------------------------------------
+  - Owner sees a list of all their centres (empty state on first login)
+  - Owner can add a new centre with name, centre number, centre ID, location
+  - Owner can edit centre details
+  - Owner can deactivate a centre (soft delete, data preserved)
+  - Owner can register a new worker (name, NIM, phone number)
+  - Owner can assign a registered worker to a specific centre
+  - Owner can view all workers across all centres
+  - Owner can transfer a worker from one centre to another
+  - Duplicate centre numbers and duplicate NIMs are rejected with clear errors
+  - Worker transfer correctly deactivates the old assignment and creates a new one
+
+
+STORIES IN THIS SPRINT
+-----------------------
+
+  US-010  Add new centre                           5 points
+  US-011  View list of all centres                 3 points
+  US-012  Edit centre details                      3 points
+  US-013  Deactivate or delete a centre            3 points
+  US-020  Register a new worker                    5 points
+  US-021  Assign worker to a centre                3 points
+  US-022  View all workers across centres          3 points
+  US-023  Transfer worker between centres          3 points
+
+  Total: 28 points
+
+
+TECHNICAL NOTES FOR THE TEAM
+------------------------------
+  - Centre deactivation must be a soft delete (set is_active to false).
+    The centre's data (stock, service events) must be preserved.
+
+  - Worker transfer: set is_active to false on the old assignment record
+    and create a new worker_centre_assignments record pointing to the new
+    centre. Store the previous centre in the transferred_from column.
+
+  - Duplicate validation: check centre_no and centre_id uniqueness before
+    inserting. Check NIM uniqueness before registering a worker.
+
+  - All list screens must show an appropriate empty state message when
+    no data exists yet (e.g. "No centres yet. Tap + to add one.").
+
+
+DEFINITION OF DONE REMINDER
+-----------------------------
+Refer to DEFINITION_OF_DONE.txt for the full checklist.
+Key for this sprint: verify RLS still works for all new data
+(owners only see their own centres and workers).
+
+
+================================================================================
+End of Document
+================================================================================

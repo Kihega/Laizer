@@ -1,0 +1,70 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 4 -- Service Provision Tracking
+Sprint Goal
+================================================================================
+
+Duration      : 2 Weeks (10 working days)
+Start Date    : ____________________________
+End Date      : ____________________________
+Points Planned: 27
+================================================================================
+
+
+SPRINT GOAL
+-----------
+"By the end of Sprint 4, a worker can fully log a customer service
+transaction by selecting the service type, subtype, number of pages,
+and price per page -- with the total auto-calculated -- and both the
+worker and owner can view a running log of all service events."
+
+
+WHAT WILL BE TRUE AT THE END OF THIS SPRINT
+---------------------------------------------
+  - Worker sees a "Log Service" button and a form for each new transaction
+  - Service types available: photocopy, printing, lamination,
+    scanning, designing, and other
+  - Service subtypes available: Black and White, Colour
+  - Total amount auto-calculates as pages multiplied by price per page
+  - Worker can see all service events logged today at their centre
+  - Worker can edit or delete a recently logged event (within 1 hour)
+  - Owner can see all service events across all centres
+  - Owner can filter events by centre, date, and service type
+  - All events are timestamped and linked to the logged-in worker and centre
+
+
+STORIES IN THIS SPRINT
+-----------------------
+
+  US-040  Worker logs a complete service event    8 points
+  US-041  Auto-calculate total amount             3 points
+  US-042  Service type selector (6 types)         3 points
+  US-043  Service subtype selector                2 points
+  US-044  Worker views today's event log          3 points
+  US-046  Worker edits or deletes an event        3 points
+  US-045  Owner views events across centres       5 points
+
+  Total: 27 points
+
+
+TECHNICAL NOTES FOR THE TEAM
+------------------------------
+  - US-040 to US-043 are closely related and should be built together
+    as one form screen. The auto-calculation (US-041) fires whenever
+    the pages or price field changes, not only on form submission.
+
+  - The "other" service type should show an optional text field for
+    the worker to describe the service.
+
+  - Edit permission: workers can edit or delete events created within
+    the last 60 minutes. After that, only the owner can make changes.
+    Implement this by comparing created_at to the current time.
+
+  - Total amount = pages * price_per_page. This must also be validated
+    server-side. Do not trust the client's computed total; recalculate
+    in the database insert trigger or Edge Function if needed.
+
+
+================================================================================
+End of Document
+================================================================================

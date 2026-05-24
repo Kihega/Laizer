@@ -1,0 +1,85 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 1 -- Authentication
+Sprint Goal
+================================================================================
+
+Duration    : 2 Weeks (10 working days)
+Start Date  : ____________________________
+End Date    : ____________________________
+Points Planned: 25
+================================================================================
+
+
+SPRINT GOAL
+-----------
+"By the end of Sprint 1, an owner can register an account and log in,
+a worker can authenticate using a Centre ID, each user lands on their
+own dashboard home screen, and sessions persist between app restarts."
+
+
+GOAL BREAKDOWN
+--------------
+This sprint delivers the entire authentication layer of the application.
+Nothing else in the app is accessible without this foundation in place.
+
+What will be true at the end of this sprint:
+  - The app opens to a role selection screen (Owner or Worker)
+  - An owner can create a new account with email and password
+  - An owner can log in and reach the Owner Dashboard
+  - A worker can enter a Centre ID and reach the Worker Dashboard
+  - An incorrect Centre ID shows a clear error message
+  - Closing and reopening the app keeps the user logged in
+  - A user can log out and be returned to the login screen
+  - All database tables have Row-Level Security policies active
+  - Reusable error message and loading indicator components exist
+
+
+STORIES IN THIS SPRINT
+-----------------------
+
+  US-001  Owner registration (email + password)           3 points
+  US-002  Owner login                                      2 points
+  US-003  Worker login with Centre ID                      5 points
+  US-004  Persistent login session                         2 points
+  US-005  Logout functionality                             1 point
+  US-073  Row-Level Security policies on all tables        5 points
+  US-075  Global error message component                   3 points
+  US-076  Global loading state component                   2 points
+  AUTH-X  Auth screen UI and navigation routing            2 points
+
+  Total: 25 points
+
+
+TECHNICAL NOTES FOR THE TEAM
+------------------------------
+  - Worker Centre ID login requires a Supabase Edge Function.
+    The function receives the Centre ID, validates it exists in the
+    centres table, confirms the worker is assigned there, and returns
+    a JWT. This is the most complex task in this sprint.
+
+  - Use Expo SecureStore (not AsyncStorage) for storing the session token.
+    AsyncStorage is not encrypted and is not suitable for auth tokens.
+
+  - The role of the logged-in user (owner or worker) must be stored
+    in the Zustand auth store so screens can conditionally render content.
+
+  - Route protection: any screen inside (owner)/ or (worker)/ must
+    redirect unauthenticated users to the login screen automatically.
+
+
+DEFINITION OF DONE REMINDER
+-----------------------------
+A story is Done only when:
+  - All acceptance criteria pass
+  - Tested on Android (device or emulator)
+  - RLS verified for affected tables
+  - PR reviewed and CI checks pass
+  - Product Owner has seen a demo and accepted it
+
+Refer to DEFINITION_OF_DONE.txt for the full checklist.
+
+
+================================================================================
+End of Document
+================================================================================

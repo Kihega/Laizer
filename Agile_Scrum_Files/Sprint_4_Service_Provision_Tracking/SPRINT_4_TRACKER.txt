@@ -1,0 +1,69 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 4 -- Service Provision Tracking | Daily Progress Tracker
+================================================================================
+Sprint Points: 27 | Duration: 2 Weeks
+================================================================================
+
+STORY US-040 : Log Service Event (8 pts)
+  Task                                          Status   Est.    Actual
+  Build Log Service form with all fields        [ ]      4 hrs   ______
+  Real-time total calculation on field change   [ ]      1 hr    ______
+  Insert into service_events table              [ ]      1 hr    ______
+  Navigate back and show in daily log           [ ]      1 hr    ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+  Completed On: ____________________________
+
+STORY US-041 : Auto-Calculate Total (3 pts)
+  Task                                          Status   Est.    Actual
+  Wire calculation to pages + price onChange    [ ]      1 hr    ______
+  Format total as "Tshs X,XXX"                 [ ]      30 min  ______
+  Unit test the calculation function            [ ]      1 hr    ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+
+STORY US-042 : Service Type Selector (3 pts)
+  Task                                          Status   Est.    Actual
+  Build type picker (6 options)                 [ ]      2 hrs   ______
+  Show description field when "Other" selected  [ ]      1 hr    ______
+  Validate type is selected before submit       [ ]      30 min  ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+
+STORY US-043 : Service Subtype Selector (2 pts)
+  Task                                          Status   Est.    Actual
+  Build subtype radio buttons / toggle          [ ]      1 hr    ______
+  Allow unselected state (subtype optional)     [ ]      30 min  ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+
+STORY US-044 : Today's Event Log (3 pts)
+  Task                                          Status   Est.    Actual
+  Build Today's Log section on Worker Dashboard [ ]      2 hrs   ______
+  Query events by centre_id and today's date    [ ]      1 hr    ______
+  Sort most recent first                        [ ]      30 min  ______
+  Empty state for no events today               [ ]      30 min  ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+
+STORY US-046 : Edit or Delete Event (3 pts)
+  Task                                          Status   Est.    Actual
+  Show edit button only if < 60 min old         [ ]      1 hr    ______
+  Build pre-filled edit form                    [ ]      2 hrs   ______
+  Delete with confirmation dialog               [ ]      1 hr    ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+
+STORY US-045 : Owner Views Events (5 pts)
+  Task                                          Status   Est.    Actual
+  Build Service Events section on Owner view    [ ]      3 hrs   ______
+  Centre, date, and service type filters        [ ]      2 hrs   ______
+  Formatted results sorted by created_at        [ ]      1 hr    ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+
+
+DAILY POINT TALLY
+  Week 1: Mon ___ Tue ___ Wed ___ Thu ___ Fri ___  (Running: ___)
+  Week 2: Mon ___ Tue ___ Wed ___ Thu ___ Fri ___  (Running: ___)
+
+SPRINT 4 FINAL SUMMARY
+  Points planned: 27  |  Points completed: ______  |  Carryover: ______
+
+================================================================================
+End of Document
+================================================================================

@@ -1,0 +1,101 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 6 -- QA and Production Release
+Final Retrospective and Project Wrap-Up
+================================================================================
+
+Date: ____________________________   Attendees: ____________________________
+
+================================================================================
+SPRINT 6 AND PROJECT COMPLETION METRICS
+================================================================================
+
+Sprint 6 QA results:
+  QA tests planned         : 45
+  QA tests passed          : ______
+  QA tests failed          : ______
+  Bugs found               : ______
+  P1 bugs fixed            : ______
+  P2 bugs fixed            : ______
+  Production build created : Yes / No
+  App submitted to store   : Yes / No
+
+Overall project metrics:
+  Total sprints completed  : 7 (Sprint 0 through Sprint 6)
+  Total points delivered   : ______
+  Must-Have stories done   : ______ of 50 (___%)
+  Schedule: On time / 1 week late / _____ weeks late
+
+
+================================================================================
+FINAL RETROSPECTIVE
+================================================================================
+
+START -- What should the next development phase begin doing?
+  1. ____________________________________________________________
+  2. ____________________________________________________________
+  3. ____________________________________________________________
+
+STOP -- What slowed us down across the project that should be dropped?
+  1. ____________________________________________________________
+  2. ____________________________________________________________
+  3. ____________________________________________________________
+
+CONTINUE -- What practices worked well and must continue post-MVP?
+  1. ____________________________________________________________
+  2. ____________________________________________________________
+  3. ____________________________________________________________
+
+
+TEAM SATISFACTION SCORES BY SPRINT
+------------------------------------
+  Sprint 0  : ______   Sprint 1 : ______   Sprint 2 : ______
+  Sprint 3  : ______   Sprint 4 : ______   Sprint 5 : ______
+  Sprint 6  : ______
+  Overall average: ______  (out of 5)
+
+
+PRODUCT OWNER FINAL FEEDBACK
+------------------------------
+  Overall satisfaction with the product (1-5): ______
+  Key features working as expected:
+    ____________________________________________________________
+    ____________________________________________________________
+  Areas to prioritise in Post-MVP Phase:
+    ____________________________________________________________
+    ____________________________________________________________
+
+
+LESSONS LEARNED
+----------------
+Technical lessons (for the development team):
+  1. ____________________________________________________________
+  2. ____________________________________________________________
+  3. ____________________________________________________________
+
+Process lessons (for the Scrum process):
+  1. ____________________________________________________________
+  2. ____________________________________________________________
+  3. ____________________________________________________________
+
+
+WHAT HAPPENS NEXT
+------------------
+Post-MVP Phase begins after a 1-week break.
+First action: run a backlog refinement session to prioritise
+the deferred features listed in SPRINT_6_TASKS.txt Section 6.
+First post-MVP sprint planning date: ____________________________
+
+
+CONGRATULATIONS
+----------------
+The SMSS MVP has been delivered. The system now allows the business
+owner to manage multiple stationery centres, workers, stock, and
+service provision -- from their phone.
+
+This document marks the formal close of the MVP development phase.
+
+
+================================================================================
+End of Document
+================================================================================

@@ -1,0 +1,99 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 2 -- Centre and Worker Management
+Daily Progress Tracker
+================================================================================
+
+Sprint Points: 28 | Duration: 2 Weeks
+================================================================================
+
+STORY TASK TRACKER
+
+STORY US-010 : Add New Centre (5 pts)
+  Task                                          Status   Est.    Actual
+  Build Add Centre screen with form             [ ]      3 hrs   ______
+  Insert into centres table                     [ ]      1 hr    ______
+  Handle duplicate centre_no and centre_id      [ ]      1 hr    ______
+  Navigate back + show new centre in list       [ ]      1 hr    ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+  Completed On: ____________________________
+
+STORY US-011 : View List of All Centres (3 pts)
+  Task                                          Status   Est.    Actual
+  Build Centres list screen with cards          [ ]      2 hrs   ______
+  Fetch centres from Supabase (RLS-filtered)    [ ]      1 hr    ______
+  Empty state component                         [ ]      1 hr    ______
+  Navigate to Centre Detail on tap              [ ]      30 min  ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+  Completed On: ____________________________
+
+STORY US-012 : Edit Centre Details (3 pts)
+  Task                                          Status   Est.    Actual
+  Build Edit Centre form (pre-filled)           [ ]      2 hrs   ______
+  Implement update query on centres table       [ ]      1 hr    ______
+  Read-only centre_no and centre_id fields      [ ]      30 min  ______
+  Success confirmation after update             [ ]      30 min  ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+  Completed On: ____________________________
+
+STORY US-013 : Deactivate a Centre (3 pts)
+  Task                                          Status   Est.    Actual
+  Add Deactivate button + confirmation dialog   [ ]      1 hr    ______
+  Set is_active = false (soft delete)           [ ]      1 hr    ______
+  Filter deactivated centres from list query    [ ]      30 min  ______
+  Verify historical data still accessible       [ ]      30 min  ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+  Completed On: ____________________________
+
+STORY US-020 : Register New Worker (5 pts)
+  Task                                          Status   Est.    Actual
+  Build Register Worker screen + form           [ ]      3 hrs   ______
+  Insert into users table (role: "worker")      [ ]      1 hr    ______
+  Handle duplicate NIM error                    [ ]      1 hr    ______
+  Navigate to workers list after save           [ ]      30 min  ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+  Completed On: ____________________________
+
+STORY US-021 : Assign Worker to Centre (3 pts)
+  Task                                          Status   Est.    Actual
+  Build Assign to Centre picker/dropdown        [ ]      2 hrs   ______
+  Insert into worker_centre_assignments         [ ]      1 hr    ______
+  Refresh worker detail to show assignment      [ ]      30 min  ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+  Completed On: ____________________________
+
+STORY US-022 : View All Workers (3 pts)
+  Task                                          Status   Est.    Actual
+  Build Workers list screen                     [ ]      2 hrs   ______
+  Query users joined with assignments           [ ]      1 hr    ______
+  Show "Unassigned" for workers without centre  [ ]      30 min  ______
+  Empty state component                         [ ]      30 min  ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+  Completed On: ____________________________
+
+STORY US-023 : Transfer Worker (3 pts)
+  Task                                          Status   Est.    Actual
+  Add Transfer button on Worker Detail screen   [ ]      1 hr    ______
+  Centre picker (excluding current centre)      [ ]      1 hr    ______
+  Update old assignment + insert new one        [ ]      2 hrs   ______
+  Refresh worker detail to show new assignment  [ ]      30 min  ______
+  Story Status: [ ] Not Started  [ ] In Progress  [ ] In Review  [ ] Done
+  Completed On: ____________________________
+
+
+DAILY POINT TALLY
+-----------------
+           Week 1                           Week 2
+  Day        Pts Done   Cumulative          Day        Pts Done   Cumulative
+  Monday     ________   __________          Monday     ________   __________
+  Tuesday    ________   __________          Tuesday    ________   __________
+  Wednesday  ________   __________          Wednesday  ________   __________
+  Thursday   ________   __________          Thursday   ________   __________
+  Friday     ________   __________          Friday     ________   __________
+
+SPRINT 2 FINAL SUMMARY
+  Points planned: 28  |  Points completed: ______  |  Carryover: ______
+
+================================================================================
+End of Document
+================================================================================
