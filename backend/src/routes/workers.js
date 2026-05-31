@@ -11,7 +11,6 @@
  */
 const { Router }       = require('express');
 const { z }            = require('zod');
-const bcrypt           = require('bcryptjs');
 const prisma           = require('../lib/prisma');
 const redis            = require('../lib/redis');
 const logAction        = require('../lib/audit');

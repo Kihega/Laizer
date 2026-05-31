@@ -1,6 +1,5 @@
 // SMSS — Audit log helper
 // Failures are intentionally swallowed — audit errors must never disrupt main flow.
-const prisma = require('./prisma');
 
 const ACTIONS = {
   OWNER_LOGIN_SUCCESS:   'OWNER_LOGIN_SUCCESS',
@@ -42,7 +41,7 @@ async function logAction(userId, action, meta = {}) {
     // Store as a generic JSON log in Redis (no dedicated audit table for MVP)
     // In production you'd write to a dedicated audit_logs table.
     // For now we just console.info so it appears in Render logs.
-    console.info('[Audit]', JSON.stringify({ userId, action, ipAddress, ...extra }));
+    console.info('[Audit]', JSON.stringify({ userId, action, ipAddress, userAgent, ...extra }));
   } catch (_) { /* swallowed */ }
 }
 

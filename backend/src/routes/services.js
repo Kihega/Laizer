@@ -9,7 +9,6 @@
 const { Router }          = require('express');
 const { z }               = require('zod');
 const prisma              = require('../lib/prisma');
-const redis               = require('../lib/redis');
 const logAction           = require('../lib/audit');
 const cfg                 = require('../config');
 const { authenticate, workerOnly } = require('../middleware/auth');
