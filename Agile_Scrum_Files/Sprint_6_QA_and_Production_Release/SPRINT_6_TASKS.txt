@@ -1,0 +1,200 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 6 -- QA and Production Release
+QA Task List and Release Checklist
+================================================================================
+
+Duration : 1 Week | Start: ________________  End: ________________
+================================================================================
+
+BUG SEVERITY LEVELS
+--------------------
+P1 - Critical : App crashes, data loss, security breach, login broken.
+                Must be fixed before release. Blocks production build.
+P2 - Major    : Core feature broken or unusable. Must be fixed before release.
+P3 - Minor    : Non-critical issue or cosmetic defect. Can be fixed post-release.
+P4 - Trivial  : Very minor. Logged for a future sprint.
+
+
+================================================================================
+SECTION 1 : FULL FLOW QA TESTS
+================================================================================
+
+Use [ ] for not tested, [P] for passed, [F] for failed.
+For each failure, log a bug in the Bug Log section below.
+
+OWNER FLOW
+----------
+  [ ] QA-001  Register a new owner account with email and password
+  [ ] QA-002  Log in as owner with correct credentials
+  [ ] QA-003  Attempt login with wrong password (error message appears)
+  [ ] QA-004  Add a new centre with all required fields
+  [ ] QA-005  Attempt to add a centre with a duplicate centre number
+              (error appears, record not created)
+  [ ] QA-006  Edit a centre's name and location
+  [ ] QA-007  Deactivate a centre (disappears from list, data preserved)
+  [ ] QA-008  Register a new worker with name, NIM, and phone
+  [ ] QA-009  Attempt to register a worker with a duplicate NIM
+              (error appears, record not created)
+  [ ] QA-010  Assign a worker to a centre
+  [ ] QA-011  Transfer a worker from one centre to another
+  [ ] QA-012  View stock levels across all centres
+  [ ] QA-013  View service events across all centres
+  [ ] QA-014  View daily summary report for a specific centre
+  [ ] QA-015  View weekly summary report for a specific centre
+  [ ] QA-016  Compose and send a notice to a specific centre
+  [ ] QA-017  Verify notice appears in worker's inbox after sending
+  [ ] QA-018  Log out as owner (returns to role selection screen)
+  [ ] QA-019  Reopen app after closing (owner stays logged in)
+
+WORKER FLOW
+-----------
+  [ ] QA-020  Log in as worker using a valid Centre ID
+  [ ] QA-021  Attempt login with an invalid Centre ID (error appears)
+  [ ] QA-022  Register a new stock item (name, quantity, unit, price)
+  [ ] QA-023  Attempt to register a stock item with negative quantity
+              (validation error appears, record not created)
+  [ ] QA-024  Update the quantity of an existing stock item
+  [ ] QA-025  Delete a stock item (confirmation dialog appears first)
+  [ ] QA-026  Log a service event (photocopy, B&W, 20 pages, Tshs 100/page)
+  [ ] QA-027  Verify total shows Tshs 2,000 automatically
+  [ ] QA-028  Log a service event for each service type to confirm all work
+  [ ] QA-029  View today's service event log
+  [ ] QA-030  Edit a service event within 60 minutes of logging it
+  [ ] QA-031  Attempt to edit an event older than 60 minutes
+              (edit button should not be visible)
+  [ ] QA-032  View the notices inbox
+  [ ] QA-033  Open a notice and confirm it is marked as read
+  [ ] QA-034  Receive a push notification when owner sends a new notice
+  [ ] QA-035  Log out as worker (returns to role selection screen)
+  [ ] QA-036  Reopen app after closing (worker stays logged in)
+
+SECURITY AND DATA ISOLATION TESTS
+----------------------------------
+  [ ] QA-037  Log in as Owner A, confirm Owner B's centres are not visible
+  [ ] QA-038  Log in as Worker at Centre X, confirm Centre Y stock is not visible
+  [ ] QA-039  Attempt to access a protected route without being logged in
+              (redirected to login screen)
+  [ ] QA-040  Confirm .env.local is not committed to the GitHub repository
+
+
+================================================================================
+SECTION 2 : PERFORMANCE CHECKS
+================================================================================
+
+  [ ] QA-041  Simulate 3G network speed using browser dev tools or Android
+              developer options. Measure time for key screens to load.
+
+  Screen                          Target (seconds)   Actual (seconds)
+  ------------------------------  ----------------   ----------------
+  Owner Dashboard (initial load)  Under 2            ____________
+  Centres list                    Under 2            ____________
+  Workers list                    Under 2            ____________
+  Stock list (10+ items)          Under 2            ____________
+  Service event log (10+ events)  Under 2            ____________
+  Daily Reports screen            Under 2            ____________
+
+  [ ] QA-042  Confirm the app does not crash when switching between tabs quickly
+  [ ] QA-043  Confirm real-time updates (stock, notices) arrive within 5 seconds
+
+
+================================================================================
+SECTION 3 : BUG LOG
+================================================================================
+
+Record every defect found during QA here.
+
+Bug ID   QA Test  Severity  Description                        Status    Fixed In
+-------  -------  --------  ---------------------------------  --------  --------
+BUG-001  ______   P_        _________________________________  Open      ________
+BUG-002  ______   P_        _________________________________  Open      ________
+BUG-003  ______   P_        _________________________________  Open      ________
+BUG-004  ______   P_        _________________________________  Open      ________
+BUG-005  ______   P_        _________________________________  Open      ________
+
+Status values: Open / In Progress / Fixed / Closed / Won't Fix
+
+
+================================================================================
+SECTION 4 : RELEASE PREPARATION CHECKLIST
+================================================================================
+
+CODE AND REPOSITORY
+  [ ] REL-001  All P1 and P2 bugs are fixed and verified
+  [ ] REL-002  All feature branches for Sprints 1-5 are merged to develop
+  [ ] REL-003  develop branch is fully up to date (no pending PRs)
+  [ ] REL-004  A release Pull Request is open: develop -> main
+  [ ] REL-005  PR has been reviewed and approved by at least one team member
+  [ ] REL-006  GitHub Actions pr-checks workflow passes on the release PR
+  [ ] REL-007  Release PR is merged to main
+  [ ] REL-008  GitHub Actions deploy-production workflow triggered on main
+
+DATABASE AND SECURITY
+  [ ] REL-009  All 8 database tables have RLS enabled in Supabase dashboard
+  [ ] REL-010  All RLS policies are active and confirmed by QA-037 to QA-039
+  [ ] REL-011  No sensitive data or API keys in the codebase (grep check)
+  [ ] REL-012  .env.local confirmed absent from git history
+
+EXPO AND BUILD
+  [ ] REL-013  app.json version number updated (e.g. 1.0.0)
+  [ ] REL-014  app.json build number incremented
+  [ ] REL-015  eas.json production profile configured correctly
+  [ ] REL-016  EAS production build completed successfully (Android)
+  [ ] REL-017  APK or AAB downloaded and installed on a test device
+  [ ] REL-018  Production build tested manually (happy path)
+
+GOOGLE PLAY SUBMISSION
+  [ ] REL-019  Google Play Console account set up (if not already done)
+  [ ] REL-020  App listing created (title, description, screenshots)
+  [ ] REL-021  AAB uploaded to Internal Testing track
+  [ ] REL-022  Internal testers added and notified
+
+PRODUCT OWNER SIGN-OFF
+  [ ] REL-023  Product Owner has tested the app on their device
+  [ ] REL-024  Product Owner has confirmed all Must Have stories are working
+  [ ] REL-025  Product Owner has given written or verbal sign-off for release
+
+  Sign-off statement:
+  "I have tested the SMSS app and confirm it is ready for internal
+   release to the testing track."
+
+  Product Owner signature: _______________________  Date: ________________
+
+
+================================================================================
+SECTION 5 : POST-RELEASE MONITORING
+================================================================================
+
+After the internal testing build is live, monitor the following for
+48 hours and log any issues found:
+
+  [ ] MON-001  No crash reports in Google Play Console
+  [ ] MON-002  Internal testers can log in successfully
+  [ ] MON-003  Push notifications delivered correctly
+  [ ] MON-004  Supabase dashboard shows no unexpected error spikes
+  [ ] MON-005  Real-time subscriptions working in production environment
+
+
+================================================================================
+SECTION 6 : POST-MVP BACKLOG (Features Deferred from MVP)
+================================================================================
+
+Features that were scoped but not included in the MVP release.
+These are prioritised for the next development phase.
+
+  Story ID   Feature                            Target Sprint
+  --------   --------------------------------   -------------
+  US-006     Owner password reset via email     Post-MVP Sprint 1
+  US-033     Worker stock trend charts          Post-MVP Sprint 1
+  US-052     Service trend charts (owner)       Post-MVP Sprint 2
+  US-053     Report date range filtering        Post-MVP Sprint 1
+  US-054     Cross-centre performance compare   Post-MVP Sprint 2
+  US-063     Notice priority levels (urgent)    Post-MVP Sprint 1
+  US-064     Notice read receipts for owner     Post-MVP Sprint 2
+  US-065     Broadcast notice to all centres    Post-MVP Sprint 2
+  US-072     Full offline mode with sync        Post-MVP Sprint 3
+
+
+================================================================================
+End of Document
+================================================================================

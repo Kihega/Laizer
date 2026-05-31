@@ -1,0 +1,56 @@
+{
+  "applied": [
+    "sprint_0/01_root_config.py",
+    "sprint_0/02_github_actions.py",
+    "sprint_0/03_shared_types.py",
+    "sprint_0/04_backend_scaffold.py",
+    "sprint_0/05_prisma_schema.py",
+    "sprint_0/06_backend_lib.py",
+    "sprint_0/07_backend_utils.py",
+    "sprint_0/08_backend_middleware.py",
+    "sprint_0/09_backend_routes.py",
+    "sprint_0/10_mobile_scaffold.py"
+  ],
+  "patches": {
+    "sprint_0/01_root_config.py": {
+      "applied_at": "2026-05-25T12:22:54.311066",
+      "ops": 7
+    },
+    "sprint_0/02_github_actions.py": {
+      "applied_at": "2026-05-25T12:22:54.332671",
+      "ops": 3
+    },
+    "sprint_0/03_shared_types.py": {
+      "applied_at": "2026-05-25T12:22:54.349137",
+      "ops": 3
+    },
+    "sprint_0/04_backend_scaffold.py": {
+      "applied_at": "2026-05-25T12:22:54.384618",
+      "ops": 5
+    },
+    "sprint_0/05_prisma_schema.py": {
+      "applied_at": "2026-05-25T12:22:54.390779",
+      "ops": 1
+    },
+    "sprint_0/06_backend_lib.py": {
+      "applied_at": "2026-05-25T12:22:54.397338",
+      "ops": 4
+    },
+    "sprint_0/07_backend_utils.py": {
+      "applied_at": "2026-05-25T12:22:54.406719",
+      "ops": 4
+    },
+    "sprint_0/08_backend_middleware.py": {
+      "applied_at": "2026-05-25T12:22:54.414544",
+      "ops": 5
+    },
+    "sprint_0/09_backend_routes.py": {
+      "applied_at": "2026-05-25T12:22:54.429465",
+      "ops": 9
+    },
+    "sprint_0/10_mobile_scaffold.py": {
+      "applied_at": "2026-05-25T12:22:54.445846",
+      "ops": 8
+    }
+  }
+}

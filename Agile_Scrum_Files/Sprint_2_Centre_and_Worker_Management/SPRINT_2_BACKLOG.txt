@@ -1,0 +1,164 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 2 -- Centre and Worker Management
+Sprint Backlog and Acceptance Criteria
+================================================================================
+
+Sprint Points: 28
+================================================================================
+
+
+STORY US-010 : Add New Centre (5 pts)
+---------------------------------------
+As an owner, I want to add a new centre with name, centre number,
+centre ID, and location so that I can begin tracking it.
+
+Acceptance Criteria:
+  1. Tapping "Add Centre" opens a form with: Centre Name, Centre Number
+     (e.g. STN001), Centre ID (e.g. CENTRE-ARU-001), and Location fields.
+  2. All four fields are required. Empty fields show a validation error.
+  3. On successful submission, the new centre appears in the centres list.
+  4. A duplicate Centre Number shows: "This centre number is already taken."
+  5. A duplicate Centre ID shows: "This Centre ID is already in use."
+
+Tasks:
+  [ ] Build Add Centre screen with form and validation
+  [ ] Implement insert into centres table with owner_id from auth store
+  [ ] Handle duplicate centre_no and centre_id errors from Supabase
+  [ ] Navigate back to centres list after successful creation
+  [ ] Show the new centre in the list immediately (optimistic update)
+
+
+STORY US-011 : View List of All Centres (3 pts)
+-------------------------------------------------
+As an owner, I want to view a list of all my centres so I can quickly
+navigate to any of them.
+
+Acceptance Criteria:
+  1. The centres list shows name, centre number, and location for each centre.
+  2. When no centres exist, an empty state message appears with a prompt
+     to add the first centre.
+  3. Tapping a centre navigates to a centre detail screen.
+
+Tasks:
+  [ ] Build Centres list screen with centre cards
+  [ ] Fetch centres from Supabase filtered by owner_id (RLS handles this)
+  [ ] Build empty state component with "Add your first centre" prompt
+  [ ] Navigate to Centre Detail screen on tap
+
+
+STORY US-012 : Edit Centre Details (3 pts)
+--------------------------------------------
+As an owner, I want to edit a centre's details so I can keep information
+accurate.
+
+Acceptance Criteria:
+  1. On the Centre Detail screen, an Edit button opens a pre-filled form.
+  2. I can update name, location. Centre number and centre ID are read-only
+     after creation.
+  3. Saving updates the centre record and returns me to the detail screen.
+
+Tasks:
+  [ ] Build Edit Centre form pre-populated with current values
+  [ ] Implement update query on centres table
+  [ ] Make centre_no and centre_id display-only in the edit form
+  [ ] Show success confirmation after update
+
+
+STORY US-013 : Deactivate or Delete a Centre (3 pts)
+------------------------------------------------------
+As an owner, I want to deactivate a centre so I can remove closed
+locations without losing historical data.
+
+Acceptance Criteria:
+  1. A deactivate option is available on the Centre Detail screen.
+  2. A confirmation dialog appears before deactivation.
+  3. After deactivation, the centre no longer appears in the active list.
+  4. Historical stock and service event data for the centre is preserved.
+
+Tasks:
+  [ ] Add Deactivate button and confirmation dialog to Centre Detail screen
+  [ ] Set is_active to false on the centres record (soft delete)
+  [ ] Remove deactivated centres from the list query (filter is_active = true)
+  [ ] Confirm historical data is still accessible via reports
+
+
+STORY US-020 : Register New Worker (5 pts)
+--------------------------------------------
+As an owner, I want to register a new worker with name, NIM, and phone
+number so they can be assigned to a centre and use the app.
+
+Acceptance Criteria:
+  1. "Register Worker" form has fields for: Full Name, NIM, Phone Number.
+  2. All fields are required. Empty fields show validation errors.
+  3. A duplicate NIM shows: "A worker with this NIM already exists."
+  4. On success, the new worker appears in the workers list.
+
+Tasks:
+  [ ] Build Register Worker screen with form and validation
+  [ ] Implement insert into users table with role: "worker"
+  [ ] Handle duplicate NIM error
+  [ ] Navigate back to workers list after successful registration
+
+
+STORY US-021 : Assign Worker to a Centre (3 pts)
+--------------------------------------------------
+As an owner, I want to assign a registered worker to a specific centre
+so they can log in there.
+
+Acceptance Criteria:
+  1. On the Worker Detail screen, an "Assign to Centre" option is available.
+  2. A picker or dropdown shows all active centres.
+  3. Selecting a centre and confirming creates an assignment record.
+  4. The worker now appears in that centre's worker list.
+
+Tasks:
+  [ ] Build Assign to Centre picker/dropdown on Worker Detail screen
+  [ ] Insert record into worker_centre_assignments table
+  [ ] Refresh worker detail to show current assignment after saving
+
+
+STORY US-022 : View All Workers Across Centres (3 pts)
+--------------------------------------------------------
+As an owner, I want to view all my workers across all centres in one
+place so I can manage them efficiently.
+
+Acceptance Criteria:
+  1. The Workers screen shows all registered workers with name, NIM,
+     and their currently assigned centre.
+  2. Workers with no assignment show "Unassigned".
+  3. Empty state shown when no workers are registered yet.
+
+Tasks:
+  [ ] Build Workers list screen
+  [ ] Query users table for role = "worker" joined with
+      worker_centre_assignments to show current centre name
+  [ ] Show "Unassigned" for workers with no active assignment
+  [ ] Build empty state component
+
+
+STORY US-023 : Transfer Worker Between Centres (3 pts)
+--------------------------------------------------------
+As an owner, I want to transfer a worker from one centre to another
+so I can respond to staffing needs.
+
+Acceptance Criteria:
+  1. On the Worker Detail screen, a "Transfer" option is available for
+     workers who are currently assigned to a centre.
+  2. Selecting a new centre and confirming:
+       a. Sets is_active to false on the current assignment record.
+       b. Creates a new assignment record for the new centre.
+       c. Records the previous centre in the transferred_from column.
+  3. The worker's detail screen immediately shows the new centre.
+
+Tasks:
+  [ ] Add Transfer button on Worker Detail screen (visible if assigned)
+  [ ] Show picker of active centres excluding the current one
+  [ ] On confirm: update old assignment (is_active = false) and
+      insert new assignment with transferred_from reference
+  [ ] Refresh worker detail screen to show new assignment
+
+
+================================================================================
+End of Document
+================================================================================

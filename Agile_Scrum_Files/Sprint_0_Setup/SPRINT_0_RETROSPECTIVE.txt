@@ -1,0 +1,102 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 0 -- Setup and Foundation
+Retrospective Record
+================================================================================
+
+Date      : ____________________________
+Attendees : ____________________________
+Facilitator: ___________________________
+================================================================================
+
+
+SPRINT 0 METRICS
+-----------------
+Total tasks planned  : 29
+Tasks completed      : ______
+Tasks not completed  : ______
+Sprint duration      : 1 week
+
+
+TASKS NOT COMPLETED (if any)
+------------------------------
+Task ID   Description                        Reason           Moved To
+--------  ---------------------------------  ---------------  ----------
+________  _________________________________  _______________  __________
+________  _________________________________  _______________  __________
+
+
+START -- Things we should begin doing from Sprint 1
+-----------------------------------------------------
+1. ____________________________________________________________
+2. ____________________________________________________________
+3. ____________________________________________________________
+
+
+STOP -- Things that slowed us down that we should drop
+-------------------------------------------------------
+1. ____________________________________________________________
+2. ____________________________________________________________
+3. ____________________________________________________________
+
+
+CONTINUE -- Things that worked well during setup
+-------------------------------------------------
+1. ____________________________________________________________
+2. ____________________________________________________________
+3. ____________________________________________________________
+
+
+TOP ACTION ITEMS FOR SPRINT 1
+-------------------------------
+
+  1. Action  : ________________________________________________
+     Owner   : ________________
+     Due     : Start of Sprint 1
+
+  2. Action  : ________________________________________________
+     Owner   : ________________
+     Due     : Start of Sprint 1
+
+  3. Action  : ________________________________________________
+     Owner   : ________________
+     Due     : ________________
+
+
+TEAM SATISFACTION SCORE
+------------------------
+  Team Member 1  :  1   2   3   4   5
+  Team Member 2  :  1   2   3   4   5
+  Average        :  ______
+
+  (1 = very poor setup experience, 5 = smooth and well-organised)
+
+
+SETUP RISKS IDENTIFIED
+-----------------------
+Any risks or unknowns discovered during Sprint 0 that may affect
+future sprints:
+
+  Risk 1: ________________________________________________________
+  Risk 2: ________________________________________________________
+  Risk 3: ________________________________________________________
+
+
+INFRASTRUCTURE STATUS AT END OF SPRINT 0
+------------------------------------------
+
+  [ ] GitHub repo live with protected main and develop branches
+  [ ] Monorepo running locally with pnpm workspaces
+  [ ] Expo app renders on device
+  [ ] Supabase project created with all 8 tables
+  [ ] Row-Level Security enabled
+  [ ] GitHub Actions pr-checks workflow passing
+  [ ] GitHub Actions deploy-production workflow configured
+  [ ] EXPO_TOKEN secret added to GitHub
+  [ ] README written and tested by a second person
+  [ ] Shared TypeScript types package scaffolded
+
+
+================================================================================
+End of Document
+================================================================================

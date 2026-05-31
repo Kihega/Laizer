@@ -1,0 +1,286 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Sprint 1 -- Authentication
+Sprint Backlog and Acceptance Criteria
+================================================================================
+
+Sprint Points: 25
+================================================================================
+
+
+STORY US-001 : Owner Registration
+Points : 3
+Priority: Must Have
+Status  : [ ] Not Started  [ ] In Progress  [ ] In Review  [X] Done
+--------------------------------------------------------------------------
+
+As an owner, I want to register a new account with email and password
+so that I can access and manage my stationery business in the system.
+
+Acceptance Criteria:
+
+  1. Given I open the app for the first time, when I select "Owner" and
+     tap "Register", then I see a registration form with fields for
+     full name, email address, and password.
+
+  2. Given I fill in all fields correctly, when I submit the form, then
+     a new account is created and I am taken directly to the Owner Dashboard.
+
+  3. Given I enter an email address that is already registered, when I
+     submit, then I see the message "An account with this email already exists."
+
+  4. Given I enter a password shorter than 8 characters, when I submit,
+     then I see the message "Password must be at least 8 characters."
+
+  5. Given I leave any required field empty, when I submit, then the
+     form highlights the empty fields and does not submit.
+
+
+Tasks:
+  [ ] Design and build the registration screen UI
+  [ ] Implement Supabase signUp call with email and password
+  [ ] On successful sign-up, create a record in the users table
+      (full_name, email, role: "owner")
+  [ ] Add form validation (email format, password minimum length, required fields)
+  [ ] Handle and display the duplicate email error from Supabase
+  [ ] Write unit test for the email and password validation logic
+
+
+--------------------------------------------------------------------------------
+
+STORY US-002 : Owner Login
+Points : 2
+Priority: Must Have
+Status  : [ ] Not Started  [ ] In Progress  [ ] In Review  [X] Done
+--------------------------------------------------------------------------
+
+As an owner, I want to log in with my email and password so that I can
+access and manage my business centres and workers.
+
+Acceptance Criteria:
+
+  1. Given I am on the login screen, when I enter my registered email and
+     password and tap Login, then I am taken to the Owner Dashboard.
+
+  2. Given I enter an incorrect password, when I tap Login, then I see the
+     message "Incorrect email or password. Please try again."
+
+  3. Given I leave the email or password field empty, when I tap Login,
+     then the form shows a validation error and does not attempt to log in.
+
+  4. Given I have no internet connection, when I tap Login, then I see
+     the message "No internet connection. Please check your network."
+
+
+Tasks:
+  [ ] Build the owner login screen UI (email + password fields, Login button)
+  [ ] Implement Supabase signInWithPassword call
+  [ ] Navigate to Owner Dashboard on successful login
+  [ ] Display error message for wrong credentials
+  [ ] Display error message for network failure
+
+
+--------------------------------------------------------------------------------
+
+STORY US-003 : Worker Login with Centre ID
+Points : 5
+Priority: Must Have
+Status  : [ ] Not Started  [ ] In Progress  [ ] In Review  [X] Done
+--------------------------------------------------------------------------
+
+As a worker, I want to log in using my Centre ID so that I can access
+my assigned centre's workspace.
+
+Acceptance Criteria:
+
+  1. Given I select "Worker" on the role screen, then I see a Centre ID
+     input field and a Login button.
+
+  2. Given I enter a valid Centre ID that has at least one active worker
+     assigned, when I tap Login, then I am taken to the Worker Dashboard.
+
+  3. Given I enter a Centre ID that does not exist in the system, when I
+     tap Login, then I see the message "Centre ID not found. Please check
+     with your employer."
+
+  4. Given I enter a valid Centre ID but no workers are assigned to it,
+     when I tap Login, then I see the message "No workers assigned to
+     this centre yet. Contact the owner."
+
+  5. Given the Centre ID field is empty, when I tap Login, then the
+     field is highlighted and the form does not submit.
+
+
+Tasks:
+  [ ] Build the worker login screen UI (Centre ID input, Login button)
+  [ ] Create Express route POST /api/v1/auth/worker/login that:
+        Receive the Centre ID
+        Query centres table to confirm the ID exists
+        Query worker_centre_assignments to confirm at least one active worker
+        Return a signed JWT with role: "worker" and centre_id claims
+  [ ] Call the Edge Function from the mobile app
+  [ ] Store the returned JWT and centre_id in Expo SecureStore
+        and in the Zustand auth store
+  [ ] Navigate to Worker Dashboard on success
+  [ ] Handle "Centre ID not found" error
+  [ ] Handle "No workers assigned" error
+
+
+--------------------------------------------------------------------------------
+
+STORY US-004 : Persistent Login Session
+Points : 2
+Priority: Must Have
+Status  : [ ] Not Started  [ ] In Progress  [ ] In Review  [X] Done
+--------------------------------------------------------------------------
+
+As any user, I want to stay logged in between app sessions so that I
+do not have to enter my credentials every time I open the app.
+
+Acceptance Criteria:
+
+  1. Given I am logged in as an owner and I close and reopen the app,
+     then I land directly on the Owner Dashboard without logging in again.
+
+  2. Given I am logged in as a worker and I close and reopen the app,
+     then I land directly on the Worker Dashboard without logging in again.
+
+  3. Given my session has expired, when I reopen the app, then I am
+     redirected to the appropriate login screen.
+
+
+Tasks:
+  [ ] Store the Supabase session in Expo SecureStore on login
+  [ ] On app launch, read stored session from SecureStore
+  [ ] If session is valid: navigate to the correct dashboard by role
+  [ ] If session is expired or missing: navigate to login screen
+  [ ] Test by logging in, closing the app, and reopening it
+
+
+--------------------------------------------------------------------------------
+
+STORY US-005 : Logout
+Points : 1
+Priority: Must Have
+Status  : [ ] Not Started  [ ] In Progress  [ ] In Review  [X] Done
+--------------------------------------------------------------------------
+
+As any user, I want to log out securely so that my account is protected
+when someone else uses the device.
+
+Acceptance Criteria:
+
+  1. Given I am logged in, when I tap the Logout button, then my session
+     is cleared and I am taken back to the role selection screen.
+
+  2. Given I log out, when I reopen the app, then I am not automatically
+     logged back in.
+
+
+Tasks:
+  [ ] Add a Logout button accessible from the dashboard (e.g. in a menu)
+  [ ] Call Supabase signOut on tap
+  [ ] Clear the stored session from Expo SecureStore
+  [ ] Clear the Zustand auth store
+  [ ] Navigate to role selection screen after logout
+
+
+--------------------------------------------------------------------------------
+
+STORY US-073 : Row-Level Security Policies
+Points : 5
+Priority: Must Have
+Status  : [ ] Not Started  [ ] In Progress  [ ] In Review  [X] Done
+--------------------------------------------------------------------------
+
+As a developer, I want all database tables to have Row-Level Security
+policies so that users can only access data they are authorised to see.
+
+Acceptance Criteria:
+
+  1. An owner can only read and write centres that belong to them.
+  2. An owner cannot read or modify another owner's centres or workers.
+  3. A worker can only read data for their assigned centre.
+  4. A worker cannot read stock or service events from another centre.
+  5. Notices are only readable by workers of the target centre.
+
+
+Tasks:
+  [ ] Write and apply RLS policy: owners see only their own centres
+  [ ] Write and apply RLS policy: workers see only their assigned centre
+  [ ] Write and apply RLS policies for stock_items (scoped to centre)
+  [ ] Write and apply RLS policies for service_events (scoped to centre)
+  [ ] Write and apply RLS policies for notices (scoped to target centre)
+  [ ] Test: log in as Owner A and confirm Owner B's data is not visible
+  [ ] Test: log in as Worker at Centre X and confirm Centre Y data is hidden
+
+
+--------------------------------------------------------------------------------
+
+STORY US-075 : Global Error Message Component
+Points : 3
+Priority: Must Have
+Status  : [ ] Not Started  [ ] In Progress  [ ] In Review  [X] Done
+--------------------------------------------------------------------------
+
+As any user, I want to see clear, readable error messages when something
+goes wrong so that I know what happened and what to do next.
+
+Acceptance Criteria:
+
+  1. Error messages appear in a consistent, styled banner on screen.
+  2. The banner is dismissible by the user.
+  3. Network errors display the message "No internet connection."
+  4. Server errors display a human-readable message, not a raw error code.
+
+Tasks:
+  [ ] Create a reusable ErrorMessage component
+  [ ] Integrate it into all auth forms
+  [ ] Handle the case of no internet connection specifically
+
+
+--------------------------------------------------------------------------------
+
+STORY US-076 : Global Loading Indicator
+Points : 2
+Priority: Must Have
+Status  : [ ] Not Started  [ ] In Progress  [ ] In Review  [X] Done
+--------------------------------------------------------------------------
+
+As any user, I want a loading indicator shown while the app is waiting
+for a response so that I know the action is being processed.
+
+Acceptance Criteria:
+
+  1. A spinner or overlay appears immediately when an async operation starts.
+  2. Buttons are disabled while loading to prevent duplicate submissions.
+  3. The loading indicator disappears as soon as the operation completes.
+
+Tasks:
+  [ ] Create a reusable LoadingOverlay component
+  [ ] Show it during all login, register, and logout operations
+  [ ] Disable submit buttons while loading is active
+
+
+--------------------------------------------------------------------------------
+
+AUTH SCREEN UI AND NAVIGATION (AUTH-X)
+Points : 2
+Priority: Must Have
+Status  : [ ] Not Started  [ ] In Progress  [ ] In Review  [X] Done
+--------------------------------------------------------------------------
+
+Tasks:
+  [ ] Create a role selection entry screen (Owner / Worker buttons)
+  [ ] Set up Expo Router protected route groups:
+        (auth)/ for unauthenticated users
+        (owner)/ for authenticated owners
+        (worker)/ for authenticated workers
+  [ ] Redirect unauthenticated users trying to access protected routes
+      back to the role selection screen
+  [ ] Apply consistent font, colour, and spacing across all auth screens
+
+
+================================================================================
+End of Document
+================================================================================

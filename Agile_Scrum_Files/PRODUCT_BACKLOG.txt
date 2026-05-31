@@ -1,0 +1,278 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Product Backlog -- Master List
+================================================================================
+
+Version 1.0 | May 2026
+================================================================================
+
+PRIORITY KEY:
+  [M] Must Have   -- Core MVP. Will not release without this.
+  [S] Should Have -- Important but deliverable can work without it.
+  [C] Could Have  -- Nice to have if time and capacity allow.
+
+STATUS KEY:
+  [ ] Not Started
+  [~] In Progress
+  [X] Done
+
+POINT SCALE: 1 (trivial) | 2 (simple) | 3 (small) | 5 (medium) | 8 (large)
+
+
+================================================================================
+EPIC 1 : AUTHENTICATION AND ONBOARDING
+================================================================================
+
+ID      Story                                                       Pts  Pri  Status
+------  ----------------------------------------------------------  ---  ---  ------
+US-001  As an owner, I want to register with email and password
+        so I can access the system.                                  3   [M]   [ ]
+
+US-002  As an owner, I want to log in with email and password
+        so I can manage my business.                                 2   [M]   [ ]
+
+US-003  As a worker, I want to log in using my Centre ID
+        so I can access my centre's workspace.                       5   [M]   [ ]
+
+US-004  As any user, I want to stay logged in between app sessions
+        so I do not have to re-enter credentials every time.         2   [M]   [ ]
+
+US-005  As any user, I want to log out securely from the app.        1   [M]   [ ]
+
+US-006  As an owner, I want to reset my password via email
+        so I can recover my account if I forget it.                  3   [S]   [ ]
+
+Epic 1 Total: 16 points
+
+
+================================================================================
+EPIC 2 : CENTRE MANAGEMENT (OWNER)
+================================================================================
+
+ID      Story                                                       Pts  Pri  Status
+------  ----------------------------------------------------------  ---  ---  ------
+US-010  As an owner, I want to add a new centre (name, centre
+        number, centre ID, location) so I can track it.              5   [M]   [ ]
+
+US-011  As an owner, I want to view a list of all my centres
+        so I can quickly navigate between them.                       3   [M]   [ ]
+
+US-012  As an owner, I want to edit a centre's details so I can
+        keep information accurate.                                    3   [S]   [ ]
+
+US-013  As an owner, I want to deactivate or delete a centre
+        so I can remove closed locations.                             3   [M]   [ ]
+
+US-014  As an owner, I want to see the count of active workers
+        per centre at a glance on the centre list.                    2   [S]   [ ]
+
+Epic 2 Total: 16 points
+
+
+================================================================================
+EPIC 3 : WORKER MANAGEMENT (OWNER)
+================================================================================
+
+ID      Story                                                       Pts  Pri  Status
+------  ----------------------------------------------------------  ---  ---  ------
+US-020  As an owner, I want to register a new worker (name, NIM,
+        phone) so they can use the system.                            5   [M]   [ ]
+
+US-021  As an owner, I want to assign a worker to a specific
+        centre so they can log in there.                              3   [M]   [ ]
+
+US-022  As an owner, I want to view all workers across all
+        my centres.                                                   3   [M]   [ ]
+
+US-023  As an owner, I want to transfer a worker from one centre
+        to another.                                                   5   [M]   [ ]
+
+US-024  As an owner, I want to remove or deactivate a worker so
+        they can no longer access the system.                         3   [M]   [ ]
+
+US-025  As an owner, I want to see which workers are currently
+        assigned to a specific centre.                                2   [M]   [ ]
+
+US-026  As an owner, I want to edit a worker's profile
+        information.                                                  3   [S]   [ ]
+
+Epic 3 Total: 24 points
+
+
+================================================================================
+EPIC 4 : STOCK MANAGEMENT (WORKER)
+================================================================================
+
+ID      Story                                                       Pts  Pri  Status
+------  ----------------------------------------------------------  ---  ---  ------
+US-030  As a worker, I want to register a new stock item (name,
+        quantity, unit, net price) for my centre.                     5   [M]   [ ]
+
+US-031  As a worker, I want to view all stock items currently
+        registered at my centre.                                      3   [M]   [ ]
+
+US-032  As a worker, I want to update the quantity of an existing
+        stock item.                                                   3   [M]   [ ]
+
+US-033  As a worker, I want to view stock trend charts for items
+        at my centre over time.                                       8   [S]   [ ]
+
+US-034  As an owner, I want to view stock levels across all my
+        centres from the dashboard.                                   5   [M]   [ ]
+
+US-035  As an owner, I want to see live stock updates per centre
+        without refreshing manually.                                  5   [S]   [ ]
+
+US-036  As a worker, I want to delete or remove an incorrect
+        stock entry.                                                  2   [S]   [ ]
+
+Epic 4 Total: 31 points
+
+
+================================================================================
+EPIC 5 : SERVICE PROVISION TRACKING (WORKER)
+================================================================================
+
+ID      Story                                                       Pts  Pri  Status
+------  ----------------------------------------------------------  ---  ---  ------
+US-040  As a worker, I want to log a service event (type, subtype,
+        pages, price per page) when a customer arrives.               8   [M]   [ ]
+
+US-041  As a worker, I want the total amount to be automatically
+        calculated as pages multiplied by price per page.             3   [M]   [ ]
+
+US-042  As a worker, I want to select a service type from the
+        list: photocopy, printing, lamination, scanning, designing,
+        or other.                                                     3   [M]   [ ]
+
+US-043  As a worker, I want to select a service subtype of
+        Black and White or Colour.                                    2   [M]   [ ]
+
+US-044  As a worker, I want to view my service event log for
+        today at my centre.                                           3   [M]   [ ]
+
+US-045  As an owner, I want to see all service events across all
+        centres from my dashboard.                                    5   [M]   [ ]
+
+US-046  As a worker, I want to edit or delete an incorrectly
+        entered service event.                                        3   [S]   [ ]
+
+Epic 5 Total: 27 points
+
+
+================================================================================
+EPIC 6 : REPORTS AND ANALYTICS (OWNER)
+================================================================================
+
+ID      Story                                                       Pts  Pri  Status
+------  ----------------------------------------------------------  ---  ---  ------
+US-050  As an owner, I want a daily summary report per centre
+        showing total services and revenue.                           8   [M]   [ ]
+
+US-051  As an owner, I want a weekly summary report per centre.       5   [M]   [ ]
+
+US-052  As an owner, I want to view service provision trend charts
+        by type (e.g. photocopy vs printing) per centre.              8   [S]   [ ]
+
+US-053  As an owner, I want to filter reports by date range and
+        by centre.                                                    5   [S]   [ ]
+
+US-054  As an owner, I want to compare revenue and performance
+        across all my centres side by side.                           5   [C]   [ ]
+
+Epic 6 Total: 31 points
+
+
+================================================================================
+EPIC 7 : NOTICES AND COMMUNICATION
+================================================================================
+
+ID      Story                                                       Pts  Pri  Status
+------  ----------------------------------------------------------  ---  ---  ------
+US-060  As an owner, I want to compose and send a notice or
+        instruction to workers of a specific centre.                  5   [M]   [ ]
+
+US-061  As a worker, I want to see notices sent by the owner in
+        an inbox on my app.                                           5   [M]   [ ]
+
+US-062  As a worker, I want to receive a push notification when
+        a new notice arrives.                                         8   [S]   [ ]
+
+US-063  As an owner, I want to mark a notice with a priority
+        level of normal or urgent.                                    2   [S]   [ ]
+
+US-064  As an owner, I want to see which workers have read a
+        notice (read receipts).                                       5   [C]   [ ]
+
+US-065  As an owner, I want to broadcast one notice to all
+        centres at the same time.                                     3   [C]   [ ]
+
+Epic 7 Total: 28 points
+
+
+================================================================================
+EPIC 8 : APP QUALITY AND INFRASTRUCTURE
+================================================================================
+
+ID      Story                                                       Pts  Pri  Status
+------  ----------------------------------------------------------  ---  ---  ------
+US-070  As a developer, I want CI/CD with GitHub Actions so every
+        pull request is automatically linted and tested.              5   [M]   [ ]
+
+US-071  As a developer, I want EAS production builds to trigger
+        automatically when code is merged to main.                    5   [M]   [ ]
+
+US-072  As a user, I want the app to work offline for stock entry
+        and service logging and sync when reconnected.               13   [S]   [ ]
+
+US-073  As a developer, I want all database tables to have
+        Row-Level Security policies enforced.                         5   [M]   [ ]
+
+US-074  As a developer, I want unit tests covering critical
+        business logic such as total calculation and validation.      5   [S]   [ ]
+
+US-075  As any user, I want clear, readable error messages when
+        something goes wrong.                                         3   [M]   [ ]
+
+US-076  As any user, I want loading indicators shown while data
+        is being fetched.                                             2   [M]   [ ]
+
+Epic 8 Total: 38 points
+
+
+================================================================================
+BACKLOG SUMMARY
+================================================================================
+
+Epic                              Stories   Total Pts   Must-Have Pts
+--------------------------------  -------   ---------   -------------
+Epic 1: Authentication                6        16             13
+Epic 2: Centre Management             5        16             11
+Epic 3: Worker Management             7        24             21
+Epic 4: Stock Management              7        31             16
+Epic 5: Service Provision             7        27             24
+Epic 6: Reports and Analytics         5        31             13
+Epic 7: Notices and Communication     6        28             10
+Epic 8: Infrastructure                7        38             20
+--------------------------------  -------   ---------   -------------
+TOTAL                                50       211            128
+
+
+================================================================================
+BACKLOG MANAGEMENT NOTES
+================================================================================
+
+This backlog is a living document. It is updated at the start of each sprint
+and during the mid-sprint Backlog Refinement session.
+
+Rules:
+  - New stories are added to the bottom of the relevant epic.
+  - Stories are re-prioritised by the Product Owner each sprint.
+  - A story can only enter a sprint if it meets the Definition of Ready.
+  - Completed stories are marked [X] with the sprint number they were
+    finished in written next to the status (e.g. [X] Sprint 2).
+
+
+================================================================================
+End of Document
+================================================================================

@@ -1,0 +1,107 @@
+/**
+ * SMSS — Notices routes
+ *
+ * GET  /api/notices/         — worker: inbox for their centre; owner: sent notices
+ * POST /api/notices/         — owner: send notice (triggers push notifications)
+ * POST /api/notices/:id/read/— worker: mark as read
+ */
+const { Router }          = require('express');
+const { z }               = require('zod');
+const prisma              = require('../lib/prisma');
+const logAction           = require('../lib/audit');
+const { notifyWorkers }   = require('../lib/push');
+const { authenticate, ownerOnly, workerOnly } = require('../middleware/auth');
+
+const router = Router();
+router.use(authenticate);
+
+// ── GET /api/notices/ ─────────────────────────────────────────────────────────
+router.get('/', async (req, res, next) => {
+  try {
+    if (req.user.role === 'worker') {
+      const notices = await prisma.notice.findMany({
+        where:   { centreId: req.user.centreId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          sender: { select: { id:true, fullName:true } },
+          reads:  { where: { workerId: req.user.id }, select: { readAt:true } },
+        },
+      });
+      return res.json(notices.map(n => ({
+        ...n,
+        isRead: n.reads.length > 0,
+        readAt: n.reads[0]?.readAt || null,
+      })));
+    }
+
+    if (req.user.role === 'owner') {
+      const centreId = req.query.centreId;
+      const centres  = await prisma.centre.findMany({
+        where:  { ownerId: req.user.id, isActive: true, ...(centreId ? { id: centreId } : {}) },
+        select: { id: true },
+      });
+      const notices = await prisma.notice.findMany({
+        where:   { centreId: { in: centres.map(c => c.id) } },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          centre: { select: { id:true, name:true, centreNo:true } },
+          _count: { select: { reads: true } },
+        },
+      });
+      return res.json(notices);
+    }
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/notices/ ────────────────────────────────────────────────────────
+const SendNoticeSchema = z.object({
+  centreId: z.string().uuid(),
+  title:    z.string().min(1).max(100),
+  body:     z.string().min(1),
+  priority: z.enum(['low', 'normal', 'urgent']).default('normal'),
+});
+
+router.post('/', ownerOnly, async (req, res, next) => {
+  try {
+    const parsed = SendNoticeSchema.safeParse(req.body);
+    if (!parsed.success)
+      return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
+
+    // Verify centre belongs to owner
+    const centre = await prisma.centre.findFirst({
+      where: { id: parsed.data.centreId, ownerId: req.user.id, isActive: true },
+    });
+    if (!centre)
+      return res.status(404).json({ error: 'not_found', detail: 'Centre not found.' });
+
+    const notice = await prisma.notice.create({
+      data: { ...parsed.data, senderId: req.user.id },
+    });
+
+    // Fire-and-forget push notification to all workers of the centre
+    notifyWorkers(
+      centre.id,
+      `📢 ${notice.title}`,
+      notice.body,
+      { noticeId: notice.id, priority: notice.priority }
+    ).catch(e => console.error('[Notices] push failed:', e.message));
+
+    await logAction(req.user.id, logAction.ACTIONS.NOTICE_SENT, { req, noticeId: notice.id });
+    return res.status(201).json(notice);
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/notices/:id/read/ ───────────────────────────────────────────────
+router.post('/:id/read/', workerOnly, async (req, res, next) => {
+  try {
+    await prisma.noticeRead.upsert({
+      where:  { noticeId_workerId: { noticeId: req.params.id, workerId: req.user.id } },
+      create: { noticeId: req.params.id, workerId: req.user.id },
+      update: { readAt: new Date() },
+    });
+    await logAction(req.user.id, logAction.ACTIONS.NOTICE_READ, { req, noticeId: req.params.id });
+    return res.json({ detail: 'Notice marked as read.' });
+  } catch (err) { next(err); }
+});
+
+module.exports = router;

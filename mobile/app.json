@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Laizer",
+    "slug": "laizer-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "smss",
+    "userInterfaceStyle": "automatic",
+
+    "icon": "./assets/images/icon.png",
+
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1D4ED8"
+    },
+
+    "assetBundlePatterns": ["**/*"],
+
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.smss.mobile"
+    },
+
+    "android": {
+      "package": "com.smss.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#1D4ED8"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": []
+    },
+
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#1D4ED8"
+        }
+      ]
+    ],
+
+    "experiments": {
+      "typedRoutes": true
+    },
+
+    "extra": {
+      "apiUrl": "https://smss-api.onrender.com",
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    }
+  }
+}

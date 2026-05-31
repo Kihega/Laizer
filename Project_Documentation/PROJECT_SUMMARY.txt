@@ -1,0 +1,376 @@
+================================================================================
+STATIONERY MANAGEMENT & SALES SYSTEM (SMSS)
+Mobile-Based Business Operations Platform
+================================================================================
+
+PROJECT SUMMARY
+Version 1.1 | May 2026 (Updated: Tech Stack Revision)
+================================================================================
+
+
+1. EXECUTIVE SUMMARY
+--------------------
+
+SMSS is a cross-platform mobile application designed to streamline the
+day-to-day operations of a stationery business running across multiple
+service centres. It gives the business owner a single dashboard to manage
+centres, workers, stock inventory, and service-provision trends in real time,
+while workers on the ground log transactions, manage stock, and receive
+notices from the owner instantly.
+
+Core problems the system solves:
+  - Manual, paper-based record-keeping of stock across dispersed centres
+  - No real-time visibility into service trends or worker activity
+  - Slow, unreliable communication between the owner and centre workers
+
+
+2. PROJECT GOALS AND OBJECTIVES
+--------------------------------
+
+Goal 1  : Centralised multi-centre management
+          Success measure: Owner can add and manage 2 or more centres
+          from a single account.
+
+Goal 2  : Real-time stock tracking
+          Success measure: Stock levels update the moment a worker
+          enters a new item.
+
+Goal 3  : Service event logging
+          Success measure: Workers log photocopy, printing, and lamination
+          events per customer transaction without paper.
+
+Goal 4  : Owner-to-worker communication
+          Success measure: Notices and instructions reach workers within
+          5 seconds of being sent.
+
+Goal 5  : Business insights
+          Success measure: Owner views daily and weekly service-provision
+          trend reports per centre.
+
+
+3. USER ROLES AND CORE FEATURES
+---------------------------------
+
+OWNER / EMPLOYER
+----------------
+Module: Manage Centres
+  - Add a new centre with name, centre number (e.g. STN001),
+    centre ID, and location (e.g. Arusha University)
+  - View the full list of centres
+  - Edit centre details
+  - Deactivate or delete a centre
+
+Module: Manage Workers
+  - Register a new worker with name, NIM, and phone number
+  - Assign a worker to a specific centre
+  - Transfer a worker from one centre to another
+  - View all workers across all centres
+  - Remove or deactivate a worker
+
+Module: Reports Dashboard
+  - View daily and weekly service summaries per centre
+  - View stock levels across all centres in real time
+  - View service-provision trends by type (printing, scanning, etc.)
+  - Filter reports by date range and centre
+
+Module: Communication
+  - Compose and send instructions or notices to workers
+    of a specific centre
+  - Mark a notice as normal or urgent
+  - View read receipts per notice
+
+WORKER / EMPLOYEE
+-----------------
+Module: Authentication
+  - Log in using the assigned Centre ID
+
+Module: Stock Management
+  - Register a new stock item with name, quantity
+    (in pieces or boxes), and net price in Tanzanian Shillings
+  - View all stock items at their centre
+  - Update stock quantities
+  - Remove incorrect entries
+
+Module: Service Provision Logging
+  - Log a customer service event:
+      Service type  : photocopy / printing / lamination /
+                      scanning / designing / other
+      Sub-type      : black and white / colour
+      Pages         : number of pages
+      Price per page: amount in Tshs (total auto-calculated)
+  - View today's service event log at their centre
+
+Module: Notices
+  - View instructions and notices sent by the owner
+  - Receive push notifications when a new notice arrives
+
+
+4. RECOMMENDED TECHNOLOGY STACK
+---------------------------------
+
+Selection principle: favour tools that maximise development speed,
+suit a small team, and keep infrastructure costs at zero during the
+build and early launch phase.
+
+MOBILE FRONTEND
+  Framework       : React Native with Expo (Managed Workflow)
+                    Single codebase for Android and iOS. Over-the-air
+                    updates avoid app store resubmission for minor fixes.
+  Language        : TypeScript throughout
+  Navigation      : Expo Router v3 (file-based routing)
+  UI components   : React Native Paper + NativeWind (Tailwind CSS)
+  State management: Zustand (lightweight, minimal boilerplate)
+  Forms           : React Hook Form + Zod schema validation
+  API client      : Axios + TanStack React Query
+                    (auto-caching, background refetch, error states)
+  Charts          : Victory Native XL (for trend reports)
+  Notifications   : Expo Notifications (push on Android and iOS)
+
+BACKEND (Custom API Server)
+  Runtime         : Node.js
+  Framework       : Express.js
+  Language        : TypeScript
+  Hosting         : Render (Free Tier)
+                    Always-on web service. Free tier handles low-to-medium
+                    traffic. Spins down after 15 minutes of inactivity on
+                    the free plan -- acceptable for MVP and internal use.
+  Authentication  : Custom JWT (JSON Web Tokens) using the jsonwebtoken
+                    library. The backend generates and validates all tokens.
+                    No third-party auth provider needed.
+  Validation      : Zod (same schema library as the frontend)
+  ORM             : Prisma (type-safe database queries, auto-generated types
+                    from the PostgreSQL schema)
+  Push Notifs     : Expo Push Notification API called directly from the
+                    backend when a notice is sent
+
+CACHING AND SESSION STORAGE
+  Service         : Upstash Redis (Free Tier)
+                    Serverless Redis with a generous free tier:
+                    10,000 commands per day, 256 MB storage.
+                    No server to manage -- accessed via HTTPS REST API
+                    or the official Redis client.
+  Used for        :
+    - JWT session storage: tokens stored with a TTL (time-to-live)
+      matching the token expiry duration. Fast lookup on every request.
+    - Token blacklist on logout: invalidated tokens added to Redis so
+      they cannot be reused even before natural expiry.
+    - API response caching: frequently read data (centre list, worker
+      list) cached in Redis to reduce database load and improve response
+      speed on the free Render tier.
+  Client library  : ioredis or @upstash/redis (official REST client)
+
+DATABASE
+  Provider        : Supabase (Free Tier)
+  Role            : PostgreSQL data storage only.
+                    Supabase is used purely as a managed PostgreSQL host.
+                    Its built-in Auth, Realtime, Edge Functions, and
+                    Row-Level Security features are NOT used -- all of
+                    that logic lives in the custom Express backend.
+  Access          : Prisma connects directly to the Supabase PostgreSQL
+                    connection string (not the Supabase JS client)
+  Free tier       : 500 MB database space, 2 GB bandwidth per month,
+                    unlimited API requests via direct Postgres connection
+
+MONOREPO STRUCTURE
+  Tool            : pnpm Workspaces (no separate monorepo tool)
+                    The GitHub repository is already set up. pnpm workspaces
+                    manage the packages without needing an additional build
+                    pipeline tool.
+  Package manager : pnpm
+
+CI/CD
+  Pipeline        : GitHub Actions
+  Mobile builds   : Expo EAS (cloud builds for Android and iOS)
+  Backend deploy  : Render auto-deploys from the main branch on GitHub
+                    (connected via Render's GitHub integration)
+  Trigger         : PR merged to main
+                      --> GitHub Actions runs lint and tests
+                      --> Render detects push to main and redeploys backend
+                      --> EAS builds updated mobile app
+
+DEVELOPMENT INFRASTRUCTURE
+  Code quality    : ESLint + Prettier + Husky pre-commit hooks
+  Testing         : Jest + React Native Testing Library (mobile)
+                    Jest + Supertest (backend API tests)
+  Environment     : dotenv for backend (.env file)
+                    Expo's EXPO_PUBLIC_ prefix for mobile env vars
+
+
+5. SYSTEM LAYERS SUMMARY
+--------------------------
+
+  [Mobile App]  --  React Native / Expo
+       |
+       | HTTPS REST API calls
+       v
+  [Backend API]  --  Express.js on Render (Free Tier)
+       |                    |
+       | SQL via Prisma      | Redis commands
+       v                    v
+  [PostgreSQL]          [Redis Cache]
+  Supabase Free Tier    Upstash Free Tier
+  (data storage)        (sessions + cache)
+
+Push notifications flow separately:
+  Backend  -->  Expo Push API  -->  FCM / APNs  -->  Device
+
+
+6. FREE TIER LIMITS AND CONSIDERATIONS
+----------------------------------------
+
+Service         Free Tier Limits            Impact on SMSS
+-----------     -----------------------     ------------------------------------
+Render          Sleeps after 15 min idle    First request after idle takes
+                512 MB RAM, shared CPU      5-10 seconds to wake. Acceptable
+                                            for MVP and internal use. Upgrade
+                to Starter ($7/month) when   the business goes live to paying
+                customers.
+
+Upstash Redis   10,000 commands/day         Sufficient for MVP with a handful
+                256 MB max data             of centres and workers. Monitor
+                                            usage in Upstash dashboard and
+                                            optimise caching TTLs if nearing
+                                            the limit.
+
+Supabase        500 MB database             More than enough for MVP data
+                2 GB bandwidth/month        volumes (stock items, service
+                Unlimited connections       events, users, notices).
+
+
+7. MONOREPO REPOSITORY STRUCTURE
+-----------------------------------
+
+smss-monorepo/                        (already created on GitHub)
+  apps/
+    mobile/                           React Native Expo application
+      app/                            Expo Router screens (file-based)
+        (auth)/                       Login screens
+        (owner)/                      Owner dashboard tabs
+          centres/
+          workers/
+          reports/
+        (worker)/                     Worker dashboard tabs
+          stock/
+          services/
+          notices/
+      components/                     Reusable UI components
+      hooks/                          Custom React hooks
+      stores/                         Zustand state stores
+      lib/                            API client (Axios), utilities
+      constants/                      Colours, config values, enums
+
+    backend/                          Express.js API server
+      src/
+        routes/                       API route handlers
+          auth.routes.ts
+          centres.routes.ts
+          workers.routes.ts
+          stock.routes.ts
+          services.routes.ts
+          notices.routes.ts
+        middleware/                   JWT validation, error handler
+        services/                     Business logic layer
+        lib/                          Prisma client, Redis client
+        utils/                        Helpers, token generator
+      prisma/
+        schema.prisma                 Database schema (source of truth)
+        migrations/                   Auto-generated migration files
+      .env                            Backend environment variables
+      tsconfig.json
+      package.json
+
+  packages/
+    shared-types/                     TypeScript interfaces shared by
+                                      mobile and backend
+    config/                           Shared ESLint and Prettier config
+
+  .github/
+    workflows/
+      pr-checks.yml                   Lint and test on every PR
+      deploy-production.yml           Trigger on merge to main
+
+  pnpm-workspace.yaml                 pnpm monorepo workspaces
+  package.json                        Root scripts (lint, test all)
+  README.md
+
+
+8. GIT BRANCHING STRATEGY
+---------------------------
+
+  main     -- Production-ready code only. Protected.
+    |
+    develop  -- Integration branch. All features merge here first.
+      |
+      +-- feature/backend-auth-routes
+      +-- feature/worker-login-centre-id
+      +-- feature/stock-management
+      +-- feature/service-events
+      +-- feature/reports-dashboard
+
+Workflow:
+  Step 1: Developer creates a feature branch from develop
+  Step 2: Opens a Pull Request into develop (reviewed before merge)
+  Step 3: At end of each sprint, develop is PR'd into main
+  Step 4: Merge to main triggers:
+            - Render: auto-redeploys the backend
+            - EAS: builds updated mobile app for distribution
+
+
+9. PROJECT TIMELINE OVERVIEW
+------------------------------
+
+Phase 0 : Setup and Architecture (Week 1)
+          Repo confirmed, backend scaffolded on Render, Upstash Redis
+          connected, Prisma schema migrated to Supabase PostgreSQL
+
+Phase 1 : Authentication (Week 2)
+          Owner JWT login, Worker Centre-ID login, Redis session storage
+
+Phase 2 : Centre and Worker Management (Weeks 3-4)
+          Owner can manage centres and workers via the API
+
+Phase 3 : Stock Management (Weeks 5-6)
+          Worker stock entry, owner stock view with Redis caching
+
+Phase 4 : Service Provision Tracking (Weeks 7-8)
+          Service event logging, trend summaries
+
+Phase 5 : Reports and Notices (Weeks 9-10)
+          Owner dashboard reports, worker notice inbox, push notifications
+
+Phase 6 : QA, Polish, and Deployment (Weeks 11-12)
+          Testing, bug fixes, EAS store submission, Render upgrade check
+
+Total Estimated Duration: 12 Weeks (3 Months)
+
+
+10. NON-FUNCTIONAL REQUIREMENTS
+---------------------------------
+
+Performance   : API responses under 500ms for cached endpoints,
+                under 2 seconds for database queries on Render free tier
+Offline       : Stock entry and service events queue locally when
+                offline and sync to the server on reconnect
+Security      : JWT stored in Redis with TTL. Blacklisted on logout.
+                All routes protected by middleware JWT validation.
+                Passwords hashed with bcrypt before storing.
+Scalability   : Architecture supports upgrading Render to paid tier
+                and increasing Redis capacity without code changes
+Currency      : All monetary values displayed in Tanzanian Shillings (Tshs)
+
+
+11. FUTURE ENHANCEMENTS (POST-MVP)
+------------------------------------
+
+  - Customer-facing receipt generation (PDF / WhatsApp share)
+  - Sales invoicing and revenue tracking
+  - Worker performance analytics dashboard
+  - Low-stock automated alerts
+  - Multi-language support (Swahili and English)
+  - Web admin dashboard built with Next.js
+  - Upgrade Render to paid tier for always-on backend
+
+
+================================================================================
+End of Document
+================================================================================
