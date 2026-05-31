@@ -11,7 +11,7 @@ const { z }                         = require('zod');
 const prisma                        = require('../lib/prisma');
 const redis                         = require('../lib/redis');
 const logAction                     = require('../lib/audit');
-const { authenticate, ownerOnly, workerOnly } = require('../middleware/auth');
+const { authenticate, workerOnly }            = require('../middleware/auth');
 
 const router = Router();
 router.use(authenticate);
