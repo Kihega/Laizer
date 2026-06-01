@@ -9,8 +9,7 @@
       ]
     },
     "types": [
-      "@types/react",
-      "@types/react-native"
+      "@types/react"
     ]
   },
   "include": [

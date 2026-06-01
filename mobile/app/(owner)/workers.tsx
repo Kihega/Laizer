@@ -9,7 +9,7 @@ import { Colors, FontSize, FontWeight, Spacing } from '@/constants/theme';
 
 export default function WorkersScreen() {
   const [workers,    setWorkers]    = useState<any[]>([]);
-  const [centres,    setCentres]    = useState<any[]>([]);
+  const [_centres,   setCentres]    = useState<any[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showForm,   setShowForm]   = useState(false);

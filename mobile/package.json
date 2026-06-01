@@ -9,8 +9,9 @@
     "web": "expo start --web",
     "build:android": "eas build --platform android --profile production",
     "build:preview": "eas build --platform android --profile preview",
-    "lint": "eslint . --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.40.0",
@@ -18,7 +19,7 @@
     "expo": "~54.0.24",
     "expo-constants": "~18.0.10",
     "expo-device": "~8.0.8",
-    "expo-linear-gradient": "~15.0.7",
+    "expo-linear-gradient": "~15.0.8",
     "expo-notifications": "~0.32.12",
     "expo-router": "~6.0.13",
     "expo-secure-store": "~15.0.7",

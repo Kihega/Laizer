@@ -1,3 +1,73 @@
+#!/usr/bin/env python3
+"""
+SMSS → Laizer — Patch Script 9: Rebrand + Owner Registration
+=============================================================
+Run from the ROOT of your repository:
+
+    python apply_laizer_rebrand.py
+
+Changes applied
+───────────────
+Mobile — mobile/app/(auth)/login.tsx   (full rewrite)
+  • Replaces icon + "SMSS" with artistic "Laizer" wordmark
+  • Removes the footer text
+  • Adds "Don't have an account? Sign Up" link (owner tab only)
+  • Adds bottom-sheet registration modal with:
+      - Full Name     (auto-uppercased)
+      - Brand Name    (auto-uppercased)
+      - Phone Number
+      - Register button → POST /api/auth/owner/register/
+      - Success state with Done button
+
+Mobile — mobile/constants/api.ts       (str.replace)
+  • Adds  ownerRegister: '/api/auth/owner/register/'  to API_ROUTES
+
+Mobile — mobile/services/api.ts        (str.replace)
+  • Adds  register(body) → authService  function
+
+Backend — backend/src/routes/auth.js   (str.replace)
+  • Adds  POST /api/auth/owner/register/  endpoint
+      - Validates fullName, brandName, phone (Zod)
+      - Uppercases both text fields server-side
+      - Checks phone/nim uniqueness
+      - Creates User { role:'owner', isActive:false }
+        brandName stored in `nim` field (unique index already there)
+        TODO: add a dedicated brandName column in a future migration
+      - Returns 201 with success message
+"""
+
+from pathlib import Path
+
+REPO = Path(".")
+MOBILE = REPO / "mobile"
+BACKEND = REPO / "backend"
+
+
+# ── Helper ────────────────────────────────────────────────────────────────────
+
+def write_file(path: Path, content: str):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    print(f"  [WRITTEN]  {path.relative_to(REPO)}")
+
+
+def patch(path: Path, old: str, new: str, label: str):
+    if not path.exists():
+        print(f"  [MISSING]  {path.relative_to(REPO)}")
+        return
+    text = path.read_text(encoding="utf-8")
+    if old not in text:
+        print(f"  [SKIP]     {path.relative_to(REPO)} — '{label}' (already applied?)")
+        return
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+    print(f"  [PATCHED]  {path.relative_to(REPO)} — {label}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 1. MOBILE — login.tsx  (full rewrite)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+LOGIN_TSX = """\
 /**
  * Laizer — Login Screen
  * Owner tab: email + password, with Sign Up modal.
@@ -557,3 +627,152 @@ const S = StyleSheet.create({
   },
   doneBtn: { marginTop: Spacing.xl },
 });
+"""
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 2. MOBILE — constants/api.ts  (add ownerRegister route)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+API_ROUTES_OLD = "  ownerLogin:   '/api/auth/owner/login/',"
+API_ROUTES_NEW = (
+    "  ownerLogin:    '/api/auth/owner/login/',\n"
+    "  ownerRegister: '/api/auth/owner/register/',"
+)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 3. MOBILE — services/api.ts  (add register to authService)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+AUTH_SVC_OLD = (
+    "export const authService = {\n"
+    "  ownerLogin:  (email: string, password: string) =>\n"
+    "    apiClient.post(API_ROUTES.ownerLogin,  { email, password }),"
+)
+AUTH_SVC_NEW = (
+    "export const authService = {\n"
+    "  ownerLogin:  (email: string, password: string) =>\n"
+    "    apiClient.post(API_ROUTES.ownerLogin,  { email, password }),\n"
+    "  register: (body: { fullName: string; brandName: string; phone: string }) =>\n"
+    "    apiClient.post(API_ROUTES.ownerRegister, body),"
+)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 4. BACKEND — src/routes/auth.js  (add POST /owner/register/)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+BACKEND_OLD = "// ── POST /api/auth/owner/login/ ───────────────────────────────────────────────"
+BACKEND_NEW = """\
+// ── POST /api/auth/owner/register/ ──────────────────────────────────────────
+// Public endpoint — creates a pending owner account (isActive: false).
+// brandName is stored in the `nim` field as an MVP workaround;
+// add a dedicated `brandName` column in a future Prisma migration.
+const RegisterSchema = z.object({
+  fullName:  z.string().min(2, 'Full name required')
+               .transform(s => s.trim().toUpperCase()),
+  brandName: z.string().min(2, 'Brand name required')
+               .transform(s => s.trim().toUpperCase()),
+  phone:     z.string().min(7, 'Phone number required')
+               .regex(/^[0-9+\\s\\-()]+$/, 'Invalid phone number format'),
+});
+
+router.post('/owner/register/', async (req, res, next) => {
+  try {
+    const parsed = RegisterSchema.safeParse(req.body);
+    if (!parsed.success)
+      return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
+
+    const { fullName, brandName, phone } = parsed.data;
+
+    // Uniqueness checks (phone and nim/brandName)
+    const phoneUsed = await prisma.user.findUnique({ where: { phone } });
+    if (phoneUsed)
+      return res.status(409).json({
+        error:  'phone_exists',
+        detail: 'This phone number is already registered. Contact support if this is an error.',
+      });
+
+    const brandUsed = await prisma.user.findUnique({ where: { nim: brandName } });
+    if (brandUsed)
+      return res.status(409).json({
+        error:  'brand_exists',
+        detail: 'A business with this brand name is already registered.',
+      });
+
+    // Create owner account — inactive until manually activated by admin
+    const user = await prisma.user.create({
+      data: {
+        fullName,
+        phone,
+        nim:      brandName,   // temporary: nim stores brandName until migration
+        role:     'owner',
+        isActive: false,
+      },
+    });
+
+    await logAction(user.id, 'OWNER_REGISTER', { req, result: 'pending_activation' });
+
+    return res.status(201).json({
+      success:  true,
+      userId:   user.id,
+      message:  'Registration received. We will contact you shortly to activate your account.',
+    });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/owner/login/ ───────────────────────────────────────────────"""
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Main
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def main():
+    print(f"\n📂 Repo root: {REPO.resolve()}")
+    print("=" * 60)
+
+    # 1 — Rewrite login.tsx
+    write_file(MOBILE / "app/(auth)/login.tsx", LOGIN_TSX)
+
+    # 2 — Add ownerRegister to API_ROUTES
+    patch(
+        MOBILE / "constants/api.ts",
+        API_ROUTES_OLD, API_ROUTES_NEW,
+        "added ownerRegister route",
+    )
+
+    # 3 — Add register() to authService
+    patch(
+        MOBILE / "services/api.ts",
+        AUTH_SVC_OLD, AUTH_SVC_NEW,
+        "added register() to authService",
+    )
+
+    # 4 — Add backend register endpoint
+    patch(
+        BACKEND / "src/routes/auth.js",
+        BACKEND_OLD, BACKEND_NEW,
+        "added POST /api/auth/owner/register/ endpoint",
+    )
+
+    print("\n" + "=" * 60)
+    print("✅  All patches applied.")
+    print()
+    print("Run checks:")
+    print("  cd mobile  && npm run lint && npm run typecheck")
+    print("  cd backend && npm test")
+    print()
+    print("Then commit:")
+    print("  git add mobile/app/\\(auth\\)/login.tsx \\")
+    print("          mobile/constants/api.ts \\")
+    print("          mobile/services/api.ts \\")
+    print("          backend/src/routes/auth.js")
+    print('  git commit -m "feat: Laizer rebrand, owner signup modal, register API"')
+    print("  git push origin develop")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    main()

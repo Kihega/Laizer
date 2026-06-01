@@ -2,7 +2,7 @@
  * SMSS — useAuth hook
  */
 import { useState, useCallback } from 'react';
-import { authService, getApiError } from '@/services/api';
+import { authService }              from '@/services/api';
 import { useAuthStore, SmssUser }    from '@/store/authStore';
 
 export interface AuthError { code: string; message: string; }

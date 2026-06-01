@@ -9,7 +9,7 @@ import { useAuthStore }    from '@/store/authStore';
 import { useAuth }         from '@/hooks/useAuth';
 import { serviceEventService, stockService, noticeService } from '@/services/api';
 import { Card, StatusBadge }  from '@/components/ui';
-import { BrandColors, Colors, FontSize, FontWeight, Radius, Shadows, Spacing } from '@/constants/theme';
+import { BrandColors, Colors, FontSize, FontWeight, Radius, Spacing }          from '@/constants/theme';
 
 function fmt(n: number) { return `Tshs ${n.toLocaleString('en-TZ',{maximumFractionDigits:0})}`; }
 
