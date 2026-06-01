@@ -16,7 +16,7 @@ export function Input({ label, error, hint, rightIcon, onPressRightIcon, contain
     <View style={[IS.container, containerStyle]}>
       {label ? <Text style={IS.label}>{label}</Text> : null}
       <View style={IS.wrapper}>
-        <RNInput style={[IS.input, hasError && IS.inputErr, rightIcon && IS.inputIcon, style]}
+        <RNInput style={[IS.input, hasError && IS.inputErr, rightIcon ? IS.inputIcon : null, style]}
           placeholderTextColor={Colors.grey400} {...rest} />
         {rightIcon ? (
           <TouchableOpacity style={IS.iconBtn} onPress={onPressRightIcon} hitSlop={{top:10,bottom:10,left:10,right:10}}>

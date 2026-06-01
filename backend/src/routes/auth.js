@@ -33,6 +33,63 @@ function userProfile(u, centreId = null) {
   };
 }
 
+// ── POST /api/auth/owner/register/ ──────────────────────────────────────────
+// Public endpoint — creates a pending owner account (isActive: false).
+// brandName is stored in the `nim` field as an MVP workaround;
+// add a dedicated `brandName` column in a future Prisma migration.
+const RegisterSchema = z.object({
+  fullName:  z.string().min(2, 'Full name required')
+               .transform(s => s.trim().toUpperCase()),
+  brandName: z.string().min(2, 'Brand name required')
+               .transform(s => s.trim().toUpperCase()),
+  phone:     z.string().min(7, 'Phone number required')
+               .regex(/^[0-9+\s\-()]+$/, 'Invalid phone number format'),
+});
+
+router.post('/owner/register/', async (req, res, next) => {
+  try {
+    const parsed = RegisterSchema.safeParse(req.body);
+    if (!parsed.success)
+      return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
+
+    const { fullName, brandName, phone } = parsed.data;
+
+    // Uniqueness checks (phone and nim/brandName)
+    const phoneUsed = await prisma.user.findUnique({ where: { phone } });
+    if (phoneUsed)
+      return res.status(409).json({
+        error:  'phone_exists',
+        detail: 'This phone number is already registered. Contact support if this is an error.',
+      });
+
+    const brandUsed = await prisma.user.findUnique({ where: { nim: brandName } });
+    if (brandUsed)
+      return res.status(409).json({
+        error:  'brand_exists',
+        detail: 'A business with this brand name is already registered.',
+      });
+
+    // Create owner account — inactive until manually activated by admin
+    const user = await prisma.user.create({
+      data: {
+        fullName,
+        phone,
+        nim:      brandName,   // temporary: nim stores brandName until migration
+        role:     'owner',
+        isActive: false,
+      },
+    });
+
+    await logAction(user.id, 'OWNER_REGISTER', { req, result: 'pending_activation' });
+
+    return res.status(201).json({
+      success:  true,
+      userId:   user.id,
+      message:  'Registration received. We will contact you shortly to activate your account.',
+    });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/owner/login/ ───────────────────────────────────────────────
 const OwnerLoginSchema = z.object({
   email:    z.string().email('Valid email required'),

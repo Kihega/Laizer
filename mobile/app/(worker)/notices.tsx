@@ -163,7 +163,7 @@ const NS = StyleSheet.create({
   root:           { flex: 1, backgroundColor: Colors.background },
   header:         { padding: Spacing.xl, paddingTop: 60, backgroundColor: Colors.primary },
   title:          { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.white },
-  unreadBadge:    { fontSize: FontSize.xs, color: Colors.amberLight ?? '#FCD34D',
+  unreadBadge:    { fontSize: FontSize.xs, color: Colors.warningLight,
                     marginTop: 2, fontWeight: FontWeight.semiBold },
   empty:          { textAlign: 'center', color: Colors.textDisabled,
                     padding: Spacing['3xl'], lineHeight: 22 },

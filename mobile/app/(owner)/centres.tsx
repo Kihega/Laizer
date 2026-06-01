@@ -6,7 +6,7 @@ import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, T
 import { centreService, getApiError } from '@/services/api';
 import { Card, Button, Input, StatusBadge } from '@/components/ui';
 import { ConfirmModal } from '@/components/ConfirmModal';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Colors, FontSize, FontWeight, Spacing }         from '@/constants/theme';
 
 export default function CentresScreen() {
   const [centres,    setCentres]    = useState<any[]>([]);

@@ -22,7 +22,8 @@ if (__DEV__) console.log(`[SMSS] API_BASE_URL → ${API_BASE_URL}`);
 
 export const API_ROUTES = {
   // Auth
-  ownerLogin:   '/api/auth/owner/login/',
+  ownerLogin:    '/api/auth/owner/login/',
+  ownerRegister: '/api/auth/owner/register/',
   workerLogin:  '/api/auth/worker/login/',
   refresh:      '/api/auth/refresh/',
   logout:       '/api/auth/logout/',

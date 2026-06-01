@@ -3,7 +3,7 @@
  * Used for service types, notice priorities, stock units, etc.
  */
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Colors, FontSize, FontWeight, Radius }          from '@/constants/theme';
 
 type BadgeVariant =
   | 'photocopy' | 'printing' | 'lamination' | 'scanning' | 'designing' | 'other'

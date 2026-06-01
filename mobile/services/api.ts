@@ -112,6 +112,8 @@ export function getApiError(err: unknown, fallback = 'Something went wrong.'): s
 export const authService = {
   ownerLogin:  (email: string, password: string) =>
     apiClient.post(API_ROUTES.ownerLogin,  { email, password }),
+  register: (body: { fullName: string; brandName: string; phone: string }) =>
+    apiClient.post(API_ROUTES.ownerRegister, body),
   workerLogin: (centreId: string) =>
     apiClient.post(API_ROUTES.workerLogin, { centreId }),
   logout:      (refresh: string) =>
