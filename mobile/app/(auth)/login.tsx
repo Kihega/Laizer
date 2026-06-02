@@ -23,6 +23,7 @@ interface RegForm {
   fullName:  string;
   brandName: string;
   phone:     string;
+  email:     string;
 }
 
 export default function LoginScreen() {
@@ -37,7 +38,7 @@ export default function LoginScreen() {
 
   // ── Registration modal state ───────────────────────────────────────────────
   const [showReg,    setShowReg]    = useState(false);
-  const [regForm,    setRegForm]    = useState<RegForm>({ fullName:'', brandName:'', phone:'' });
+  const [regForm,    setRegForm]    = useState<RegForm>({ fullName:'', brandName:'', phone:'', email:'' });
   const [regLoading, setRegLoading] = useState(false);
   const [regError,   setRegError]   = useState('');
   const [regSuccess, setRegSuccess] = useState(false);
@@ -57,7 +58,7 @@ export default function LoginScreen() {
   };
 
   const openReg = () => {
-    setRegForm({ fullName:'', brandName:'', phone:'' });
+    setRegForm({ fullName:'', brandName:'', phone:'', email:'' });
     setRegError('');
     setRegSuccess(false);
     setShowReg(true);
@@ -68,6 +69,8 @@ export default function LoginScreen() {
     if (!regForm.fullName.trim())  return setRegError('Full name is required.');
     if (!regForm.brandName.trim()) return setRegError('Stationery brand name is required.');
     if (!regForm.phone.trim())     return setRegError('Phone number is required.');
+    if (regForm.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regForm.email.trim()))
+      return setRegError('Enter a valid email address.');
 
     setRegLoading(true);
     try {
@@ -75,6 +78,7 @@ export default function LoginScreen() {
         fullName:  regForm.fullName.trim().toUpperCase(),
         brandName: regForm.brandName.trim().toUpperCase(),
         phone:     regForm.phone.trim(),
+        ...(regForm.email.trim() ? { email: regForm.email.trim().toLowerCase() } : {}),
       });
       setRegSuccess(true);
     } catch (e: unknown) {
@@ -331,6 +335,24 @@ export default function LoginScreen() {
                       value={regForm.phone}
                       onChangeText={t => setRegForm(p => ({ ...p, phone: t }))}
                       keyboardType="phone-pad"
+                      returnKeyType="next"
+                    />
+                  </View>
+
+                  {/* Email (optional) */}
+                  <View style={S.field}>
+                    <Text style={S.fieldLabel}>
+                      Email Address{' '}
+                      <Text style={{ color: Colors.textDisabled, fontWeight: '400' }}>(optional)</Text>
+                    </Text>
+                    <TextInput
+                      style={S.fieldInput}
+                      placeholder="you@example.com"
+                      placeholderTextColor={Colors.grey400}
+                      value={regForm.email}
+                      onChangeText={t => setRegForm(p => ({ ...p, email: t }))}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
                       returnKeyType="done"
                       onSubmitEditing={handleRegister}
                     />
