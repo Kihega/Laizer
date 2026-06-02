@@ -5,16 +5,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator, RefreshControl, ScrollView,
-  StyleSheet, Text, TouchableOpacity, View,
+  StyleSheet, Text, View,
 } from 'react-native';
-import { Ionicons }          from '@expo/vector-icons';
-import { LinearGradient }    from 'expo-linear-gradient';
-import { useRouter }         from 'expo-router';
-import { useAuthStore }      from '@/store/authStore';
-import { useAuth }           from '@/hooks/useAuth';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter }       from 'expo-router';
+import { useAuthStore }    from '@/store/authStore';
+import { useAuth }         from '@/hooks/useAuth';
 import { reportService, centreService } from '@/services/api';
-import { Card }              from '@/components/ui';
-import { BrandColors, Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Card }            from '@/components/ui';
+import { BrandColors, Colors, FontSize, FontWeight, Radius, Spacing }          from '@/constants/theme';
 
 function fmt(n: number) {
   return `Tshs ${n.toLocaleString('en-TZ', { maximumFractionDigits: 0 })}`;
@@ -57,16 +56,14 @@ export default function OwnerDashboard() {
             <Text style={S.greeting}>Good day, {user?.fullName?.split(' ')[0]} 👋</Text>
             <Text style={S.subGreeting}>Here's today's overview</Text>
           </View>
-          <TouchableOpacity onPress={logout} style={S.signOutBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="log-out-outline" size={24} color="rgba(255,255,255,0.8)" />
-          </TouchableOpacity>
+          <Text onPress={logout} style={S.logoutBtn}>Logout</Text>
         </View>
 
         {/* Stat cards */}
         <View style={S.statsRow}>
-          <StatCard label="Today's Revenue" value={fmt(totalRevenue)} iconName="cash-outline" />
-          <StatCard label="Services Logged" value={String(totalEvents)} iconName="list-outline" />
-          <StatCard label="Active Centres"  value={String(activeCentres)} iconName="storefront-outline" />
+          <StatCard label="Today's Revenue" value={fmt(totalRevenue)} icon="💰" />
+          <StatCard label="Services Logged" value={String(totalEvents)} icon="📋" />
+          <StatCard label="Active Centres"  value={String(activeCentres)} icon="🏪" />
         </View>
       </LinearGradient>
 
@@ -84,13 +81,13 @@ export default function OwnerDashboard() {
             <Text style={S.sectionTitle}>Quick Actions</Text>
             <View style={S.actions}>
               {[
-                { label: 'View Centres',   iconName: 'storefront-outline' as const, route: '/(owner)/centres'  },
-                { label: 'Manage Workers', iconName: 'people-outline'     as const, route: '/(owner)/workers'  },
-                { label: 'Daily Report',   iconName: 'bar-chart-outline'  as const, route: '/(owner)/reports'  },
-                { label: 'Send Notice',    iconName: 'megaphone-outline'  as const, route: '/(owner)/notices'  },
+                { label:'View Centres',  emoji:'🏪', route:'/(owner)/centres'  },
+                { label:'Manage Workers',emoji:'👥', route:'/(owner)/workers'  },
+                { label:'Daily Report',  emoji:'📊', route:'/(owner)/reports'  },
+                { label:'Send Notice',   emoji:'📢', route:'/(owner)/notices'  },
               ].map(a => (
                 <Card key={a.route} onPress={() => router.push(a.route as any)} style={S.actionCard}>
-                  <Ionicons name={a.iconName} size={32} color={Colors.primary} style={S.actionIcon} />
+                  <Text style={S.actionEmoji}>{a.emoji}</Text>
                   <Text style={S.actionLabel}>{a.label}</Text>
                 </Card>
               ))}
@@ -125,10 +122,10 @@ export default function OwnerDashboard() {
   );
 }
 
-function StatCard({ label, value, iconName }: { label: string; value: string; iconName: React.ComponentProps<typeof Ionicons>['name'] }) {
+function StatCard({ label, value, icon }: { label: string; value: string; icon: string }) {
   return (
     <View style={SS.card}>
-      <Ionicons name={iconName} size={22} color="rgba(255,255,255,0.9)" style={SS.icon} />
+      <Text style={SS.icon}>{icon}</Text>
       <Text style={SS.value}>{value}</Text>
       <Text style={SS.label}>{label}</Text>
     </View>
@@ -136,32 +133,32 @@ function StatCard({ label, value, iconName }: { label: string; value: string; ic
 }
 
 const S = StyleSheet.create({
-  root:         { flex: 1, backgroundColor: Colors.background },
-  header:       { paddingTop: 60, paddingHorizontal: Spacing.xl, paddingBottom: Spacing['2xl'] },
-  headerRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.xl },
+  root:         { flex:1, backgroundColor: Colors.background },
+  header:       { paddingTop:60, paddingHorizontal: Spacing.xl, paddingBottom: Spacing['2xl'] },
+  headerRow:    { flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start', marginBottom: Spacing.xl },
   greeting:     { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.white },
-  subGreeting:  { fontSize: FontSize.sm, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
-  signOutBtn:   { paddingTop: 2 },
-  statsRow:     { flexDirection: 'row', gap: Spacing.sm },
-  body:         { flex: 1, padding: Spacing.xl },
+  subGreeting:  { fontSize: FontSize.sm, color:'rgba(255,255,255,0.7)', marginTop:2 },
+  logoutBtn:    { color:'rgba(255,255,255,0.7)', fontSize: FontSize.sm, paddingTop:4 },
+  statsRow:     { flexDirection:'row', gap: Spacing.sm },
+  body:         { flex:1, padding: Spacing.xl },
   loader:       { marginTop: Spacing['3xl'] },
   sectionTitle: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.textPrimary, marginBottom: Spacing.md, marginTop: Spacing.base },
-  actions:      { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginBottom: Spacing.sm },
-  actionCard:   { width: '47%', alignItems: 'center', paddingVertical: Spacing.base },
-  actionIcon:   { marginBottom: Spacing.xs },
-  actionLabel:  { fontSize: FontSize.sm, fontWeight: FontWeight.semiBold, color: Colors.textPrimary, textAlign: 'center' },
+  actions:      { flexDirection:'row', flexWrap:'wrap', gap: Spacing.md, marginBottom: Spacing.sm },
+  actionCard:   { width:'47%', alignItems:'center', paddingVertical: Spacing.base },
+  actionEmoji:  { fontSize:32, marginBottom: Spacing.xs },
+  actionLabel:  { fontSize: FontSize.sm, fontWeight: FontWeight.semiBold, color: Colors.textPrimary, textAlign:'center' },
   centreCard:   { marginBottom: Spacing.sm },
-  centreCardRow:{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.xs },
+  centreCardRow:{ flexDirection:'row', justifyContent:'space-between', marginBottom: Spacing.xs },
   centreName:   { fontSize: FontSize.base, fontWeight: FontWeight.bold, color: Colors.textPrimary },
-  centreNo:     { fontSize: FontSize.xs, color: Colors.textDisabled, backgroundColor: Colors.grey100, paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full },
-  centreStats:  { flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.xs },
+  centreNo:     { fontSize: FontSize.xs, color: Colors.textDisabled, backgroundColor: Colors.grey100, paddingHorizontal:6, paddingVertical:2, borderRadius: Radius.full },
+  centreStats:  { flexDirection:'row', justifyContent:'space-between', marginTop: Spacing.xs },
   centreRev:    { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.accent },
   centreEvents: { fontSize: FontSize.sm, color: Colors.textSecondary },
   topService:   { fontSize: FontSize.xs, color: Colors.primary, marginTop: Spacing.xs },
 });
 const SS = StyleSheet.create({
-  card:  { flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: Radius.md, padding: Spacing.md, alignItems: 'center' },
-  icon:  { marginBottom: 4 },
+  card:  { flex:1, backgroundColor:'rgba(255,255,255,0.15)', borderRadius: Radius.md, padding: Spacing.md, alignItems:'center' },
+  icon:  { fontSize:22, marginBottom:4 },
   value: { fontSize: FontSize.lg, fontWeight: FontWeight.black, color: Colors.white },
-  label: { fontSize: 10, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: 2 },
+  label: { fontSize:10, color:'rgba(255,255,255,0.7)', textAlign:'center', marginTop:2 },
 });
