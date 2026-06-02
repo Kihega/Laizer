@@ -1,0 +1,16 @@
+# Laizer API — .dockerignore
+# Keep the build context small — never send secrets to Docker daemon
+
+node_modules
+npm-debug.log
+.env
+.env.*
+!.env.example
+coverage
+.git
+.gitignore
+*.md
+docker-compose*.yml
+.eslintrc*
+jest.config.js
+__tests__

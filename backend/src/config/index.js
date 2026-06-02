@@ -55,7 +55,7 @@ const cfg = {
 if (cfg.isProduction) {
   required('SECRET_KEY');
   required('DATABASE_URL');
-  required('REDIS_URL');
+  // REDIS_URL no longer required — in-process cache is used instead.
   required('CORS_ALLOWED_ORIGINS');
 }
 
