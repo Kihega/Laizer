@@ -1,0 +1,49 @@
+# ══════════════════════════════════════════════════════════════════
+# Laizer — Render Blueprint
+# Docs: https://render.com/docs/blueprint-spec
+#
+# This file lets Render auto-configure the service.
+# It does NOT override environment variables set in the Render
+# dashboard — dashboard values always win.
+# ══════════════════════════════════════════════════════════════════
+
+services:
+  - type: web
+    name: laizer-api
+    runtime: docker
+    dockerContext: backend          # folder containing Dockerfile
+    dockerfilePath: backend/Dockerfile
+
+    # Render free tier — upgrade to Starter for always-on
+    plan: free
+
+    # Render will send SIGTERM → your shutdown handler → graceful exit
+    healthCheckPath: /api/health/
+
+    envVars:
+      # ── Server ────────────────────────────────────────────────────
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8000
+
+      # ── Database (set real values in Render dashboard) ───────────
+      - key: DATABASE_URL
+        sync: false   # set manually in dashboard
+      - key: DIRECT_URL
+        sync: false
+
+      # ── JWT secret ────────────────────────────────────────────────
+      - key: SECRET_KEY
+        sync: false   # set manually in dashboard
+
+      # ── CORS ──────────────────────────────────────────────────────
+      # Add your Expo publish URL / EAS URL here too if needed
+      - key: CORS_ALLOWED_ORIGINS
+        value: "http://localhost:8081,http://localhost:19006,exp://localhost:19000"
+
+      # ── JWT lifetimes ─────────────────────────────────────────────
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 60m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
