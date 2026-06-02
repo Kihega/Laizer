@@ -11,11 +11,15 @@ generator client {
   //   debian-openssl-3.0.x          → Render free tier (Debian ARM64)
   //   linux-musl-openssl-3.0.x      → Alpine Linux (Docker)
   //   linux-musl-arm64-openssl-3.0.x→ Alpine Linux ARM64
-  binaryTargets = ["native"]
+  // native                         → local dev (auto-detected)
+  // linux-musl-openssl-3.0.x        → Docker Alpine (container)
+  // debian-openssl-3.0.x            → Render native (non-Docker)
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
   provider  = "postgresql"
+  
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }

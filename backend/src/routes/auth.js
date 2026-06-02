@@ -44,6 +44,7 @@ const RegisterSchema = z.object({
                .transform(s => s.trim().toUpperCase()),
   phone:     z.string().min(7, 'Phone number required')
                .regex(/^[0-9+\s\-()]+$/, 'Invalid phone number format'),
+  email:     z.string().email('Valid email required').optional(),
 });
 
 router.post('/owner/register/', async (req, res, next) => {
@@ -52,15 +53,24 @@ router.post('/owner/register/', async (req, res, next) => {
     if (!parsed.success)
       return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
 
-    const { fullName, brandName, phone } = parsed.data;
+    const { fullName, brandName, phone, email } = parsed.data;
 
-    // Uniqueness checks (phone and nim/brandName)
+    // Uniqueness checks
     const phoneUsed = await prisma.user.findUnique({ where: { phone } });
     if (phoneUsed)
       return res.status(409).json({
         error:  'phone_exists',
         detail: 'This phone number is already registered. Contact support if this is an error.',
       });
+
+    if (email) {
+      const emailUsed = await prisma.user.findUnique({ where: { email } });
+      if (emailUsed)
+        return res.status(409).json({
+          error:  'email_exists',
+          detail: 'This email is already registered.',
+        });
+    }
 
     const brandUsed = await prisma.user.findUnique({ where: { nim: brandName } });
     if (brandUsed)
@@ -74,6 +84,7 @@ router.post('/owner/register/', async (req, res, next) => {
       data: {
         fullName,
         phone,
+        ...(email ? { email } : {}),
         nim:      brandName,   // temporary: nim stores brandName until migration
         role:     'owner',
         isActive: false,
