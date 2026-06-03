@@ -8,9 +8,11 @@ import {
   Alert, Image, KeyboardAvoidingView, Modal, Platform,
   ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
-import * as ImagePicker    from 'expo-image-picker';
-import { LinearGradient }  from 'expo-linear-gradient';
-import { Ionicons }        from '@expo/vector-icons';
+import type { ReactNode }   from 'react';
+import * as ImagePicker     from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { LinearGradient }   from 'expo-linear-gradient';
+import { Ionicons }         from '@expo/vector-icons';
 import { useAuth }         from '@/hooks/useAuth';
 import { Button, Input }   from '@/components/ui';
 import { BrandColors, Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
@@ -21,7 +23,7 @@ type LoginMode = 'owner' | 'worker';
 type RegStep   = 1 | 2;
 
 interface S1 { fullName: string; brandName: string; phone: string; email: string; }
-interface S2 { password: string; confirm: string; photo: string; showPw: boolean; showCf: boolean; }
+interface S2 { password: string; confirm: string; photo: string; photoBase64: string; showPw: boolean; showCf: boolean; }
 
 function strength(pw: string) {
   if (!pw) return { label:'', color: Colors.border, score: 0 };
@@ -54,7 +56,7 @@ export default function LoginScreen() {
   const [regOk,    setRegOk]    = useState(false);
   const [regBusy,  setRegBusy]  = useState(false);
   const [s1, setS1] = useState<S1>({ fullName:'', brandName:'', phone:'', email:'' });
-  const [s2, setS2] = useState<S2>({ password:'', confirm:'', photo:'', showPw:false, showCf:false });
+  const [s2, setS2] = useState<S2>({ password:'', confirm:'', photo:'', photoBase64:'', showPw:false, showCf:false });
 
   const switchMode = (m: LoginMode) => { setMode(m); clearError(); };
 
@@ -71,7 +73,7 @@ export default function LoginScreen() {
 
   const openReg = () => {
     setS1({ fullName:'', brandName:'', phone:'', email:'' });
-    setS2({ password:'', confirm:'', photo:'', showPw:false, showCf:false });
+    setS2({ password:'', confirm:'', photo:'', photoBase64:'', showPw:false, showCf:false });
     setStep(1); setRegErr(''); setRegOk(false); setShowReg(true);
   };
 
@@ -93,10 +95,25 @@ export default function LoginScreen() {
       Alert.alert('Permission required', `Allow ${src} access in your device settings.`); return;
     }
     const result = src === 'camera'
-      ? await ImagePicker.launchCameraAsync({ allowsEditing:true, aspect:[1,1], quality:0.6 })
-      : await ImagePicker.launchImageLibraryAsync({ allowsEditing:true, aspect:[1,1], quality:0.6 });
-    if (!result.canceled && result.assets[0]?.uri)
-      setS2(p => ({ ...p, photo: result.assets[0].uri }));
+      ? await ImagePicker.launchCameraAsync({ allowsEditing:true, aspect:[1,1], quality:1 })
+      : await ImagePicker.launchImageLibraryAsync({ allowsEditing:true, aspect:[1,1], quality:1 });
+    if (!result.canceled && result.assets[0]?.uri) {
+      try {
+        // Resize to 400×400 and convert to PNG — ensures the image is < 1 MB
+        const compressed = await ImageManipulator.manipulateAsync(
+          result.assets[0].uri,
+          [{ resize: { width: 400, height: 400 } }],
+          { compress: 0.9, format: ImageManipulator.SaveFormat.PNG, base64: true },
+        );
+        setS2(p => ({
+          ...p,
+          photo:       compressed.uri,
+          photoBase64: `data:image/png;base64,${compressed.base64 ?? ''}`,
+        }));
+      } catch {
+        Alert.alert('Image error', 'Could not process the image. Please try another.');
+      }
+    }
   };
 
   const handleRegister = async () => {
@@ -112,7 +129,7 @@ export default function LoginScreen() {
         phone:     s1.phone.trim(),
         ...(s1.email.trim() ? { email: s1.email.trim().toLowerCase() } : {}),
         password:  s2.password,
-        ...(s2.photo ? { profilePicture: s2.photo } : {}),
+        ...(s2.photoBase64 ? { profilePicture: s2.photoBase64 } : {}),
       });
       setRegOk(true);
     } catch (e: unknown) {
@@ -236,8 +253,7 @@ export default function LoginScreen() {
                   <Text style={{ fontSize:52 }}>🎉</Text>
                   <Text style={L.successTitle}>Registration Complete!</Text>
                   <Text style={L.successMsg}>
-                    Your account has been created. An admin will activate it within 24 hours.
-                    You'll then be able to sign in with your email and password.
+                    Your account has been created successfully!\n\n                    You can now sign in with your email and password.
                   </Text>
                   <Button label="Done" onPress={() => setShowReg(false)} fullWidth size="md" style={{ marginTop:24 }} />
                 </View>
@@ -351,7 +367,7 @@ export default function LoginScreen() {
   );
 }
 
-function RF({ label, req, hint, children }: { label:string; req?:boolean; hint?:string; children:React.ReactNode }) {
+function RF({ label, req, hint, children }: { label:string; req?:boolean; hint?:string; children:ReactNode }) {
   return (
     <View style={L.field}>
       <Text style={L.fl}>

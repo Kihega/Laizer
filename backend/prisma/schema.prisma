@@ -67,7 +67,8 @@ model User {
   phone        String?   @unique
   fullName     String    @map("full_name")
   nim          String?   @unique
-  passwordHash String?   @map("password_hash")
+  passwordHash   String?   @map("password_hash")
+  profilePicture String?   @map("profile_picture")  // base64 PNG, compressed ≤ 1 MB
   role         UserRole
   isActive     Boolean   @default(true)  @map("is_active")
   lastLogin    DateTime? @map("last_login")

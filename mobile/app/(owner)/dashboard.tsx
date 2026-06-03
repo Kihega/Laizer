@@ -3,8 +3,9 @@
  * Profile card + hamburger sidebar (dark/light mode, change password, logout)
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ComponentProps } from 'react';
 import {
-  ActivityIndicator, Alert, Animated, Modal, RefreshControl,
+  ActivityIndicator, Alert, Animated, Image, Modal, RefreshControl,
   ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { Ionicons }       from '@expo/vector-icons';
@@ -104,7 +105,9 @@ export default function OwnerDashboard() {
         {/* Profile card */}
         <View style={S.profileCard}>
           <View style={S.profileAvatar}>
-            <Ionicons name="person" size={28} color={Colors.primary} />
+            {user?.profilePicture
+              ? <Image source={{ uri: user.profilePicture }} style={S.profileAvatarImg} />
+              : <Ionicons name="person" size={28} color={Colors.primary} />}
           </View>
           <View style={{ flex:1 }}>
             <Text style={S.profileName} numberOfLines={1}>{user?.fullName ?? '—'}</Text>
@@ -281,7 +284,7 @@ export default function OwnerDashboard() {
   );
 }
 
-function StatCard({ label, value, icon }: { label:string; value:string; icon: React.ComponentProps<typeof Ionicons>['name'] }) {
+function StatCard({ label, value, icon }: { label:string; value:string; icon: ComponentProps<typeof Ionicons>['name'] }) {
   return (
     <View style={SC.card}>
       <Ionicons name={icon} size={22} color="rgba(255,255,255,0.9)" style={{ marginBottom:4 }} />
@@ -296,7 +299,8 @@ const S = StyleSheet.create({
   header:      { paddingTop:60, paddingHorizontal:Spacing.xl, paddingBottom:Spacing['2xl'] },
   headerTop:   { flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:Spacing.md },
   profileCard: { flexDirection:'row', alignItems:'center', gap:12, backgroundColor:'rgba(255,255,255,0.15)', borderRadius:Radius.lg, padding:Spacing.base, marginBottom:Spacing.xl },
-  profileAvatar:{ width:54, height:54, borderRadius:27, backgroundColor:'rgba(255,255,255,0.9)', alignItems:'center', justifyContent:'center' },
+  profileAvatar:{ width:54, height:54, borderRadius:27, backgroundColor:'rgba(255,255,255,0.9)', alignItems:'center', justifyContent:'center', overflow:'hidden' },
+  profileAvatarImg:{ width:54, height:54, borderRadius:27 },
   profileName: { fontSize:FontSize.md, fontWeight:FontWeight.bold, color:Colors.white },
   profileBrand:{ fontSize:FontSize.sm, color:'rgba(255,255,255,0.8)', marginTop:1 },
   profileDate: { fontSize:FontSize.xs, color:'rgba(255,255,255,0.6)', marginTop:2 },
@@ -318,7 +322,8 @@ const S = StyleSheet.create({
   sideOverlay: { position:'absolute', top:0, left:0, right:0, bottom:0, backgroundColor:'rgba(0,0,0,0.45)', zIndex:10 },
   sidebar:     { position:'absolute', top:0, left:0, bottom:0, width:280, zIndex:11, elevation:20 },
   sideHeader:  { paddingTop:60, padding:Spacing.xl, alignItems:'center' },
-  sideAvatar:  { width:68, height:68, borderRadius:34, backgroundColor:'rgba(255,255,255,0.9)', alignItems:'center', justifyContent:'center', marginBottom:10 },
+  sideAvatar:  { width:68, height:68, borderRadius:34, backgroundColor:'rgba(255,255,255,0.9)', alignItems:'center', justifyContent:'center', marginBottom:10, overflow:'hidden' },
+  sideAvatarImg:{ width:68, height:68, borderRadius:34 },
   sideName:    { fontSize:FontSize.md, fontWeight:FontWeight.bold, color:Colors.white },
   sideBrand:   { fontSize:FontSize.sm, color:'rgba(255,255,255,0.8)', marginTop:2 },
   sideMenu:    { flex:1, padding:Spacing.xl },
