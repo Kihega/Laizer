@@ -5,15 +5,16 @@ import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 
 export interface SmssUser {
-  id:        string;
-  fullName:  string;
-  email?:    string | null;
-  phone?:    string | null;
-  nim?:      string | null;
-  role:      'owner' | 'worker';
-  isActive:  boolean;
-  lastLogin: string | null;
-  centreId?: string | null;
+  id:             string;
+  fullName:       string;
+  email?:         string | null;
+  phone?:         string | null;
+  nim?:           string | null;
+  profilePicture?: string | null;
+  role:           'owner' | 'worker';
+  isActive:       boolean;
+  lastLogin:      string | null;
+  centreId?:      string | null;
 }
 
 interface AuthState {

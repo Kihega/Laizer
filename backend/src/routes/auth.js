@@ -21,20 +21,21 @@ const router = Router();
 // ── Helper: safe user profile (no password hash) ──────────────────────────────
 function userProfile(u, centreId = null) {
   return {
-    id:        u.id,
-    fullName:  u.fullName,
-    email:     u.email   || null,
-    phone:     u.phone   || null,
-    nim:       u.nim     || null,
-    role:      u.role,
-    isActive:  u.isActive,
-    lastLogin: u.lastLogin,
+    id:             u.id,
+    fullName:       u.fullName,
+    email:          u.email          || null,
+    phone:          u.phone          || null,
+    nim:            u.nim            || null,
+    profilePicture: u.profilePicture || null,
+    role:           u.role,
+    isActive:       u.isActive,
+    lastLogin:      u.lastLogin,
     centreId,
   };
 }
 
 // ── POST /api/auth/owner/register/ ──────────────────────────────────────────
-// Public endpoint — creates a pending owner account (isActive: false).
+// Public endpoint — creates an active owner account (can login immediately).
 // brandName is stored in the `nim` field as an MVP workaround;
 // add a dedicated `brandName` column in a future Prisma migration.
 const RegisterSchema = z.object({
@@ -46,7 +47,7 @@ const RegisterSchema = z.object({
                .regex(/^[0-9+\s\-()]+$/, 'Invalid phone number format'),
   email:     z.string().email('Valid email required').optional(),
   password:  z.string().min(8, 'Password must be at least 8 characters'),
-  profilePicture: z.string().optional(),  // local URI — stored only in client for now
+  profilePicture: z.string().optional(),  // base64 PNG from device
 });
 
 router.post('/owner/register/', async (req, res, next) => {
@@ -55,7 +56,7 @@ router.post('/owner/register/', async (req, res, next) => {
     if (!parsed.success)
       return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
 
-    const { fullName, brandName, phone, email, password } = parsed.data;
+    const { fullName, brandName, phone, email, password, profilePicture } = parsed.data;
 
     // Uniqueness checks
     const phoneUsed = await prisma.user.findUnique({ where: { phone } });
@@ -90,19 +91,20 @@ router.post('/owner/register/', async (req, res, next) => {
         fullName,
         phone,
         ...(email ? { email } : {}),
-        nim:          brandName,   // temporary: nim stores brandName until migration
+        nim:            brandName,  // nim stores brandName until a migration adds brandName column
         passwordHash,
-        role:         'owner',
-        isActive:     false,
+        ...(profilePicture ? { profilePicture } : {}),
+        role:           'owner',
+        isActive:       true,       // owner can login immediately after registration
       },
     });
 
-    await logAction(user.id, 'OWNER_REGISTER', { req, result: 'pending_activation' });
+    await logAction(user.id, 'OWNER_REGISTER', { req, result: 'registered_active' });
 
     return res.status(201).json({
       success:  true,
       userId:   user.id,
-      message:  'Registration received. We will contact you shortly to activate your account.',
+      message:  'Registration successful! You can now sign in with your email and password.',
     });
   } catch (err) { next(err); }
 });
