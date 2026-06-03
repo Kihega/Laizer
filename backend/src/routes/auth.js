@@ -45,6 +45,8 @@ const RegisterSchema = z.object({
   phone:     z.string().min(7, 'Phone number required')
                .regex(/^[0-9+\s\-()]+$/, 'Invalid phone number format'),
   email:     z.string().email('Valid email required').optional(),
+  password:  z.string().min(8, 'Password must be at least 8 characters'),
+  profilePicture: z.string().optional(),  // local URI — stored only in client for now
 });
 
 router.post('/owner/register/', async (req, res, next) => {
@@ -53,7 +55,7 @@ router.post('/owner/register/', async (req, res, next) => {
     if (!parsed.success)
       return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
 
-    const { fullName, brandName, phone, email } = parsed.data;
+    const { fullName, brandName, phone, email, password } = parsed.data;
 
     // Uniqueness checks
     const phoneUsed = await prisma.user.findUnique({ where: { phone } });
@@ -80,14 +82,18 @@ router.post('/owner/register/', async (req, res, next) => {
       });
 
     // Create owner account — inactive until manually activated by admin
+    const bcrypt      = require('bcryptjs');
+    const passwordHash = await bcrypt.hash(password, 12);
+
     const user = await prisma.user.create({
       data: {
         fullName,
         phone,
         ...(email ? { email } : {}),
-        nim:      brandName,   // temporary: nim stores brandName until migration
-        role:     'owner',
-        isActive: false,
+        nim:          brandName,   // temporary: nim stores brandName until migration
+        passwordHash,
+        role:         'owner',
+        isActive:     false,
       },
     });
 
@@ -232,5 +238,30 @@ router.post('/logout/', async (req, res, next) => {
 router.get('/me/', authenticate, (req, res) =>
   res.json(userProfile(req.user, req.user.centreId))
 );
+
+// ── PATCH /api/auth/change-password/ ────────────────────────────────────────
+// Authenticated endpoint — owner changes their own password.
+router.patch('/change-password/', authenticate, async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword)
+      return res.status(400).json({ error: 'validation_error', detail: 'Both currentPassword and newPassword are required.' });
+    if (newPassword.length < 8)
+      return res.status(400).json({ error: 'validation_error', detail: 'New password must be at least 8 characters.' });
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) return res.status(404).json({ error: 'not_found' });
+
+    const bcrypt = require('bcryptjs');
+    const ok = await bcrypt.compare(currentPassword, user.passwordHash || '');
+    if (!ok)
+      return res.status(401).json({ error: 'invalid_password', detail: 'Current password is incorrect.' });
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({ where: { id: req.user.id }, data: { passwordHash } });
+    await logAction(req.user.id, 'PASSWORD_CHANGED', { req, result: 'success' });
+    return res.json({ success: true, message: 'Password changed successfully.' });
+  } catch (err) { next(err); }
+});
 
 module.exports = router;

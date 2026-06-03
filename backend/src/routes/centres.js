@@ -40,10 +40,8 @@ router.get('/', async (req, res, next) => {
 
 // ── POST /api/centres/ ────────────────────────────────────────────────────────
 const CreateCentreSchema = z.object({
-  centreNo: z.string().min(2).max(20),
-  centreId: z.string().min(2).max(50),
-  name:     z.string().min(2),
-  location: z.string().min(2),
+  name:     z.string().min(2).transform(s => s.trim().toUpperCase()),
+  location: z.string().min(2).transform(s => s.trim().toUpperCase()),
 });
 
 router.post('/', async (req, res, next) => {
@@ -52,7 +50,13 @@ router.post('/', async (req, res, next) => {
     if (!parsed.success)
       return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
 
-    const { centreNo, centreId, name, location } = parsed.data;
+    const { name, location } = parsed.data;
+
+    // Auto-generate STN-XX centreId (scoped per owner)
+    const count    = await prisma.centre.count({ where: { ownerId: req.user.id } });
+    const centreId = `STN-${String(count + 1).padStart(2, '0')}`;
+    const centreNo = centreId;  // keep centreNo in sync for legacy reads
+
     const centre = await prisma.centre.create({
       data: { centreNo, centreId, name, location, ownerId: req.user.id },
     });

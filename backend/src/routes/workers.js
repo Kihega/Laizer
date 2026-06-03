@@ -68,9 +68,9 @@ router.get('/', async (req, res, next) => {
 
 // ── POST /api/workers/ ────────────────────────────────────────────────────────
 const RegisterWorkerSchema = z.object({
-  fullName: z.string().min(2),
-  nim:      z.string().min(2).max(20),
-  phone:    z.string().min(9).max(15),
+  fullName: z.string().min(2).transform(s => s.trim().toUpperCase()),
+  phone:    z.string().min(7).max(20),
+  centreId: z.string().optional(),
 });
 
 router.post('/', async (req, res, next) => {
@@ -79,19 +79,30 @@ router.post('/', async (req, res, next) => {
     if (!parsed.success)
       return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
 
-    const { fullName, nim, phone } = parsed.data;
+    const { fullName, phone, centreId } = parsed.data;
 
-    const exists = await prisma.user.findUnique({ where: { nim } });
+    // Phone uniqueness (workers identified by phone)
+    const exists = await prisma.user.findUnique({ where: { phone } });
     if (exists)
-      return res.status(409).json({ error: 'duplicate', detail: 'A worker with this NIM already exists.' });
+      return res.status(409).json({ error: 'duplicate', detail: 'A worker with this phone number already exists.' });
 
     const worker = await prisma.user.create({
-      data: { fullName, nim, phone, role: 'worker' },
+      data: { fullName, phone, role: 'worker' },
     });
+
+    // If centreId provided, assign immediately
+    if (centreId) {
+      const centre = await ownCentre(centreId, req.user.id);
+      if (centre) {
+        await prisma.workerCentreAssignment.create({
+          data: { workerId: worker.id, centreId: centre.id },
+        });
+      }
+    }
 
     await redis.cacheDel(redis.CacheKey.workers(req.user.id));
     await logAction(req.user.id, logAction.ACTIONS.WORKER_REGISTERED, { req, workerId: worker.id });
-    return res.status(201).json({ id: worker.id, fullName: worker.fullName, nim: worker.nim, phone: worker.phone });
+    return res.status(201).json({ id: worker.id, fullName: worker.fullName, phone: worker.phone });
   } catch (err) { next(err); }
 });
 
