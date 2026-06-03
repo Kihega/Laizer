@@ -11,7 +11,7 @@ import {
 import { Ionicons }        from '@expo/vector-icons';
 import { centreService, getApiError } from '@/services/api';
 import { Card, Button, Input, StatusBadge } from '@/components/ui';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Colors, FontSize, FontWeight, Spacing }         from '@/constants/theme';
 
 export default function CentresScreen() {
   const [centres,    setCentres]    = useState<any[]>([]);

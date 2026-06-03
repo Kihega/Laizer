@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, RefreshControl,
-  ScrollView, StyleSheet, Text, TouchableOpacity, View,
+  StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { Ionicons }        from '@expo/vector-icons';
 import { noticeService, centreService, getApiError } from '@/services/api';
