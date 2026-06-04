@@ -30,14 +30,21 @@ router.get('/daily/', async (req, res, next) => {
     if (!report) {
       const centres = await prisma.centre.findMany({
         where: { ownerId, isActive: true, ...(centreId ? { id: centreId } : {}) },
-        select: { id:true, name:true, centreNo:true },
+        select: { id:true, name:true, centreNo:true, centreId:true },
       });
 
       report = await Promise.all(centres.map(async centre => {
-        const events = await prisma.serviceEvent.findMany({
-          where:  { centreId: centre.id, createdAt: { gte: date, lt: nextDay } },
-          select: { serviceType:true, totalAmountTshs:true },
-        });
+        // Graceful fallback — returns 0 if service_events table is empty
+        // or doesn't exist yet (first deploy before any services are logged).
+        let events = [];
+        try {
+          events = await prisma.serviceEvent.findMany({
+            where:  { centreId: centre.id, createdAt: { gte: date, lt: nextDay } },
+            select: { serviceType:true, totalAmountTshs:true },
+          });
+        } catch (evtErr) {
+          console.error(`[reports/daily] serviceEvent query failed for centre ${centre.id}:`, evtErr.message);
+        }
 
         const totalEvents  = events.length;
         const totalRevenue = events.reduce((s, e) => s + Number(e.totalAmountTshs), 0);
@@ -91,14 +98,19 @@ router.get('/weekly/', async (req, res, next) => {
     if (!report) {
       const centres = await prisma.centre.findMany({
         where:  { ownerId, isActive: true, ...(centreId ? { id: centreId } : {}) },
-        select: { id:true, name:true, centreNo:true },
+        select: { id:true, name:true, centreNo:true, centreId:true },
       });
 
       report = await Promise.all(centres.map(async centre => {
-        const events = await prisma.serviceEvent.findMany({
-          where:  { centreId: centre.id, createdAt: { gte: weekStart, lt: weekEnd } },
-          select: { serviceType:true, totalAmountTshs:true, createdAt:true },
-        });
+        let events = [];
+        try {
+          events = await prisma.serviceEvent.findMany({
+            where:  { centreId: centre.id, createdAt: { gte: weekStart, lt: weekEnd } },
+            select: { serviceType:true, totalAmountTshs:true, createdAt:true },
+          });
+        } catch (evtErr) {
+          console.error(`[reports/weekly] serviceEvent query failed for centre ${centre.id}:`, evtErr.message);
+        }
 
         const totalEvents   = events.length;
         const totalRevenue  = events.reduce((s, e) => s + Number(e.totalAmountTshs), 0);

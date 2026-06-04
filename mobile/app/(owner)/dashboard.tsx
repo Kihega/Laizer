@@ -50,9 +50,16 @@ export default function OwnerDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const [rpt, ctr] = await Promise.all([reportService.daily(), centreService.list()]);
-      setReport(rpt.data); setCentres(ctr.data);
-    } catch (e) { console.error('[Dashboard]', e); }
+      // allSettled keeps centres loading even if reports fail
+      const [rpt, ctr] = await Promise.allSettled([
+        reportService.daily(),
+        centreService.list(),
+      ]);
+      if (rpt.status === 'fulfilled') setReport(rpt.value.data ?? []);
+      else console.error('[Dashboard] reports failed:', (rpt.reason as Error)?.message);
+      if (ctr.status === 'fulfilled') setCentres(ctr.value.data ?? []);
+      else console.error('[Dashboard] centres failed:', (ctr.reason as Error)?.message);
+    } catch (e) { console.error('[Dashboard] unexpected:', e); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
@@ -146,6 +153,14 @@ export default function OwnerDashboard() {
               ))}
             </View>
 
+            {report.length === 0 && centres.length > 0 && (
+              <View style={S.emptyReport}>
+                <Text style={S.emptyReportIcon}>📋</Text>
+                <Text style={[S.emptyReportTxt, { color: tc.textSec }]}>
+                  No services logged today yet.
+                </Text>
+              </View>
+            )}
             {report.length > 0 && (
               <>
                 <Text style={[S.sectionTitle, { color: tc.text }]}>Today by Centre</Text>
@@ -312,6 +327,9 @@ const S = StyleSheet.create({
   actionCard:  { width:'47%', alignItems:'center', paddingVertical:Spacing.base },
   actionIcon:  { marginBottom:Spacing.xs },
   actionLabel: { fontSize:FontSize.sm, fontWeight:FontWeight.semiBold, textAlign:'center' },
+  emptyReport:    { alignItems:'center', paddingVertical:Spacing.xl, marginBottom:Spacing.md },
+  emptyReportIcon:{ fontSize:36, marginBottom:8 },
+  emptyReportTxt: { fontSize:FontSize.sm, textAlign:'center' },
   centreCard:  { marginBottom:Spacing.sm },
   centreRow:   { flexDirection:'row', justifyContent:'space-between', marginBottom:Spacing.xs },
   centreName:  { fontSize:FontSize.base, fontWeight:FontWeight.bold },
