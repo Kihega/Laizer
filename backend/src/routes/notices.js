@@ -56,7 +56,7 @@ router.get('/', async (req, res, next) => {
 // ── POST /api/notices/ ────────────────────────────────────────────────────────
 const SendNoticeSchema = z.object({
   centreId: z.string().uuid(),
-  title:    z.string().min(1).max(100),
+  title:    z.string().max(100).optional(),   // auto-generated if omitted
   body:     z.string().min(1),
   priority: z.enum(['low', 'normal', 'urgent']).default('normal'),
 });
@@ -74,8 +74,10 @@ router.post('/', ownerOnly, async (req, res, next) => {
     if (!centre)
       return res.status(404).json({ error: 'not_found', detail: 'Centre not found.' });
 
+    const body  = parsed.data.body;
+    const title = parsed.data.title ?? (body.length > 60 ? body.substring(0,60)+'…' : body);
     const notice = await prisma.notice.create({
-      data: { ...parsed.data, senderId: req.user.id },
+      data: { ...parsed.data, title, senderId: req.user.id },
     });
 
     // Fire-and-forget push notification to all workers of the centre

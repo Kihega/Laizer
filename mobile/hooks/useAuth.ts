@@ -18,6 +18,7 @@ export function useAuth() {
     try {
       const { data } = await authService.ownerLogin(email.trim(), password);
       await setAuth(data.access, data.refresh, data.user as SmssUser);
+      if (data.centreInfo) useAuthStore.getState().setCentreInfo(data.centreInfo);
       return { success: true, role: data.user.role };
     } catch (err) {
       const resp = (err as any)?.response?.data;

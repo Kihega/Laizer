@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, FlatList, RefreshControl,
+  ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView,
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { Ionicons }        from '@expo/vector-icons';
@@ -83,6 +83,7 @@ export default function NoticesOwnerScreen() {
           </TouchableOpacity>
           {showDrop && (
             <View style={N.dropList}>
+              <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {centres.map(c => (
                 <TouchableOpacity key={c.id} style={[N.dropItem, form.centreId===c.id && N.dropItemActive]}
                   onPress={() => { setForm(p => ({ ...p, centreId: c.id })); setShowDrop(false); }}>
@@ -94,6 +95,7 @@ export default function NoticesOwnerScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
+              </ScrollView>
             </View>
           )}
 
