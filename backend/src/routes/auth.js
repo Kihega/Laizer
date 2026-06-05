@@ -195,7 +195,10 @@ router.post('/worker/login/', async (req, res, next) => {
     const { token: refresh } = jwtLib.signRefresh(worker);
 
     await logAction(worker.id, 'WORKER_LOGIN_SUCCESS', { req, result: 'success', centreId });
-    return res.json({ access, refresh, user: userProfile(worker, centre.id), centreId: centre.id });
+    const owner = await prisma.user.findUnique({ where: { id: centre.ownerId }, select: { nim:true, profilePicture:true } });
+    const centreInfo = { name: centre.name, location: centre.location, centreId: centre.centreId,
+      brandName: owner?.nim ?? 'LAIZER STATIONERY', profilePicture: owner?.profilePicture ?? null };
+    return res.json({ access, refresh, user: userProfile(worker, centre.id), centreInfo });
   } catch (err) { next(err); }
 });
 

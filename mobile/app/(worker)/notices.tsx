@@ -20,7 +20,7 @@ export default function WorkerNoticesScreen() {
   const load = useCallback(async () => {
     try {
       const { data } = await noticeService.list();
-      setNotices(data);
+      setNotices(Array.isArray(data) ? data : []);
     } catch (e) { console.error('[Notices]', getApiError(e)); }
     finally { setLoading(false); setRefresh(false); }
   }, []);

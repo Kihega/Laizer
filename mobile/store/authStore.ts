@@ -1,3 +1,5 @@
+export interface CentreInfo { name:string; location:string; centreId:string; brandName:string; profilePicture:string|null; }
+
 /**
  * SMSS — Auth Store (Zustand + SecureStore)
  */
@@ -21,10 +23,12 @@ interface AuthState {
   accessToken:     string | null;
   refreshToken:    string | null;
   user:            SmssUser | null;
+  centreInfo:      CentreInfo | null;
   isAuthenticated: boolean;
   isLoading:       boolean;
 
   setAuth:        (access: string, refresh: string, user: SmssUser) => Promise<void>;
+  setCentreInfo:  (info: CentreInfo | null) => void;
   setAccessToken: (token: string) => void;
   clearAuth:      () => Promise<void>;
   loadStoredAuth: () => Promise<void>;
@@ -37,7 +41,7 @@ const KEYS = {
 } as const;
 
 export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null, refreshToken: null, user: null,
+  accessToken: null, refreshToken: null, user: null, centreInfo: null,
   isAuthenticated: false, isLoading: true,
 
   setAuth: async (accessToken, refreshToken, user) => {
@@ -47,6 +51,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ accessToken, refreshToken, user, isAuthenticated: true });
   },
 
+  setCentreInfo:  (centreInfo) => set({ centreInfo }),
   setAccessToken: (token) => {
     SecureStore.setItemAsync(KEYS.ACCESS, token);
     set({ accessToken: token });
@@ -58,7 +63,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       SecureStore.deleteItemAsync(KEYS.REFRESH).catch(() => {}),
       SecureStore.deleteItemAsync(KEYS.USER).catch(() => {}),
     ]);
-    set({ accessToken: null, refreshToken: null, user: null, isAuthenticated: false });
+    set({ accessToken: null, refreshToken: null, user: null, centreInfo: null, isAuthenticated: false });
   },
 
   loadStoredAuth: async () => {

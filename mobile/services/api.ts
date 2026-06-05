@@ -100,8 +100,13 @@ apiClient.interceptors.response.use(
 // ── Error message extractor ────────────────────────────────────────────────────
 export function getApiError(err: unknown, fallback = 'Something went wrong.'): string {
   if (axios.isAxiosError(err)) {
-    const d = (err.response?.data as { error?: string; detail?: string });
-    if (d?.detail) return d.detail;
+    const d = (err.response?.data as { error?: string; detail?: unknown });
+    if (d?.detail) {
+      if (typeof d.detail === 'string') return d.detail;
+      const fe = (d.detail as any)?.fieldErrors;
+      if (fe) return Object.entries(fe).map(([k,v]) => `${k}: ${(v as string[]).join(', ')}`).join(' | ');
+      return JSON.stringify(d.detail);
+    }
     if (!err.response) return 'No internet connection.';
     return `Server error ${err.response.status}`;
   }
@@ -128,6 +133,7 @@ export const centreService = {
   create:     (body: object)             => apiClient.post(API_ROUTES.centres, body),
   update:     (id: string, body: object) => apiClient.patch(API_ROUTES.centre(id), body),
   deactivate: (id: string)               => apiClient.delete(API_ROUTES.centre(id)),
+  delete:     (id: string)               => apiClient.delete(API_ROUTES.centre(id)),
 };
 
 // ── Worker service (owner) ─────────────────────────────────────────────────────

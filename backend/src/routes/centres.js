@@ -98,17 +98,23 @@ router.patch('/:id/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ── DELETE /api/centres/:id/ ──────────────────────────────────────────────────
-router.delete('/:id/', async (req, res, next) => {
+// ── DELETE /api/centres/:id/ — hard-delete with cascade ──────────────────────
+router.delete('/:id/', authenticate, ownerOnly, async (req, res, next) => {
   try {
-    const result = await prisma.centre.updateMany({
+    const centre = await prisma.centre.findFirst({
       where: { id: req.params.id, ownerId: req.user.id },
-      data:  { isActive: false },
     });
-    if (!result.count) return res.status(404).json({ error: 'not_found', detail: 'Centre not found.' });
+    if (!centre) return res.status(404).json({ error: 'not_found', detail: 'Centre not found.' });
+
+    await prisma.workerCentreAssignment.deleteMany({ where: { centreId: centre.id } });
+    await prisma.stockItem.deleteMany({ where: { centreId: centre.id } });
+    await prisma.serviceEvent.deleteMany({ where: { centreId: centre.id } });
+    await prisma.notice.deleteMany({ where: { centreId: centre.id } });
+    await prisma.centre.delete({ where: { id: centre.id } });
+
     await redis.cacheDel(redis.CacheKey.centres(req.user.id));
-    await logAction(req.user.id, logAction.ACTIONS.CENTRE_DEACTIVATED, { req, centreId: req.params.id });
-    return res.json({ detail: 'Centre deactivated.' });
+    await logAction(req.user.id, 'CENTRE_DELETED', { req, centreId: centre.id });
+    return res.json({ detail: 'Centre deleted successfully.' });
   } catch (err) { next(err); }
 });
 
