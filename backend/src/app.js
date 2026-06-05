@@ -26,7 +26,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.use(express.json());
+// 5 MB limit — accommodates base64-encoded profile pictures (≤ 1 MB raw)
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(morgan(cfg.isProduction ? 'combined' : 'dev'));
 
 // ── Rate limiting on auth ─────────────────────────────────────────────────────

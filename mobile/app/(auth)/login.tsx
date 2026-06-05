@@ -99,12 +99,36 @@ export default function LoginScreen() {
       : await ImagePicker.launchImageLibraryAsync({ allowsEditing:true, aspect:[1,1], quality:1 });
     if (!result.canceled && result.assets[0]?.uri) {
       try {
-        // Resize to 400×400 and convert to PNG — ensures the image is < 1 MB
-        const compressed = await ImageManipulator.manipulateAsync(
+        // Adaptive compression: starts at 300×300 and halves on each retry
+        // until the base64 payload is under 900 KB (well within 5 MB body limit).
+        const MAX_B64_BYTES = 900_000;  // ~675 KB raw → ~900 KB base64
+        let size    = 300;
+        let quality = 0.85;
+        let compressed = await ImageManipulator.manipulateAsync(
           result.assets[0].uri,
-          [{ resize: { width: 400, height: 400 } }],
-          { compress: 0.9, format: ImageManipulator.SaveFormat.PNG, base64: true },
+          [{ resize: { width: size, height: size } }],
+          { compress: quality, format: ImageManipulator.SaveFormat.PNG, base64: true },
         );
+
+        // Retry with smaller dimensions until it fits
+        let attempts = 0;
+        while (
+          (compressed.base64?.length ?? 0) > MAX_B64_BYTES &&
+          attempts < 4
+        ) {
+          size    = Math.round(size * 0.65);
+          quality = Math.max(0.6, quality - 0.1);
+          compressed = await ImageManipulator.manipulateAsync(
+            result.assets[0].uri,
+            [{ resize: { width: size, height: size } }],
+            { compress: quality, format: ImageManipulator.SaveFormat.PNG, base64: true },
+          );
+          attempts++;
+        }
+
+        const estimatedKB = Math.round((compressed.base64?.length ?? 0) * 0.75 / 1024);
+        console.log(`[Photo] ${size}×${size} px, ~${estimatedKB} KB (attempt ${attempts})`);
+
         setS2(p => ({
           ...p,
           photo:       compressed.uri,
