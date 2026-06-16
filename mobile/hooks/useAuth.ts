@@ -6,7 +6,7 @@ import { authService }              from '@/services/api';
 import { useAuthStore, SmssUser }    from '@/store/authStore';
 
 export interface AuthError { code: string; message: string; }
-interface LoginResult { success: boolean; role?: string; error?: AuthError; }
+interface LoginResult { success: boolean; role?: string; error?: AuthError; notice?: string | null; }
 
 export function useAuth() {
   const { setAuth, clearAuth, refreshToken, user, isAuthenticated } = useAuthStore();
