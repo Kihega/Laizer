@@ -16,28 +16,15 @@ import { Colors, FontSize, FontWeight, Spacing }         from '@/constants/theme
 export default function CentresScreen() {
   const [centres,    setCentres]    = useState<any[]>([]);
   const [loading,    setLoading]    = useState(true);
-  const [loadError,  setLoadError]  = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showForm,   setShowForm]   = useState(false);
   const [saving,     setSaving]     = useState(false);
   const [form, setForm] = useState({ name:'', location:'' });
 
   const load = useCallback(async () => {
-    setLoadError(null);
-    const timer = setTimeout(() => {
-      setLoading(false); setRefreshing(false);
-      setLoadError('Server is taking too long.\nTap Retry to try again.');
-    }, 12000);
-    try {
-      const { data } = await centreService.list();
-      clearTimeout(timer);
-      setCentres(data);
-    } catch (e: unknown) {
-      clearTimeout(timer);
-      const msg = getApiError(e);
-      setLoadError(msg);
-      console.error('[Centres] load:', (e as any)?.response?.data ?? msg);
-    } finally { setLoading(false); setRefreshing(false); }
+    try { const { data } = await centreService.list(); setCentres(data); }
+    catch (e) { Alert.alert('Error', getApiError(e)); }
+    finally { setLoading(false); setRefreshing(false); }
   }, []);
 
   useEffect(() => { load(); }, []);
@@ -104,20 +91,7 @@ export default function CentresScreen() {
         </Card>
       )}
 
-      {loading ? (
-        <ActivityIndicator style={S.loader} color={Colors.primary} />
-      ) : loadError ? (
-        <View style={{ alignItems:'center', padding:32 }}>
-          <Ionicons name="cloud-offline-outline" size={36} color={Colors.textDisabled} />
-          <Text style={{ color:Colors.textSecondary, textAlign:'center', marginTop:10,
-                         fontSize:FontSize.sm, lineHeight:20 }}>{loadError}</Text>
-          <TouchableOpacity onPress={() => { setLoading(true); load(); }}
-            style={{ marginTop:14, paddingVertical:8, paddingHorizontal:22,
-                     borderRadius:8, borderWidth:1.5, borderColor:Colors.primary }}>
-            <Text style={{ color:Colors.primary, fontWeight:FontWeight.bold }}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
+      {loading ? <ActivityIndicator style={S.loader} color={Colors.primary} /> : (
         <FlatList
           data={centres}
           keyExtractor={i => i.id}

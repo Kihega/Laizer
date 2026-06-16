@@ -35,6 +35,7 @@ export default function OwnerDashboard() {
   const [report,     setReport]    = useState<any[]>([]);
   const [centres,    setCentres]   = useState<any[]>([]);
   const [loading,    setLoading]   = useState(true);
+  const [loadError,  setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing]= useState(false);
 
   // Sidebar
@@ -49,18 +50,35 @@ export default function OwnerDashboard() {
   const [pwBusy, setPwBusy] = useState(false);
 
   const load = useCallback(async () => {
+    setLoadError(null);
+    const timer = setTimeout(() => {
+      setLoading(false); setRefreshing(false);
+      setLoadError('Server is taking too long.\nTap Retry to try again.');
+    }, 12000);
     try {
-      // allSettled keeps centres loading even if reports fail
       const [rpt, ctr] = await Promise.allSettled([
         reportService.daily(),
         centreService.list(),
       ]);
+      clearTimeout(timer);
       if (rpt.status === 'fulfilled') setReport(rpt.value.data ?? []);
-      else console.error('[Dashboard] reports failed:', (rpt.reason as Error)?.message);
+      else {
+        const e = rpt.reason as any;
+        console.error('[Dashboard] reports:', e?.response?.data ?? e?.message);
+      }
       if (ctr.status === 'fulfilled') setCentres(ctr.value.data ?? []);
-      else console.error('[Dashboard] centres failed:', (ctr.reason as Error)?.message);
-    } catch (e) { console.error('[Dashboard] unexpected:', e); }
-    finally { setLoading(false); setRefreshing(false); }
+      else {
+        const e = ctr.reason as any;
+        const msg = e?.response?.data?.detail ?? e?.message ?? 'Unknown error';
+        console.error('[Dashboard] centres:', e?.response?.data ?? msg);
+        setLoadError(`Could not load: ${msg}`);
+      }
+    } catch (e: unknown) {
+      clearTimeout(timer);
+      const msg = (e as any)?.response?.data?.detail ?? (e as Error)?.message ?? 'Unexpected error';
+      setLoadError(`Error: ${msg}`);
+      console.error('[Dashboard] unexpected:', e);
+    } finally { setLoading(false); setRefreshing(false); }
   }, []);
 
   useEffect(() => { load(); }, []);
@@ -135,7 +153,20 @@ export default function OwnerDashboard() {
       <ScrollView style={S.body}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
         showsVerticalScrollIndicator={false}>
-        {loading ? <ActivityIndicator style={S.loader} color={Colors.primary} size="large" /> : (
+        {loading ? (
+          <ActivityIndicator style={S.loader} color={Colors.primary} size="large" />
+        ) : loadError ? (
+          <View style={{ alignItems:'center', marginTop:40, paddingHorizontal:24 }}>
+            <Ionicons name="cloud-offline-outline" size={40} color={Colors.primary} style={{ opacity:0.5 }} />
+            <Text style={{ color:Colors.textSecondary, textAlign:'center', marginTop:12,
+                           fontSize:FontSize.sm, lineHeight:20 }}>{loadError}</Text>
+            <TouchableOpacity onPress={() => { setLoading(true); load(); }}
+              style={{ marginTop:16, paddingVertical:8, paddingHorizontal:24,
+                       borderRadius:8, borderWidth:1.5, borderColor:Colors.primary }}>
+              <Text style={{ color:Colors.primary, fontWeight:FontWeight.bold }}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
           <>
             <Text style={[S.sectionTitle, { color: tc.text }]}>Quick Actions</Text>
             <View style={S.actions}>

@@ -179,53 +179,14 @@ router.post('/worker/login/', async (req, res, next) => {
       orderBy: { assignedAt: 'asc' },
     });
 
-    // ── No assigned worker: allow anonymous branch access ──────────────────
-    // The centre exists and is active but has no workers yet.
-    // We issue a short-lived token for the branch itself so the worker
-    // dashboard can load (stock, services, notices are branch-scoped, not
-    // worker-scoped).  The pseudo-user carries role='worker' so routing works.
     if (!assignment || !assignment.worker.isActive) {
-      await logAction(null, 'WORKER_LOGIN_BRANCH_GUEST', { req, result: 'no_workers_branch_guest', centreId });
-
-      // Build a transient guest identity from the centre record
-      const owner = await prisma.user.findUnique({
-        where: { id: centre.ownerId },
-        select: { nim: true, profilePicture: true },
-      });
-
-      const guestUser = {
-        id:             `guest-${centre.id}`,
-        fullName:       centre.name,
-        email:          null,
-        phone:          null,
-        nim:            null,
-        profilePicture: owner?.profilePicture ?? null,
-        role:           'worker',
-        isActive:       true,
-        lastLogin:      null,
-        centreId:       centre.id,
-      };
-
-      const access             = jwtLib.signAccess({ ...guestUser, centreId: centre.id });
-      const { token: refresh } = jwtLib.signRefresh({ id: guestUser.id });
-
-      const centreInfo = {
-        name:           centre.name,
-        location:       centre.location,
-        centreId:       centre.centreId,
-        brandName:      owner?.nim ?? 'LAIZER STATIONERY',
-        profilePicture: owner?.profilePicture ?? null,
-      };
-
-      return res.json({
-        access,
-        refresh,
-        user: guestUser,
-        centreInfo,
-        notice: 'No workers assigned to this centre yet. You have read-only branch access.',
+      await logAction(null, 'WORKER_LOGIN_FAILURE', { req, result: 'no_workers', centreId });
+      return res.status(401).json({
+        error: 'no_workers_assigned',
+        detail: 'No active workers assigned to this centre. Contact the owner.',
       });
     }
-    // ── Regular assigned-worker path ─────────────────────────────────────
+
     const worker = assignment.worker;
     await prisma.user.update({ where: { id: worker.id }, data: { lastLogin: new Date() } });
     await redis.cacheDel(redis.CacheKey.user(worker.id));

@@ -60,20 +60,14 @@ export default function LoginScreen() {
 
   const switchMode = (m: LoginMode) => { setMode(m); clearError(); };
 
-  const [notice, setNotice] = useState<string | null>(null);
-
   const handleLogin = async () => {
     clearError();
-    setNotice(null);
     if (mode === 'owner') {
       if (!email.trim() || !password.trim()) return;
       await ownerLogin(email, password);
     } else {
       if (!centreId.trim()) return;
-      // workerLogin returns the raw result; the backend may include a `notice`
-      // field when authorising a branch that has no assigned workers yet.
-      const result = await workerLogin(centreId.toUpperCase());
-      if (result?.notice) setNotice(result.notice as string);
+      await workerLogin(centreId.toUpperCase());
     }
   };
 
@@ -210,11 +204,6 @@ export default function LoginScreen() {
             </View>
 
             {error && <View style={L.errBanner}><Text style={L.errTxt}>⚠️  {error.message}</Text></View>}
-            {notice && (
-              <View style={[L.errBanner, { borderLeftColor: '#D97706', backgroundColor: '#FEF3C7' }]}>
-                <Text style={[L.errTxt, { color: '#92400E' }]}>ℹ️  {notice}</Text>
-              </View>
-            )}
 
             {mode==='owner' ? (
               <>

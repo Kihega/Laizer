@@ -26,7 +26,6 @@ interface AuthState {
   centreInfo:      CentreInfo | null;
   isAuthenticated: boolean;
   isLoading:       boolean;
-  loadingStatus:   string;   // human-readable status for the splash screen
 
   setAuth:        (access: string, refresh: string, user: SmssUser) => Promise<void>;
   setCentreInfo:  (info: CentreInfo | null) => void;
@@ -43,7 +42,7 @@ const KEYS = {
 
 export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null, refreshToken: null, user: null, centreInfo: null,
-  isAuthenticated: false, isLoading: true, loadingStatus: 'Starting up…',
+  isAuthenticated: false, isLoading: true,
 
   setAuth: async (accessToken, refreshToken, user) => {
     await SecureStore.setItemAsync(KEYS.ACCESS,  accessToken);
@@ -68,15 +67,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   loadStoredAuth: async () => {
-    set({ isLoading: true, loadingStatus: 'Loading stored session…' });
-    // Hard 8-second timeout — prevents permanent spinner on network/SecureStore hang
-    const timeout = new Promise<void>(resolve =>
-      setTimeout(() => {
-        set({ isLoading: false, loadingStatus: 'Timed out. Please retry.' });
-        resolve();
-      }, 8000)
-    );
-    const load = (async () => {
+    set({ isLoading: true });
     try {
       const [access, refresh, userJson] = await Promise.all([
         SecureStore.getItemAsync(KEYS.ACCESS),
@@ -115,15 +106,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       } else {
         set({
           accessToken: access, refreshToken: refresh,
-          user: JSON.parse(userJson), isAuthenticated: true,
-          isLoading: false, loadingStatus: 'Session restored.',
+          user: JSON.parse(userJson), isAuthenticated: true, isLoading: false,
         });
       }
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Unknown error';
-      set({ isLoading: false, loadingStatus: `Error: ${msg}` });
+    } catch {
+      set({ isLoading: false });
     }
-    })(); // end load IIFE
-    await Promise.race([load, timeout]);
   },
 }));
