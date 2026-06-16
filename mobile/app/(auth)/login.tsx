@@ -73,7 +73,6 @@ export default function LoginScreen() {
       // workerLogin returns the raw result; the backend may include a `notice`
       // field when authorising a branch that has no assigned workers yet.
       const result = await workerLogin(centreId.toUpperCase());
-      // @ts-ignore — `notice` is an extra field on the success response
       if (result?.notice) setNotice(result.notice as string);
     }
   };
