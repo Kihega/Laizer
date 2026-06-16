@@ -4,7 +4,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Image, RefreshControl, ScrollView,
+  Image, RefreshControl, ScrollView,
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import type { ComponentProps } from 'react';
@@ -23,13 +23,13 @@ export let globalUnreadCount = 0;
 export function setGlobalUnreadCount(n: number) { globalUnreadCount = n; }
 
 export default function WorkerDashboard() {
-  const { user, centreInfo } = useAuthStore() as any;
+  const { user: _user, centreInfo } = useAuthStore() as any;
   const { logout }           = useAuth();
   const router               = useRouter();
   const [events,     setEvents]     = useState<any[]>([]);
   const [stockLow,   setStockLow]   = useState<any[]>([]);
   const [unreadCnt,  setUnreadCnt]  = useState(0);
-  const [loading,    setLoading]    = useState(true);
+  const [_loading,   setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
