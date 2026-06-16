@@ -52,35 +52,14 @@ router.post('/', async (req, res, next) => {
 
     const { name, location } = parsed.data;
 
-    // Auto-generate STN-XX — scan for next FREE slot (gap-safe after deletes)
-    const count = await prisma.centre.count({ where: { ownerId: req.user.id } });
-    let seq = count + 1;
-    let centreId;
-    for (let i = 0; i < 100; i++) {
-      const candidate = `STN-${String(seq).padStart(2, '0')}`;
-      const exists    = await prisma.centre.findUnique({ where: { centreId: candidate } });
-      if (!exists) { centreId = candidate; break; }
-      seq++;
-    }
-    if (!centreId)
-      return res.status(500).json({ error: 'id_exhausted', detail: 'Could not generate a unique Centre ID.' });
+    // Auto-generate STN-XX centreId (scoped per owner)
+    const count    = await prisma.centre.count({ where: { ownerId: req.user.id } });
+    const centreId = `STN-${String(count + 1).padStart(2, '0')}`;
+    const centreNo = centreId;  // keep centreNo in sync for legacy reads
 
-    const centreNo = centreId;
-    console.log(`[Centres] Creating: ${JSON.stringify({ centreId, name, location, owner: req.user.id })}`);
-
-    let centre;
-    try {
-      centre = await prisma.centre.create({
-        data: { centreNo, centreId, name, location, ownerId: req.user.id },
-      });
-      console.log(`[Centres] Created OK: ${centre.id} (${centreId})`);
-    } catch (dbErr) {
-      console.error('[Centres] DB error:', dbErr?.message ?? dbErr);
-      return res.status(500).json({
-        error: 'db_error',
-        detail: `Database error: ${dbErr?.message ?? 'Unknown DB error'}`,
-      });
-    }
+    const centre = await prisma.centre.create({
+      data: { centreNo, centreId, name, location, ownerId: req.user.id },
+    });
 
     await redis.cacheDel(redis.CacheKey.centres(req.user.id));
     await logAction(req.user.id, logAction.ACTIONS.CENTRE_CREATED, { req, centreId: centre.id });

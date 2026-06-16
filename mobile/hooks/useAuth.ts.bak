@@ -21,22 +21,8 @@ export function useAuth() {
       if (data.centreInfo) useAuthStore.getState().setCentreInfo(data.centreInfo);
       return { success: true, role: data.user.role };
     } catch (err) {
-      const anyErr  = err as any;
-      const resp    = anyErr?.response?.data;
-      const status  = anyErr?.response?.status;
-      const rawDetail = typeof resp?.detail === 'string'
-        ? resp.detail
-        : resp?.detail
-          ? JSON.stringify(resp.detail)
-          : null;
-      const message = rawDetail
-        ? (status ? `[${status}] ${rawDetail}` : rawDetail)
-        : anyErr?.message === 'Network Error'
-          ? 'Cannot reach the server. Check your internet connection.'
-          : status
-            ? `Server error (${status}). Please try again.`
-            : 'Could not connect to server.';
-      const e: AuthError = { code: resp?.error ?? 'network_error', message };
+      const resp = (err as any)?.response?.data;
+      const e: AuthError = { code: resp?.error ?? 'network_error', message: resp?.detail ?? 'Could not connect to server.' };
       setError(e);
       return { success: false, error: e };
     } finally { setIsLoading(false); }
@@ -47,25 +33,10 @@ export function useAuth() {
     try {
       const { data } = await authService.workerLogin(centreId.trim());
       await setAuth(data.access, data.refresh, data.user as SmssUser);
-      if (data.centreInfo) useAuthStore.getState().setCentreInfo(data.centreInfo);
-      return { success: true, role: data.user.role, notice: data.notice ?? null };
+      return { success: true, role: data.user.role };
     } catch (err) {
-      const anyErr  = err as any;
-      const resp    = anyErr?.response?.data;
-      const status  = anyErr?.response?.status;
-      const rawDetail = typeof resp?.detail === 'string'
-        ? resp.detail
-        : resp?.detail
-          ? JSON.stringify(resp.detail)
-          : null;
-      const message = rawDetail
-        ? (status ? `[${status}] ${rawDetail}` : rawDetail)
-        : anyErr?.message === 'Network Error'
-          ? 'Cannot reach the server. Check your internet connection.'
-          : status
-            ? `Server error (${status}). Please try again.`
-            : 'Could not connect to server.';
-      const e: AuthError = { code: resp?.error ?? 'network_error', message };
+      const resp = (err as any)?.response?.data;
+      const e: AuthError = { code: resp?.error ?? 'network_error', message: resp?.detail ?? 'Could not connect to server.' };
       setError(e);
       return { success: false, error: e };
     } finally { setIsLoading(false); }
