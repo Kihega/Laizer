@@ -19,10 +19,8 @@ router.use(authenticate);
 router.get('/', async (req, res, next) => {
   try {
     if (req.user.role === 'worker') {
-      const nowFilter = new Date();
       const notices = await prisma.notice.findMany({
-        where:   { centreId: req.user.centreId,
-                   OR: [{ expiresAt: null }, { expiresAt: { gt: nowFilter } }] },
+        where:   { centreId: req.user.centreId },
         orderBy: { createdAt: 'desc' },
         include: {
           sender: { select: { id:true, fullName:true } },
@@ -42,10 +40,8 @@ router.get('/', async (req, res, next) => {
         where:  { ownerId: req.user.id, isActive: true, ...(centreId ? { id: centreId } : {}) },
         select: { id: true },
       });
-      const nowFilter2 = new Date();
       const notices = await prisma.notice.findMany({
-        where:   { centreId: { in: centres.map(c => c.id) },
-                   OR: [{ expiresAt: null }, { expiresAt: { gt: nowFilter2 } }] },
+        where:   { centreId: { in: centres.map(c => c.id) } },
         orderBy: { createdAt: 'desc' },
         include: {
           centre: { select: { id:true, name:true, centreNo:true } },
@@ -60,9 +56,9 @@ router.get('/', async (req, res, next) => {
 // ── POST /api/notices/ ────────────────────────────────────────────────────────
 const SendNoticeSchema = z.object({
   centreId: z.string().uuid(),
-  title:    z.string().max(100).optional(),
-  body:     z.string().min(1).max(2000),
-  priority: z.enum(['low', 'normal', 'urgent']).default('normal').optional(),
+  title:    z.string().max(100).optional(),   // auto-generated if omitted
+  body:     z.string().min(1),
+  priority: z.enum(['low', 'normal', 'urgent']).default('normal'),
 });
 
 router.post('/', ownerOnly, async (req, res, next) => {
@@ -80,17 +76,8 @@ router.post('/', ownerOnly, async (req, res, next) => {
 
     const body  = parsed.data.body;
     const title = parsed.data.title ?? (body.length > 60 ? body.substring(0,60)+'…' : body);
-    // Notices expire automatically after 48 hours
-    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
     const notice = await prisma.notice.create({
-      data: {
-        centreId: parsed.data.centreId,
-        body:     parsed.data.body,
-        priority: parsed.data.priority ?? 'normal',
-        title,
-        senderId: req.user.id,
-        expiresAt,
-      },
+      data: { ...parsed.data, title, senderId: req.user.id },
     });
 
     // Fire-and-forget push notification to all workers of the centre
