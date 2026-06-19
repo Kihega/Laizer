@@ -13,6 +13,7 @@ import { noticeService, centreService, getApiError } from '@/services/api';
 import { Card, Button, Input, StatusBadge } from '@/components/ui';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 
+const PRIORITIES = ['normal', 'urgent', 'low'] as const;
 const MAX_WORDS = 100;
 
 function wordCount(txt: string) {
@@ -27,7 +28,7 @@ export default function NoticesOwnerScreen() {
   const [showForm,   setShowForm]   = useState(false);
   const [saving,     setSaving]     = useState(false);
   const [showDrop,   setShowDrop]   = useState(false);
-  const [form, setForm] = useState({ centreId:'', body:'' });
+  const [form, setForm] = useState({ centreId:'', body:'', priority:'normal' as string });
 
   const load = useCallback(async () => {
     try {
@@ -53,8 +54,8 @@ export default function NoticesOwnerScreen() {
     }
     setSaving(true);
     try {
-      await noticeService.send({ centreId: form.centreId, body: form.body });
-      setShowForm(false); setForm(p => ({ ...p, body:'' }));
+      await noticeService.send({ centreId: form.centreId, body: form.body, priority: form.priority });
+      setShowForm(false); setForm(p => ({ ...p, body:'', priority:'normal' }));
       await load();
     } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setSaving(false); }
@@ -70,9 +71,6 @@ export default function NoticesOwnerScreen() {
       {showForm && (
         <Card style={N.form}>
           <Text style={N.formTitle}>Send Notice to Workers</Text>
-          <Text style={{ fontSize: FontSize.xs, color: Colors.textDisabled, marginBottom: Spacing.sm }}>
-            Notices are automatically removed after 48 hours.
-          </Text>
 
           {/* Centre dropdown */}
           <Text style={N.fieldLabel}>Target Centre <Text style={{ color:Colors.error }}>*</Text></Text>
@@ -113,6 +111,19 @@ export default function NoticesOwnerScreen() {
               onChangeText={t => setForm(p => ({ ...p, body: t }))}
               multiline numberOfLines={4}
               style={[{ height:90, textAlignVertical:'top' }, overLimit && { borderColor:Colors.error }]} />
+          </View>
+
+          {/* Priority */}
+          <Text style={N.fieldLabel}>Priority</Text>
+          <View style={N.pillRow}>
+            {PRIORITIES.map(p => (
+              <TouchableOpacity key={p} style={[N.pill, form.priority===p && N.pillActive]}
+                onPress={() => setForm(f => ({ ...f, priority: p }))}>
+                <Text style={[N.pillTxt, form.priority===p && N.pillTxtActive]}>
+                  {p.charAt(0).toUpperCase()+p.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           <View style={{ flexDirection:'row', gap:Spacing.sm, marginTop:Spacing.sm }}>
