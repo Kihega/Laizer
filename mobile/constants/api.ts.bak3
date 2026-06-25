@@ -47,10 +47,6 @@ export const API_ROUTES = {
   stock:        '/api/stock/',
   stockItem:    (id: string) => `/api/stock/${id}/`,
 
-  // Equipment (office utilities)
-  equipment:     '/api/equipment/',
-  equipmentItem: (id: string) => `/api/equipment/${id}/`,
-
   // Services
   services:     '/api/services/',
   service:      (id: string) => `/api/services/${id}/`,

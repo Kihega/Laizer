@@ -28,7 +28,6 @@ model User {
   sentNotices     Notice[]
   serviceEvents   ServiceEvent[]
   registeredStock StockItem[]
-  registeredEquipment Equipment[]
   assignments     WorkerCentreAssignment[]
 
   @@map("users")
@@ -46,7 +45,6 @@ model Centre {
   updatedAt     DateTime                 @updatedAt @map("updated_at")
   owner         User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   notices       Notice[]
-  equipment     Equipment[]
   serviceEvents ServiceEvent[]
   stockItems    StockItem[]
   assignments   WorkerCentreAssignment[]
@@ -87,30 +85,6 @@ model StockItem {
   @@index([centreId])
   @@map("stock_items")
 }
-
-// ── Equipment ─────────────────────────────────────────────────────────────────
-// Office utilities/tools used to provide services: printers, scanners, laptops,
-// desktops, cameras, etc. Distinct from StockItem (consumables like paper/ink).
-
-model Equipment {
-  id           String             @id @default(uuid())
-  centreId     String             @map("centre_id")
-  registeredBy String?            @map("registered_by")
-  itemName     String             @map("item_name")     // e.g. "Printer", "Scanner"
-  category     String?                                  // e.g. "Printing", "Computing"
-  quantity     Int                @default(1)
-  condition    EquipmentCondition @default(good)
-  notes        String?
-  createdAt    DateTime           @default(now()) @map("created_at")
-  updatedAt    DateTime           @updatedAt        @map("updated_at")
-
-  centre Centre @relation(fields: [centreId],     references: [id], onDelete: Cascade)
-  worker User?  @relation(fields: [registeredBy], references: [id], onDelete: SetNull)
-
-  @@index([centreId])
-  @@map("equipment")
-}
-
 
 model ServiceEvent {
   id               String          @id @default(uuid())
@@ -211,11 +185,4 @@ enum NoticePriority {
   low
   normal
   urgent
-}
-
-enum EquipmentCondition {
-  good
-  fair
-  needs_repair
-  broken
 }
