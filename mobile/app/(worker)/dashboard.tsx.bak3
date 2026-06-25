@@ -95,7 +95,6 @@ export default function WorkerDashboard() {
             { label:'Log Service', icon:'create-outline'    as const, route:'/(worker)/services' },
             { label:'View Stock',  icon:'cube-outline'      as const, route:'/(worker)/stock'    },
             { label:'Notices',     icon:'megaphone-outline' as const, route:'/(worker)/notices'  },
-            { label:'Office Utilities', icon:'hardware-chip-outline' as const, route:'/(worker)/equipment' },
           ].map(a => (
             <Card key={a.route} onPress={() => router.push(a.route as any)} style={WD.actionCard}>
               <Ionicons name={a.icon} size={30} color={Colors.primary} style={{ marginBottom:6 }} />
@@ -149,8 +148,8 @@ const WD = StyleSheet.create({
   statLbl:       { fontSize:9, color:'rgba(255,255,255,0.7)', textAlign:'center', marginTop:1 },
   body:          { flex:1, padding:Spacing.xl },
   sectionTitle:  { fontSize:FontSize.md, fontWeight:FontWeight.bold, color:Colors.textPrimary, marginBottom:Spacing.md, marginTop:Spacing.base },
-  actions:       { flexDirection:'row', flexWrap:'wrap', gap:Spacing.md, marginBottom:Spacing.sm },
-  actionCard:    { flexBasis:'45%', flexGrow:1, alignItems:'center', paddingVertical:Spacing.base },
+  actions:       { flexDirection:'row', gap:Spacing.md, marginBottom:Spacing.sm },
+  actionCard:    { flex:1, alignItems:'center', paddingVertical:Spacing.base },
   actionLabel:   { fontSize:FontSize.sm, fontWeight:FontWeight.semiBold, color:Colors.textPrimary, textAlign:'center' },
   stockCard:     { flexDirection:'row', justifyContent:'space-between', marginBottom:Spacing.xs },
   stockName:     { fontSize:FontSize.sm, fontWeight:FontWeight.semiBold, color:Colors.textPrimary },

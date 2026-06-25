@@ -39,9 +39,9 @@ interface DetailRow {
 }
 
 function DetailCard({
-  visible, row, onClose,
+  visible, row, mode, onClose,
 }: {
-  visible: boolean; row: DetailRow | null; onClose: () => void;
+  visible: boolean; row: DetailRow | null; mode: ReportMode; onClose: () => void;
 }) {
   const slideAnim = useRef(new Animated.Value(600)).current;
 
@@ -292,6 +292,7 @@ export default function ReportsScreen() {
       <DetailCard
         visible={selected !== null}
         row={selected}
+        mode={mode}
         onClose={() => setSelected(null)}
       />
     </View>

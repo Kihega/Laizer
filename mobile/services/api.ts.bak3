@@ -156,15 +156,6 @@ export const stockService = {
   delete: (id: string)               => apiClient.delete(API_ROUTES.stockItem(id)),
 };
 
-// ── Equipment (office utilities) ───────────────────────────────────────────────
-export const equipmentService = {
-  list:   (centreId?: string) =>
-    apiClient.get(API_ROUTES.equipment + (centreId ? `?centreId=${centreId}` : '')),
-  create: (body: object)             => apiClient.post(API_ROUTES.equipment, body),
-  update: (id: string, body: object) => apiClient.patch(API_ROUTES.equipmentItem(id), body),
-  delete: (id: string)               => apiClient.delete(API_ROUTES.equipmentItem(id)),
-};
-
 // ── Service events ─────────────────────────────────────────────────────────────
 export const serviceEventService = {
   list:   (params?: { centreId?: string; date?: string; type?: string }) => {
