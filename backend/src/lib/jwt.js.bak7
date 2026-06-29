@@ -46,19 +46,9 @@ function verify(token) {
 
 /** Blacklist a refresh token jti in DB. */
 async function blacklist(jti, expiresAt) {
-  try {
-    await prisma.blacklistedToken.create({
-      data: { jti, expiresAt: new Date(expiresAt * 1000) },
-    });
-  } catch (err) {
-    // P2002 = unique constraint violation on `jti`. This happens when two
-    // logout/refresh calls race each other (e.g. a double-tap, or a retry
-    // firing while the first request is still in flight): both pass the
-    // isBlacklisted() check before either INSERT lands. The end state is
-    // identical either way — the token IS blacklisted — so this is not a
-    // real error and must not crash the request.
-    if (err.code !== 'P2002') throw err;
-  }
+  await prisma.blacklistedToken.create({
+    data: { jti, expiresAt: new Date(expiresAt * 1000) },
+  });
 }
 
 /** Returns true if jti is blacklisted. */
