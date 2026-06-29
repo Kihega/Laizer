@@ -43,23 +43,16 @@ router.get('/', async (req, res, next) => {
         select: { id: true },
       });
       const nowFilter2 = new Date();
-      try {
-        const notices = await prisma.notice.findMany({
-          where:   { centreId: { in: centres.map(c => c.id) },
-                     OR: [{ expiresAt: null }, { expiresAt: { gt: nowFilter2 } }] },
-          orderBy: { createdAt: 'desc' },
-          include: {
-            centre: { select: { id:true, name:true, centreNo:true } },
-            _count: { select: { reads: true } },
-          },
-        });
-        return res.json(notices);
-      } catch (prismaErr) {
-        // Defensive fallback — never let a notices query error block the
-        // owner's screen; an empty list is recoverable, a 500 is not.
-        console.error('[Notices] owner GET query failed:', prismaErr.message);
-        return res.json([]);
-      }
+      const notices = await prisma.notice.findMany({
+        where:   { centreId: { in: centres.map(c => c.id) },
+                   OR: [{ expiresAt: null }, { expiresAt: { gt: nowFilter2 } }] },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          centre: { select: { id:true, name:true, centreNo:true } },
+          _count: { select: { reads: true } },
+        },
+      });
+      return res.json(notices);
     }
   } catch (err) { next(err); }
 });

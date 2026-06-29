@@ -5,7 +5,7 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, TouchableOpacity
 import { LinearGradient } from 'expo-linear-gradient';
 import { BrandColors, Colors, FontSize, FontWeight, Radius, Spacing, Shadows } from '@/constants/theme';
 
-type Variant = 'primary' | 'secondary' | 'accent' | 'danger' | 'ghost' | 'onHeader';
+type Variant = 'primary' | 'secondary' | 'accent' | 'danger' | 'ghost';
 type Size    = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
@@ -32,9 +32,8 @@ export function Button({ label, variant='primary', size='md', loading=false, dis
   const isGradient = ['primary','accent','danger'].includes(variant);
   const isBordered = variant === 'secondary';
   const isGhost    = variant === 'ghost';
-  const isOnHeader = variant === 'onHeader';
 
-  const textColor = isBordered || isGhost || isOnHeader ? Colors.primary : Colors.textInverse;
+  const textColor = isBordered || isGhost ? Colors.primary : Colors.textInverse;
 
   const containerStyle: ViewStyle = {
     alignSelf: fullWidth ? 'stretch' : 'flex-start',
@@ -42,7 +41,6 @@ export function Button({ label, variant='primary', size='md', loading=false, dis
     opacity: isDisabled ? 0.55 : 1,
     ...(isBordered && { borderWidth:1.5, borderColor: Colors.primary, backgroundColor: Colors.white }),
     ...(isGhost    && { backgroundColor: 'transparent' }),
-    ...(isOnHeader && { backgroundColor: Colors.white }),
     ...(!isGradient && Shadows.sm),
     ...style,
   };
@@ -54,7 +52,6 @@ export function Button({ label, variant='primary', size='md', loading=false, dis
 
   // When a gradient button is loading, always use white so the spinner is
   // visible against the blue/teal/red gradient background.
-  // onHeader buttons are a solid white pill, so the spinner stays primary-blue.
   const spinnerColor = isGradient ? Colors.white : textColor;
   const content = loading ? <ActivityIndicator color={spinnerColor} size="small" /> : (
     <>{icon && <View>{icon}</View>}<Text style={[S.label, { fontSize: sz.fontSize, color: textColor }]}>{label}</Text></>

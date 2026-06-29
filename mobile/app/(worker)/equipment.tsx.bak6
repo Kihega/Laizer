@@ -82,7 +82,7 @@ export default function EquipmentScreen() {
             <Ionicons name="arrow-back" size={22} color={Colors.white} />
           </TouchableOpacity>
           <Text style={ES.title}>Office Utilities</Text>
-          <Button label="+ Add" size="sm" variant="onHeader" onPress={() => setShowForm(v => !v)} />
+          <Button label="+ Add" size="sm" onPress={() => setShowForm(v => !v)} />
         </View>
       </View>
 

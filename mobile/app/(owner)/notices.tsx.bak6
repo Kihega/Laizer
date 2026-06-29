@@ -30,25 +30,12 @@ export default function NoticesOwnerScreen() {
   const [form, setForm] = useState({ centreId:'', body:'' });
 
   const load = useCallback(async () => {
-    // allSettled — a notices-query failure must never prevent the centre
-    // list from loading, or the Send-Notice dropdown ends up permanently empty.
-    const [n, c] = await Promise.allSettled([noticeService.list(), centreService.list()]);
-    if (n.status === 'fulfilled') {
-      setNotices(Array.isArray(n.value.data) ? n.value.data : []);
-    } else {
-      console.error('[OwnerNotices] notices load failed:', getApiError(n.reason));
-      setNotices([]);
-    }
-    if (c.status === 'fulfilled') {
-      const list = Array.isArray(c.value.data) ? c.value.data : [];
-      setCentres(list);
-      if (list.length > 0) setForm(p => (p.centreId ? p : { ...p, centreId: list[0].id }));
-    } else {
-      console.error('[OwnerNotices] centres load failed:', getApiError(c.reason));
-      setCentres([]);
-      Alert.alert('Error', getApiError(c.reason, 'Could not load your centres.'));
-    }
-    setLoading(false); setRefreshing(false);
+    try {
+      const [n, c] = await Promise.all([noticeService.list(), centreService.list()]);
+      setNotices(n.data); setCentres(c.data);
+      if (c.data.length > 0) setForm(p => ({ ...p, centreId: c.data[0].id }));
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
+    finally { setLoading(false); setRefreshing(false); }
   }, []);
 
   useEffect(() => { load(); }, []);
@@ -77,7 +64,7 @@ export default function NoticesOwnerScreen() {
     <View style={N.root}>
       <View style={N.header}>
         <Text style={N.title}>Notices</Text>
-        <Button label="+ Send" size="sm" variant="onHeader" onPress={() => setShowForm(v => !v)} />
+        <Button label="+ Send" size="sm" onPress={() => setShowForm(v => !v)} />
       </View>
 
       {showForm && (
@@ -98,11 +85,6 @@ export default function NoticesOwnerScreen() {
           </TouchableOpacity>
           {showDrop && (
             <View style={N.dropList}>
-              {centres.length === 0 ? (
-                <Text style={{ padding: Spacing.base, color: Colors.textDisabled, fontSize: FontSize.sm }}>
-                  No centres yet — add one from the Centres tab first.
-                </Text>
-              ) : (
               <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {centres.map(c => (
                 <TouchableOpacity key={c.id} style={[N.dropItem, form.centreId===c.id && N.dropItemActive]}
@@ -116,7 +98,6 @@ export default function NoticesOwnerScreen() {
                 </TouchableOpacity>
               ))}
               </ScrollView>
-              )}
             </View>
           )}
 
