@@ -1,14 +1,10 @@
 /**
  * SMSS — API Service
- * __LAIZER_PATCH_V8__
  * Axios instance with:
  * - Bearer token injection
  * - Silent 401 → refresh → retry logic
  * - Logout on unrecoverable 401
- * - Human-readable, classified errors: network_error | timeout |
- *   database_unavailable | database_busy | validation_error | server_error
- * - One automatic retry (with backoff) for idempotent GET requests on
- *   transient network/timeout failures — smooths Render cold starts
+ * - Human-readable error codes
  * - 50s timeout for Render free-tier cold starts
  */
 import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
@@ -46,19 +42,6 @@ apiClient.interceptors.response.use(
 
     if (!error.response) {
       const isTimeout = error.code === 'ECONNABORTED';
-      const isGet     = (orig?.method || '').toLowerCase() === 'get';
-      const retries   = (orig as any)?._retryCount || 0;
-
-      // One quiet retry for idempotent GETs on transient network/timeout
-      // failures (cold starts, flaky Wi-Fi) before surfacing an error.
-      if (isGet && retries < 1 && orig) {
-        (orig as any)._retryCount = retries + 1;
-        const backoffMs = 1200;
-        if (__DEV__) console.log(`[API] retrying ${orig.url} after ${backoffMs}ms (network/timeout)`);
-        await new Promise(r => setTimeout(r, backoffMs));
-        return apiClient(orig);
-      }
-
       return Promise.reject({
         ...error,
         response: {
@@ -115,41 +98,17 @@ apiClient.interceptors.response.use(
 );
 
 // ── Error message extractor ────────────────────────────────────────────────────
-// DB / network / server errors are pre-classified by the backend's
-// errorHandler.js (database_unavailable, database_busy, server_error, …)
-// and by the response interceptor above (network_error, timeout). This
-// turns that `error` code + `detail` payload into one clear sentence so
-// the UI never shows a raw object, [object Object], or a stuck spinner.
-const ERROR_PREFIXES: Record<string, string> = {
-  network_error:         '',
-  timeout:                '',
-  database_unavailable:  'Database error: ',
-  database_busy:         'Database error: ',
-  validation_error:      '',
-  server_error:          'Server error: ',
-  payload_too_large:     '',
-  too_many_requests:     '',
-};
-
 export function getApiError(err: unknown, fallback = 'Something went wrong.'): string {
   if (axios.isAxiosError(err)) {
     const d = (err.response?.data as { error?: string; detail?: unknown });
-    const prefix = d?.error ? (ERROR_PREFIXES[d.error] ?? '') : '';
     if (d?.detail) {
-      if (typeof d.detail === 'string') return `${prefix}${d.detail}`;
+      if (typeof d.detail === 'string') return d.detail;
       const fe = (d.detail as any)?.fieldErrors;
-      if (fe) {
-        const msgs = Object.entries(fe)
-          .filter(([, v]) => Array.isArray(v) && (v as string[]).length)
-          .map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`);
-        if (msgs.length) return msgs.join(' | ');
-      }
-      if (typeof d.detail === 'object') {
-        try { return `${prefix}${JSON.stringify(d.detail)}`; } catch { /* fallthrough */ }
-      }
+      if (fe) return Object.entries(fe).map(([k,v]) => `${k}: ${(v as string[]).join(', ')}`).join(' | ');
+      return JSON.stringify(d.detail);
     }
-    if (!err.response) return 'No internet connection. Check your network and try again.';
-    return `Server error (${err.response.status}). Please try again.`;
+    if (!err.response) return 'No internet connection.';
+    return `Server error ${err.response.status}`;
   }
   return fallback;
 }
