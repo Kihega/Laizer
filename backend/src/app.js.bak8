@@ -6,19 +6,11 @@ const morgan       = require('morgan');
 const rateLimit    = require('express-rate-limit');
 const cfg          = require('./config');
 const errorHandler = require('./middleware/errorHandler');
-// __LAIZER_PATCH_V8__
-// gzip/deflate API responses (lists, reports) when the optional
-// `compression` package is installed. Falls back to a no-op middleware
-// so the server still boots if `npm install compression` hasn't run yet.
-let compression;
-try { compression = require('compression'); }
-catch { compression = () => (_req, _res, next) => next(); }
 
 const app = express();
 
 app.set('trust proxy', 1);
 app.use(helmet());
-app.use(compression());
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 app.use(cors({

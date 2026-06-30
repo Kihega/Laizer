@@ -16,7 +16,7 @@ import { Ionicons }         from '@expo/vector-icons';
 import { useAuth }         from '@/hooks/useAuth';
 import { Button, Input }   from '@/components/ui';
 import { BrandColors, Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
-import { apiClient, getApiError } from '@/services/api'; // __LAIZER_PATCH_V8__
+import { apiClient }       from '@/services/api';
 import { API_ROUTES }      from '@/constants/api';
 
 type LoginMode = 'owner' | 'worker';
@@ -163,11 +163,8 @@ export default function LoginScreen() {
       });
       setRegOk(true);
     } catch (e: unknown) {
-      // getApiError() classifies network / timeout / database / validation /
-      // server errors (set by the axios interceptor and the backend's
-      // errorHandler.js) into one readable sentence instead of leaving the
-      // form stuck on a raw object or an endless spinner.
-      setRegErr(getApiError(e, 'Registration failed. Please try again.'));
+      const err = e as { response?: { data?: { detail?: string } } };
+      setRegErr(err?.response?.data?.detail ?? 'Registration failed. Please try again.');
     } finally { setRegBusy(false); }
   };
 
