@@ -42,10 +42,10 @@ export function useAuth() {
     } finally { setIsLoading(false); }
   }, [setAuth]);
 
-  const workerLogin = useCallback(async (workerId: string, centreId: string): Promise<LoginResult> => { // __LAIZER_PATCH_V9__
+  const workerLogin = useCallback(async (centreId: string): Promise<LoginResult> => {
     setIsLoading(true); setError(null);
     try {
-      const { data } = await authService.workerLogin(workerId.trim(), centreId.trim());
+      const { data } = await authService.workerLogin(centreId.trim());
       await setAuth(data.access, data.refresh, data.user as SmssUser);
       if (data.centreInfo) useAuthStore.getState().setCentreInfo(data.centreInfo);
       return { success: true, role: data.user.role, notice: data.notice ?? null };

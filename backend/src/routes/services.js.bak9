@@ -20,25 +20,6 @@ router.use(authenticate);
 const SERVICE_TYPES = ['photocopy', 'printing', 'lamination', 'scanning', 'designing', 'other'];
 const SUBTYPES      = ['black_and_white', 'colour'];
 
-// __LAIZER_PATCH_V9__
-// Report caches are keyed by EITHER a centreId OR an ownerId (see
-// reports.js — `centreId || ownerId`, used for the owner's "all centres"
-// dashboard view), plus the per-centre detail-card cache. A wildcard
-// pattern-delete busts every variant for the affected date/week in one
-// call, regardless of which id an owner's screen happened to be cached
-// under — this is what makes new services show up on report cards
-// immediately instead of only after the cache TTL expires.
-async function bustReportCaches(centreId, when = new Date()) {
-  const dateStr   = when.toISOString().slice(0, 10);
-  const weekStart = new Date(when);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
-  const weekStartStr = weekStart.toISOString().slice(0, 10);
-
-  await redis.cacheDelPattern(`report:d:*:${dateStr}`);
-  await redis.cacheDelPattern(`report:w:*:${weekStartStr}`);
-  await redis.cacheDelPattern(`report:x:${centreId}:*`);
-}
-
 // ── GET /api/services/ ────────────────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
   try {
@@ -125,7 +106,15 @@ router.post('/', workerOnly, async (req, res, next) => {
     });
 
     await logAction(req.user.id, logAction.ACTIONS.SERVICE_LOGGED, { req, eventId: event.id });
-    await bustReportCaches(event.centreId, new Date(event.createdAt));
+    // Bust report caches for this centre so owner screens reflect the new event immediately.
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const weekStart = (() => { const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1); return d.toISOString().slice(0,10); })();
+    await redis.cacheDel(
+      redis.CacheKey.reportDaily(req.user.centreId, todayStr),
+      redis.CacheKey.reportDaily(event.centreId, todayStr),
+      redis.CacheKey.reportWeekly(req.user.centreId, weekStart),
+      redis.CacheKey.reportWeekly(event.centreId, weekStart),
+    );
     return res.status(201).json(event);
   } catch (err) { next(err); }
 });
@@ -160,7 +149,9 @@ router.patch('/:id/', workerOnly, async (req, res, next) => {
     });
 
     await logAction(req.user.id, logAction.ACTIONS.SERVICE_EDITED, { req, eventId: req.params.id });
-    await bustReportCaches(existing.centreId, new Date(existing.createdAt));
+    const _todayE = new Date().toISOString().slice(0, 10);
+    const _wsE = (() => { const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1); return d.toISOString().slice(0,10); })();
+    await redis.cacheDel(redis.CacheKey.reportDaily(existing.centreId, _todayE), redis.CacheKey.reportWeekly(existing.centreId, _wsE));
     return res.json(updated);
   } catch (err) { next(err); }
 });
@@ -180,7 +171,9 @@ router.delete('/:id/', workerOnly, async (req, res, next) => {
 
     await prisma.serviceEvent.delete({ where: { id: req.params.id } });
     await logAction(req.user.id, logAction.ACTIONS.SERVICE_DELETED, { req, eventId: req.params.id });
-    await bustReportCaches(existing.centreId, new Date(existing.createdAt));
+    const _todayD = new Date().toISOString().slice(0, 10);
+    const _wsD = (() => { const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1); return d.toISOString().slice(0,10); })();
+    await redis.cacheDel(redis.CacheKey.reportDaily(existing.centreId, _todayD), redis.CacheKey.reportWeekly(existing.centreId, _wsD));
     return res.json({ detail: 'Service event deleted.' });
   } catch (err) { next(err); }
 });

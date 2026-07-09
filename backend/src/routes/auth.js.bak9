@@ -148,16 +148,8 @@ router.post('/owner/login/', async (req, res, next) => {
 });
 
 // ── POST /api/auth/worker/login/ ──────────────────────────────────────────────
-// __LAIZER_PATCH_V9__
-// Centre IDs (STN-XX) are only unique WITHIN one owner's account, so a bare
-// Centre ID can no longer safely identify a login on its own once two
-// owners share the same string. `workerId` (the workerCode generated at
-// registration, e.g. "WK-A1B2") is globally unique and is now the primary
-// credential whenever a centre has real workers — Centre ID is only kept
-// as a stand-alone login for a brand-new branch that has no workers yet.
 const WorkerLoginSchema = z.object({
-  workerId: z.string().trim().optional(),
-  centreId: z.string().min(1, 'Centre ID required').trim(),
+  centreId: z.string().min(1, 'Centre ID required'),
 });
 
 router.post('/worker/login/', async (req, res, next) => {
@@ -166,123 +158,86 @@ router.post('/worker/login/', async (req, res, next) => {
     if (!parsed.success)
       return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
 
-    const centreIdInput   = parsed.data.centreId.toUpperCase();
-    const workerCodeInput = parsed.data.workerId ? parsed.data.workerId.toUpperCase() : null;
+    const { centreId } = parsed.data;
 
-    // ── Path A: Worker ID supplied — authenticate the exact worker ──────────
-    // Resolved worker → their own active assignment → that assignment's
-    // centre. The Centre ID typed in is only used to CONFIRM the worker is
-    // logging into the branch they think they are — it never does the
-    // lookup by itself, so two owners' identical Centre IDs can't collide.
-    if (workerCodeInput) {
-      const worker = await prisma.user.findUnique({ where: { workerCode: workerCodeInput } });
-      if (!worker || worker.role !== 'worker' || !worker.isActive) {
-        await logAction(null, 'WORKER_LOGIN_FAILURE', { req, result: 'worker_id_not_found', workerCode: workerCodeInput });
-        return res.status(401).json({ error: 'invalid_worker_id', detail: 'Worker ID not found. Check with your employer.' });
-      }
-
-      const assignment = await prisma.workerCentreAssignment.findFirst({
-        where:   { workerId: worker.id, isActive: true },
-        include: { centre: true },
-        orderBy: { assignedAt: 'desc' },
+    // Verify centre exists and is active
+    const centre = await prisma.centre.findUnique({ where: { centreId } });
+    if (!centre || !centre.isActive) {
+      await logAction(null, 'WORKER_LOGIN_FAILURE', { req, result: 'centre_not_found', centreId });
+      return res.status(401).json({
+        error: 'invalid_centre_id',
+        detail: 'Centre ID not found. Check with your employer.',
       });
-
-      if (!assignment || !assignment.centre.isActive) {
-        await logAction(worker.id, 'WORKER_LOGIN_FAILURE', { req, result: 'no_active_assignment' });
-        return res.status(401).json({ error: 'not_assigned', detail: 'This worker is not currently assigned to any centre.' });
-      }
-
-      if (assignment.centre.centreId.toUpperCase() !== centreIdInput) {
-        await logAction(worker.id, 'WORKER_LOGIN_FAILURE', { req, result: 'centre_mismatch', centreId: centreIdInput });
-        return res.status(401).json({ error: 'centre_mismatch', detail: 'This Worker ID is not registered to that Centre ID.' });
-      }
-
-      const centre = assignment.centre;
-      await prisma.user.update({ where: { id: worker.id }, data: { lastLogin: new Date() } });
-      await redis.cacheDel(redis.CacheKey.user(worker.id));
-
-      const access             = jwtLib.signAccess({ ...worker, centreId: centre.id });
-      const { token: refresh } = jwtLib.signRefresh(worker);
-
-      await logAction(worker.id, 'WORKER_LOGIN_SUCCESS', { req, result: 'success', centreId: centre.centreId });
-      const owner = await prisma.user.findUnique({ where: { id: centre.ownerId }, select: { nim:true, profilePicture:true } });
-      const centreInfo = { name: centre.name, location: centre.location, centreId: centre.centreId,
-        brandName: owner?.nim ?? 'LAIZER STATIONERY', profilePicture: owner?.profilePicture ?? null };
-      return res.json({ access, refresh, user: userProfile(worker, centre.id), centreInfo });
     }
 
-    // ── Path B: Centre ID only — guest/branch access ─────────────────────────
-    // Only allowed when the Centre ID unambiguously identifies a single
-    // active centre AND that centre has no worker assigned yet. Any
-    // ambiguity (Centre ID shared across owners, or a centre that already
-    // has real workers) forces the person to also enter a Worker ID.
-    const candidateCentres = await prisma.centre.findMany({ where: { centreId: centreIdInput, isActive: true } });
-
-    if (candidateCentres.length === 0) {
-      await logAction(null, 'WORKER_LOGIN_FAILURE', { req, result: 'centre_not_found', centreId: centreIdInput });
-      return res.status(401).json({ error: 'invalid_centre_id', detail: 'Centre ID not found. Check with your employer.' });
-    }
-
-    if (candidateCentres.length > 1) {
-      await logAction(null, 'WORKER_LOGIN_FAILURE', { req, result: 'ambiguous_centre_id', centreId: centreIdInput });
-      return res.status(401).json({ error: 'worker_id_required', detail: 'Multiple branches share this Centre ID. Enter your Worker ID to continue.' });
-    }
-
-    const centre = candidateCentres[0];
+    // Find an active worker assigned to this centre
+    // For MVP: if multiple workers share a login, we return the first active one.
+    // In production, each worker would have their own pin or NIM + centreId combo.
     const assignment = await prisma.workerCentreAssignment.findFirst({
       where:   { centreId: centre.id, isActive: true },
       include: { worker: true },
       orderBy: { assignedAt: 'asc' },
     });
 
-    if (assignment && assignment.worker.isActive) {
-      await logAction(null, 'WORKER_LOGIN_FAILURE', { req, result: 'worker_id_required', centreId: centreIdInput });
-      return res.status(401).json({ error: 'worker_id_required', detail: 'This centre has registered workers. Enter your Worker ID to continue.' });
-    }
-
     // ── No assigned worker: allow anonymous branch access ──────────────────
-    // The centre exists, is active, its Centre ID is unambiguous, and it
-    // has no workers yet. We issue a short-lived token for the branch
-    // itself so the worker dashboard can load (stock, services, notices
-    // are branch-scoped, not worker-scoped).
-    await logAction(null, 'WORKER_LOGIN_BRANCH_GUEST', { req, result: 'no_workers_branch_guest', centreId: centreIdInput });
+    // The centre exists and is active but has no workers yet.
+    // We issue a short-lived token for the branch itself so the worker
+    // dashboard can load (stock, services, notices are branch-scoped, not
+    // worker-scoped).  The pseudo-user carries role='worker' so routing works.
+    if (!assignment || !assignment.worker.isActive) {
+      await logAction(null, 'WORKER_LOGIN_BRANCH_GUEST', { req, result: 'no_workers_branch_guest', centreId });
 
-    const owner = await prisma.user.findUnique({
-      where: { id: centre.ownerId },
-      select: { nim: true, profilePicture: true },
-    });
+      // Build a transient guest identity from the centre record
+      const owner = await prisma.user.findUnique({
+        where: { id: centre.ownerId },
+        select: { nim: true, profilePicture: true },
+      });
 
-    const guestUser = {
-      id:             `guest-${centre.id}`,
-      fullName:       centre.name,
-      email:          null,
-      phone:          null,
-      nim:            null,
-      profilePicture: owner?.profilePicture ?? null,
-      role:           'worker',
-      isActive:       true,
-      lastLogin:      null,
-      centreId:       centre.id,
-    };
+      const guestUser = {
+        id:             `guest-${centre.id}`,
+        fullName:       centre.name,
+        email:          null,
+        phone:          null,
+        nim:            null,
+        profilePicture: owner?.profilePicture ?? null,
+        role:           'worker',
+        isActive:       true,
+        lastLogin:      null,
+        centreId:       centre.id,
+      };
 
-    const access             = jwtLib.signAccess({ ...guestUser, centreId: centre.id });
-    const { token: refresh } = jwtLib.signRefresh({ id: guestUser.id });
+      const access             = jwtLib.signAccess({ ...guestUser, centreId: centre.id });
+      const { token: refresh } = jwtLib.signRefresh({ id: guestUser.id });
 
-    const centreInfo = {
-      name:           centre.name,
-      location:       centre.location,
-      centreId:       centre.centreId,
-      brandName:      owner?.nim ?? 'LAIZER STATIONERY',
-      profilePicture: owner?.profilePicture ?? null,
-    };
+      const centreInfo = {
+        name:           centre.name,
+        location:       centre.location,
+        centreId:       centre.centreId,
+        brandName:      owner?.nim ?? 'LAIZER STATIONERY',
+        profilePicture: owner?.profilePicture ?? null,
+      };
 
-    return res.json({
-      access,
-      refresh,
-      user: guestUser,
-      centreInfo,
-      notice: 'No workers assigned to this centre yet. You have read-only branch access.',
-    });
+      return res.json({
+        access,
+        refresh,
+        user: guestUser,
+        centreInfo,
+        notice: 'No workers assigned to this centre yet. You have read-only branch access.',
+      });
+    }
+    // ── Regular assigned-worker path ─────────────────────────────────────
+    const worker = assignment.worker;
+    await prisma.user.update({ where: { id: worker.id }, data: { lastLogin: new Date() } });
+    await redis.cacheDel(redis.CacheKey.user(worker.id));
+
+    const access             = jwtLib.signAccess({ ...worker, centreId: centre.id });
+    const { token: refresh } = jwtLib.signRefresh(worker);
+
+    await logAction(worker.id, 'WORKER_LOGIN_SUCCESS', { req, result: 'success', centreId });
+    const owner = await prisma.user.findUnique({ where: { id: centre.ownerId }, select: { nim:true, profilePicture:true } });
+    const centreInfo = { name: centre.name, location: centre.location, centreId: centre.centreId,
+      brandName: owner?.nim ?? 'LAIZER STATIONERY', profilePicture: owner?.profilePicture ?? null };
+    return res.json({ access, refresh, user: userProfile(worker, centre.id), centreInfo });
   } catch (err) { next(err); }
 });
 

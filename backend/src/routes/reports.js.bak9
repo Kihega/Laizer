@@ -176,14 +176,6 @@ router.get('/detail/', async (req, res, next) => {
       label = dateStr;
     }
 
-    // __LAIZER_PATCH_V9__ — serve from cache if a service/stock mutation hasn't
-    // invalidated it since the last identical request (see services.js
-    // bustReportCaches()). Speeds up repeated card opens without risking
-    // staleness, since any mutation busts this exact key immediately.
-    const cacheKey = redis.CacheKey.reportDetail(centre.id, mode, label);
-    const cached   = await redis.cacheGet(cacheKey);
-    if (cached) return res.json(cached);
-
     // Service events in range
     let events = [];
     try {
@@ -217,7 +209,7 @@ router.get('/detail/', async (req, res, next) => {
       byType[e.serviceType] = (byType[e.serviceType] || 0) + 1;
     }
 
-    const payload = {
+    return res.json({
       centre,
       label,
       mode,
@@ -228,9 +220,7 @@ router.get('/detail/', async (req, res, next) => {
       byServiceType:   byType,
       events,
       stock,
-    };
-    await redis.cacheSet(cacheKey, payload, redis.CacheTTL.REPORT_DETAIL);
-    return res.json(payload);
+    });
   } catch (err) { next(err); }
 });
 
