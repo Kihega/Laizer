@@ -79,14 +79,13 @@ router.get('/weekly/', async (req, res, next) => {
     const ownerId     = req.user.id;
     const centreId    = req.query.centreId;
 
-    // __LAIZER_PATCH_V10__ — weekStart defaults to the most recent Sunday
-    // 00:00, so weekly report cards reset every Sunday.
+    // weekStart defaults to the most recent Monday
     let weekStart;
     if (req.query.weekStart) {
       weekStart = new Date(req.query.weekStart);
     } else {
       weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Monday
     }
     weekStart.setHours(0, 0, 0, 0);
     const weekEnd = new Date(weekStart);

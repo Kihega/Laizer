@@ -4,10 +4,9 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, Modal, RefreshControl,
+  ActivityIndicator, Alert, FlatList, Modal, RefreshControl,
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
-import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { Ionicons }       from '@expo/vector-icons';
 import { workerService, centreService, getApiError } from '@/services/api';
 import { Card, Button, Input, StatusBadge } from '@/components/ui';
@@ -34,7 +33,7 @@ export default function WorkersScreen() {
         setCentres(list);
         if (list.length > 0 && !form.centreId) setForm(p => ({ ...p, centreId: list[0].id }));
       }
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
@@ -42,7 +41,7 @@ export default function WorkersScreen() {
 
   const handleRegister = async () => {
     if (!form.fullName || !form.phone || !form.centreId) {
-      CustomAlert.alert('Missing fields', 'Please fill in all required fields.'); return;
+      Alert.alert('Missing fields', 'Please fill in all required fields.'); return;
     }
     setSaving(true);
     try {
@@ -50,21 +49,21 @@ export default function WorkersScreen() {
       setShowForm(false); setForm(p => ({ fullName:'', phone:'', centreId: p.centreId }));
       await load();
       if (data?.workerCode) { // __LAIZER_PATCH_V9__
-        CustomAlert.alert(
+        Alert.alert(
           'Worker Registered',
           `Give this Worker ID to ${data.fullName ?? 'the worker'} — they need it together with the Centre ID to log in:\n\n${data.workerCode}`
         );
       }
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setSaving(false); }
   };
 
   const confirmDelete = (w: any) => {
-    CustomAlert.alert('Remove Worker', `Remove "${w.fullName}" from the system? This cannot be undone.`, [
+    Alert.alert('Remove Worker', `Remove "${w.fullName}" from the system? This cannot be undone.`, [
       { text:'Cancel', style:'cancel' },
       { text:'Remove', style:'destructive', onPress: async () => {
         try { await workerService.remove(w.id); await load(); }
-        catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+        catch (e) { Alert.alert('Error', getApiError(e)); }
       }},
     ]);
   };
@@ -80,7 +79,7 @@ export default function WorkersScreen() {
     try {
       await workerService.transfer(changingWorker.id, newCentreId);
       setChangingWorker(null); await load();
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setTransferring(false); }
   };
 

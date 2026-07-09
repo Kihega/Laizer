@@ -5,8 +5,7 @@
  * own back button since it renders without tab-bar chrome.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
+import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons }  from '@expo/vector-icons';
 import { equipmentService, getApiError } from '@/services/api';
@@ -41,16 +40,16 @@ export default function EquipmentScreen() {
     try {
       const { data } = await equipmentService.list();
       setItems(data);
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setLoading(false); setRefresh(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
   const handleCreate = async () => {
-    if (!form.itemName.trim()) { CustomAlert.alert('Missing field', 'Item name is required.'); return; }
+    if (!form.itemName.trim()) { Alert.alert('Missing field', 'Item name is required.'); return; }
     const qty = parseInt(form.quantity, 10);
-    if (isNaN(qty) || qty < 0) { CustomAlert.alert('Invalid quantity'); return; }
+    if (isNaN(qty) || qty < 0) { Alert.alert('Invalid quantity'); return; }
     setSaving(true);
     try {
       await equipmentService.create({
@@ -63,7 +62,7 @@ export default function EquipmentScreen() {
       setShowForm(false);
       setForm(BLANK_FORM);
       await load();
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setSaving(false); }
   };
 
@@ -71,7 +70,7 @@ export default function EquipmentScreen() {
     if (!delItem) return;
     setSaving(true);
     try { await equipmentService.delete(delItem.id); setDelItem(null); await load(); }
-    catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setSaving(false); }
   };
 

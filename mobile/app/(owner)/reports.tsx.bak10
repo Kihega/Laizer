@@ -5,10 +5,9 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Animated, Modal, Platform,
+  ActivityIndicator, Alert, Animated, Modal, Platform,
   ScrollView, Share, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
-import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import * as FileSystem from 'expo-file-system';
 import * as Sharing    from 'expo-sharing';
 import { Ionicons }    from '@expo/vector-icons';
@@ -86,10 +85,10 @@ function DetailCard({
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(path, { mimeType: 'application/json', dialogTitle: `Save ${fname}` });
       } else {
-        CustomAlert.alert('Saved', `Report saved to:\n${path}`);
+        Alert.alert('Saved', `Report saved to:\n${path}`);
       }
     } catch (e) {
-      CustomAlert.alert('Error', `Could not save file: ${(e as Error).message}`);
+      Alert.alert('Error', `Could not save file: ${(e as Error).message}`);
     }
   };
 
@@ -210,7 +209,7 @@ export default function ReportsScreen() {
     try {
       const res = m === 'daily' ? await reportService.daily() : await reportService.weekly();
       setData(res.data);
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setLoading(false); }
   }, []);
 
@@ -223,7 +222,7 @@ export default function ReportsScreen() {
     try {
       const res = await reportService.detail({ centreId, mode });
       setSelected(res.data as DetailRow);
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setDetailLoading(false); }
   };
 

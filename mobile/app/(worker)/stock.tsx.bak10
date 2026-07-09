@@ -2,8 +2,7 @@
  * SMSS — Worker: Stock Screen
  */
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
+import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { stockService, getApiError } from '@/services/api';
 import { Card, Button, Input, StatusBadge } from '@/components/ui';
 import { ConfirmModal } from '@/components/ConfirmModal';
@@ -22,7 +21,7 @@ export default function StockScreen() {
 
   const load = useCallback(async () => {
     try { const { data } = await stockService.list(); setItems(data); }
-    catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setLoading(false); setRefresh(false); }
   }, []);
 
@@ -30,18 +29,18 @@ export default function StockScreen() {
 
   const handleCreate = async () => {
     if (!form.itemName || !form.quantity || !form.netStockPriceTshs) {
-      CustomAlert.alert('Missing fields', 'Item name, quantity and price are required.'); return;
+      Alert.alert('Missing fields', 'Item name, quantity and price are required.'); return;
     }
     const qty = parseFloat(form.quantity);
     const prc = parseFloat(form.netStockPriceTshs);
-    if (isNaN(qty) || qty < 0) { CustomAlert.alert('Invalid quantity'); return; }
-    if (isNaN(prc) || prc < 0) { CustomAlert.alert('Invalid price'); return; }
+    if (isNaN(qty) || qty < 0) { Alert.alert('Invalid quantity'); return; }
+    if (isNaN(prc) || prc < 0) { Alert.alert('Invalid price'); return; }
     setSaving(true);
     try {
       await stockService.create({ itemName: form.itemName, quantity: qty, unit: form.unit, netStockPriceTshs: prc, notes: form.notes || undefined });
       setShowForm(false); setForm({ itemName:'', quantity:'', unit:'pcs', netStockPriceTshs:'', notes:'' });
       await load();
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setSaving(false); }
   };
 
@@ -49,7 +48,7 @@ export default function StockScreen() {
     if (!delItem) return;
     setSaving(true);
     try { await stockService.delete(delItem.id); setDelItem(null); await load(); }
-    catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setSaving(false); }
   };
 

@@ -5,10 +5,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentProps } from 'react';
 import {
-  ActivityIndicator, Animated, Image, Modal, RefreshControl,
+  ActivityIndicator, Alert, Animated, Image, Modal, RefreshControl,
   ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
-import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { Ionicons }       from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter }      from 'expo-router';
@@ -89,20 +88,20 @@ export default function OwnerDashboard() {
   const activeCentres = centres.length;
 
   const handleChangePw = async () => {
-    if (!pwForm.current)             return CustomAlert.alert('Error', 'Enter your current password.');
-    if (pwForm.next.length < 8)      return CustomAlert.alert('Error', 'New password must be at least 8 characters.');
-    if (pwForm.next !== pwForm.confirm) return CustomAlert.alert('Error', 'Passwords do not match.');
+    if (!pwForm.current)             return Alert.alert('Error', 'Enter your current password.');
+    if (pwForm.next.length < 8)      return Alert.alert('Error', 'New password must be at least 8 characters.');
+    if (pwForm.next !== pwForm.confirm) return Alert.alert('Error', 'Passwords do not match.');
     setPwBusy(true);
     try {
       await apiClient.patch(API_ROUTES.changePassword, {
         currentPassword: pwForm.current,
         newPassword:     pwForm.next,
       });
-      CustomAlert.alert('Success', 'Password changed successfully.');
+      Alert.alert('Success', 'Password changed successfully.');
       setShowPwModal(false);
       setPwForm({ current:'', next:'', confirm:'', showC:false, showN:false });
     } catch (e: any) {
-      CustomAlert.alert('Error', e?.response?.data?.detail ?? 'Failed to change password.');
+      Alert.alert('Error', e?.response?.data?.detail ?? 'Failed to change password.');
     } finally { setPwBusy(false); }
   };
 
@@ -115,11 +114,16 @@ export default function OwnerDashboard() {
       <LinearGradient colors={[BrandColors.blueDark, BrandColors.blue]}
         style={[S.header, isDark && { backgroundColor:'#111827' }]}>
 
-        {/* Top row: hamburger opens the side menu — Sign Out lives there. */}
-        {/* __LAIZER_PATCH_V10__ — removed the redundant standalone logout icon. */}
+        {/* Top row: hamburger | logout shortcut */}
         <View style={S.headerTop}>
           <TouchableOpacity onPress={openSide} hitSlop={{ top:10, bottom:10, left:10, right:10 }}>
             <Ionicons name="menu-outline" size={28} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { Alert.alert('Sign out', 'Are you sure?', [
+            { text:'Cancel', style:'cancel' },
+            { text:'Sign out', style:'destructive', onPress: logout },
+          ]); }} hitSlop={{ top:10, bottom:10, left:10, right:10 }}>
+            <Ionicons name="log-out-outline" size={24} color="rgba(255,255,255,0.7)" />
           </TouchableOpacity>
         </View>
 
@@ -256,7 +260,7 @@ export default function OwnerDashboard() {
             {/* Logout */}
             <TouchableOpacity style={[S.sideItem, S.sideLogout]} onPress={() => {
               closeSide();
-              setTimeout(() => CustomAlert.alert('Sign out', 'Are you sure you want to sign out?', [
+              setTimeout(() => Alert.alert('Sign out', 'Are you sure you want to sign out?', [
                 { text:'Cancel', style:'cancel' },
                 { text:'Sign out', style:'destructive', onPress: logout },
               ]), 350);

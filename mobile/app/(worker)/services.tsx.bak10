@@ -4,10 +4,9 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, RefreshControl,
+  ActivityIndicator, Alert, FlatList, RefreshControl,
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
-import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { serviceEventService, getApiError } from '@/services/api';
 import { Card, Button, Input, StatusBadge } from '@/components/ui';
 import { ConfirmModal } from '@/components/ConfirmModal';
@@ -54,7 +53,7 @@ export default function ServicesScreen() {
     try {
       const { data } = await serviceEventService.list();
       setEvents(data);
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setLoading(false); setRefresh(false); }
   }, []);
 
@@ -78,16 +77,16 @@ export default function ServicesScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!form.serviceType) { CustomAlert.alert('Select a service type'); return; }
+    if (!form.serviceType) { Alert.alert('Select a service type'); return; }
 
     const pages = form.pages ? parseInt(form.pages, 10) : undefined;
     const price = form.pricePerPageTshs ? parseFloat(form.pricePerPageTshs) : undefined;
 
     if (pages !== undefined && (isNaN(pages) || pages < 1)) {
-      CustomAlert.alert('Invalid pages', 'Pages must be a positive number.'); return;
+      Alert.alert('Invalid pages', 'Pages must be a positive number.'); return;
     }
     if (price !== undefined && (isNaN(price) || price < 0)) {
-      CustomAlert.alert('Invalid price', 'Price must be 0 or more.'); return;
+      Alert.alert('Invalid price', 'Price must be 0 or more.'); return;
     }
 
     // Total computed server-side; send 0 as placeholder — backend will recalculate
@@ -113,7 +112,7 @@ export default function ServicesScreen() {
       setEditTarget(null);
       setForm(BLANK_FORM);
       await load();
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setSaving(false); }
   };
 
@@ -124,7 +123,7 @@ export default function ServicesScreen() {
       await serviceEventService.delete(delTarget.id);
       setDelTarget(null);
       await load();
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setSaving(false); }
   };
 

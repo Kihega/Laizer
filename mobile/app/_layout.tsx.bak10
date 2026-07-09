@@ -8,7 +8,6 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useAuthStore } from '@/store/authStore';
 import { Colors, FontSize, FontWeight } from '@/constants/theme';
-import { CustomAlertHost } from '@/components/ui'; // __LAIZER_PATCH_V10__
 
 export default function RootLayout() {
   const { isAuthenticated, isLoading, loadingStatus, user, loadStoredAuth } = useAuthStore();
@@ -63,7 +62,6 @@ export default function RootLayout() {
     <>
       <Slot />
       <StatusBar style="auto" />
-      <CustomAlertHost />
     </>
   );
 }

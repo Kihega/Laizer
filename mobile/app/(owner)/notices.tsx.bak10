@@ -5,10 +5,9 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, RefreshControl, ScrollView,
+  ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView,
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
-import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { Ionicons }        from '@expo/vector-icons';
 import { noticeService, centreService, getApiError } from '@/services/api';
 import { Card, Button, Input, StatusBadge } from '@/components/ui';
@@ -47,7 +46,7 @@ export default function NoticesOwnerScreen() {
     } else {
       console.error('[OwnerNotices] centres load failed:', getApiError(c.reason));
       setCentres([]);
-      CustomAlert.alert('Error', getApiError(c.reason, 'Could not load your centres.'));
+      Alert.alert('Error', getApiError(c.reason, 'Could not load your centres.'));
     }
     setLoading(false); setRefreshing(false);
   }, []);
@@ -60,17 +59,17 @@ export default function NoticesOwnerScreen() {
 
   const handleSend = async () => {
     if (!form.centreId || !form.body.trim()) {
-      CustomAlert.alert('Missing fields', 'Please select a centre and write a message.'); return;
+      Alert.alert('Missing fields', 'Please select a centre and write a message.'); return;
     }
     if (overLimit) {
-      CustomAlert.alert('Too long', `Message exceeds ${MAX_WORDS} words (${wc} words).`); return;
+      Alert.alert('Too long', `Message exceeds ${MAX_WORDS} words (${wc} words).`); return;
     }
     setSaving(true);
     try {
       await noticeService.send({ centreId: form.centreId, body: form.body });
       setShowForm(false); setForm(p => ({ ...p, body:'' }));
       await load();
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setSaving(false); }
   };
 
