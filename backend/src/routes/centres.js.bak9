@@ -5,16 +5,7 @@
  * POST   /api/centres/           — create centre
  * GET    /api/centres/:id/       — centre detail + active workers
  * PATCH  /api/centres/:id/       — update name/location
- * DELETE /api/centres/:id/       — hard delete + auto-renumber remaining centres
- *
- * __LAIZER_PATCH_V9__
- * Centre IDs (STN-XX) are scoped PER OWNER (see prisma schema — the unique
- * constraint moved from a bare `centreId` column to a compound
- * [ownerId, centreId] index), so every owner's first centre is always
- * STN-01 regardless of what other owners have created. Deleting a centre
- * now closes the gap immediately — remaining centres are renumbered so the
- * sequence STN-01..STN-NN always stays contiguous, matching what the owner
- * sees on screen.
+ * DELETE /api/centres/:id/       — deactivate (soft delete)
  */
 const { Router }       = require('express');
 const { z }            = require('zod');
@@ -25,31 +16,6 @@ const { authenticate, ownerOnly } = require('../middleware/auth');
 
 const router = Router();
 router.use(authenticate, ownerOnly);
-
-// Renumber all of an owner's active centres to a contiguous STN-01..STN-NN
-// sequence, ordered by original creation time. Safe to call any time (it's
-// a no-op if the sequence is already contiguous) — called after every
-// delete so gaps never appear.
-async function renumberCentres(ownerId) {
-  const centres = await prisma.centre.findMany({
-    where:   { ownerId, isActive: true },
-    orderBy: { createdAt: 'asc' },
-  });
-
-  const updates = [];
-  centres.forEach((c, idx) => {
-    const target = `STN-${String(idx + 1).padStart(2, '0')}`;
-    if (c.centreId !== target || c.centreNo !== target) {
-      updates.push(prisma.centre.update({
-        where: { id: c.id },
-        data:  { centreId: target, centreNo: target },
-      }));
-    }
-  });
-
-  if (updates.length) await prisma.$transaction(updates);
-  return centres.length;
-}
 
 // ── GET /api/centres/ ─────────────────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
@@ -86,18 +52,13 @@ router.post('/', async (req, res, next) => {
 
     const { name, location } = parsed.data;
 
-    // Auto-generate STN-XX — scoped to THIS owner only (a compound
-    // [ownerId, centreId] unique index in the schema allows different
-    // owners to both have a "STN-01"). Gap-safe: since renumberCentres()
-    // keeps the sequence contiguous after every delete, this is normally
-    // just "count of active centres + 1", but we still scan for a free
-    // slot defensively in case of concurrent requests.
-    const count = await prisma.centre.count({ where: { ownerId: req.user.id, isActive: true } });
+    // Auto-generate STN-XX — scan for next FREE slot (gap-safe after deletes)
+    const count = await prisma.centre.count({ where: { ownerId: req.user.id } });
     let seq = count + 1;
     let centreId;
     for (let i = 0; i < 100; i++) {
       const candidate = `STN-${String(seq).padStart(2, '0')}`;
-      const exists    = await prisma.centre.findFirst({ where: { ownerId: req.user.id, centreId: candidate } });
+      const exists    = await prisma.centre.findUnique({ where: { centreId: candidate } });
       if (!exists) { centreId = candidate; break; }
       seq++;
     }
@@ -135,7 +96,7 @@ router.get('/:id/', async (req, res, next) => {
       include: {
         assignments: {
           where:   { isActive: true },
-          include: { worker: { select: { id:true, fullName:true, nim:true, phone:true, workerCode:true } } },
+          include: { worker: { select: { id:true, fullName:true, nim:true, phone:true } } },
         },
       },
     });
@@ -158,7 +119,7 @@ router.patch('/:id/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ── DELETE /api/centres/:id/ — hard-delete, then close the ID gap ────────────
+// ── DELETE /api/centres/:id/ — hard-delete with cascade ──────────────────────
 router.delete('/:id/', authenticate, ownerOnly, async (req, res, next) => {
   try {
     const centre = await prisma.centre.findFirst({
@@ -172,12 +133,9 @@ router.delete('/:id/', authenticate, ownerOnly, async (req, res, next) => {
     await prisma.notice.deleteMany({ where: { centreId: centre.id } });
     await prisma.centre.delete({ where: { id: centre.id } });
 
-    // Close the gap: STN-01, STN-02… stays contiguous for this owner.
-    await renumberCentres(req.user.id);
-
     await redis.cacheDel(redis.CacheKey.centres(req.user.id));
     await logAction(req.user.id, 'CENTRE_DELETED', { req, centreId: centre.id });
-    return res.json({ detail: 'Centre deleted successfully. Remaining centres were renumbered.' });
+    return res.json({ detail: 'Centre deleted successfully.' });
   } catch (err) { next(err); }
 });
 

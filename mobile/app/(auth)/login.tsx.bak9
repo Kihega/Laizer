@@ -48,7 +48,6 @@ export default function LoginScreen() {
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [centreId, setCentreId] = useState('');
-  const [workerId, setWorkerId] = useState(''); // __LAIZER_PATCH_V9__
   const [showPw,   setShowPw]   = useState(false);
 
   const [showReg,  setShowReg]  = useState(false);
@@ -73,7 +72,7 @@ export default function LoginScreen() {
       if (!centreId.trim()) return;
       // workerLogin returns the raw result; the backend may include a `notice`
       // field when authorising a branch that has no assigned workers yet.
-      const result = await workerLogin(workerId.toUpperCase(), centreId.toUpperCase());
+      const result = await workerLogin(centreId.toUpperCase());
       if (result?.notice) setNotice(result.notice as string);
     }
   };
@@ -232,16 +231,10 @@ export default function LoginScreen() {
                   onPressRightIcon={() => setShowPw(v => !v)} />
               </>
             ) : (
-              <>
-                <Input label="Worker ID" placeholder="WK-A1B2"
-                  value={workerId} onChangeText={(t:string) => { setWorkerId(t.toUpperCase()); clearError(); }}
-                  autoCapitalize="characters" returnKeyType="next"
-                  hint="Given to you by the shop owner when you were registered. Leave blank only for a brand-new branch with no workers yet." />
-                <Input label="Centre ID" placeholder="STN-01"
-                  value={centreId} onChangeText={(t:string) => { setCentreId(t.toUpperCase()); clearError(); }}
-                  autoCapitalize="characters" returnKeyType="done" onSubmitEditing={handleLogin}
-                  hint="Your Centre ID is provided by the shop owner." />
-              </>
+              <Input label="Centre ID" placeholder="STN-01"
+                value={centreId} onChangeText={(t:string) => { setCentreId(t.toUpperCase()); clearError(); }}
+                autoCapitalize="characters" returnKeyType="done" onSubmitEditing={handleLogin}
+                hint="Your Centre ID is provided by the shop owner." />
             )}
 
             <Button label={mode==='owner' ? 'Sign In' : 'Login'} onPress={handleLogin}

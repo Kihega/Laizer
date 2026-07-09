@@ -45,15 +45,9 @@ export default function WorkersScreen() {
     }
     setSaving(true);
     try {
-      const { data } = await workerService.register({ fullName: form.fullName.toUpperCase(), phone: form.phone, centreId: form.centreId });
+      await workerService.register({ fullName: form.fullName.toUpperCase(), phone: form.phone, centreId: form.centreId });
       setShowForm(false); setForm(p => ({ fullName:'', phone:'', centreId: p.centreId }));
       await load();
-      if (data?.workerCode) { // __LAIZER_PATCH_V9__
-        Alert.alert(
-          'Worker Registered',
-          `Give this Worker ID to ${data.fullName ?? 'the worker'} — they need it together with the Centre ID to log in:\n\n${data.workerCode}`
-        );
-      }
     } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setSaving(false); }
   };
@@ -124,7 +118,6 @@ export default function WorkersScreen() {
                 <View style={{ flex:1 }}>
                   <Text style={W.name}>{item.fullName}</Text>
                   <Text style={W.sub}>{item.phone}</Text>
-                  {item.workerCode ? <Text style={W.sub}>ID: {item.workerCode}</Text> : null}
                   <Text style={W.branch}>{item.assignedCentre ? `📍 ${item.assignedCentre.name}` : '⚠️  Unassigned'}</Text>
                 </View>
                 <View style={W.cardRight}>

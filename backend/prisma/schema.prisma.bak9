@@ -15,7 +15,6 @@ model User {
   phone           String?                  @unique
   fullName        String                   @map("full_name")
   nim             String?                  @unique
-  workerCode      String?                  @unique @map("worker_code") // __LAIZER_PATCH_V9__
   passwordHash    String?                  @map("password_hash")
   role            UserRole
   isActive        Boolean                  @default(true) @map("is_active")
@@ -37,8 +36,8 @@ model User {
 
 model Centre {
   id            String                   @id @default(uuid())
-  centreNo      String                   @map("centre_no") // __LAIZER_PATCH_V9__ — uniqueness now scoped per-owner below
-  centreId      String                   @map("centre_id")
+  centreNo      String                   @unique @map("centre_no")
+  centreId      String                   @unique @map("centre_id")
   name          String
   location      String
   ownerId       String                   @map("owner_id")
@@ -53,8 +52,6 @@ model Centre {
   assignments   WorkerCentreAssignment[]
 
   @@index([ownerId])
-  @@unique([ownerId, centreId], name: "centre_owner_centreId")
-  @@unique([ownerId, centreNo], name: "centre_owner_centreNo")
   @@map("centres")
 }
 
@@ -144,7 +141,6 @@ model Notice {
   body      String
   priority  NoticePriority @default(normal)
   createdAt DateTime       @default(now()) @map("created_at")
-  expiresAt DateTime?      @map("expires_at") // __LAIZER_PATCH_V9__ — routes/notices.js already relies on this field
   reads     NoticeRead[]
   centre    Centre         @relation(fields: [centreId], references: [id], onDelete: Cascade)
   sender    User           @relation(fields: [senderId], references: [id])

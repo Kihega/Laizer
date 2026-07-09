@@ -160,8 +160,8 @@ export const authService = {
     apiClient.post(API_ROUTES.ownerLogin,  { email, password }),
   register: (body: { fullName: string; brandName: string; phone: string }) =>
     apiClient.post(API_ROUTES.ownerRegister, body),
-  workerLogin: (workerId: string, centreId: string) => // __LAIZER_PATCH_V9__
-    apiClient.post(API_ROUTES.workerLogin, { workerId: workerId || undefined, centreId }),
+  workerLogin: (centreId: string) =>
+    apiClient.post(API_ROUTES.workerLogin, { centreId }),
   logout:      (refresh: string) =>
     apiClient.post(API_ROUTES.logout, { refresh }),
   me:          () => apiClient.get(API_ROUTES.me),

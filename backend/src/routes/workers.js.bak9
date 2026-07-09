@@ -24,22 +24,6 @@ async function ownCentre(centreId, ownerId) {
   return prisma.centre.findFirst({ where: { id: centreId, ownerId, isActive: true } });
 }
 
-// __LAIZER_PATCH_V9__
-// Generate a globally-unique, worker-facing login code. Independent of
-// Centre ID numbering (which is now scoped per-owner) — this is what lets
-// the login endpoint tell workers of different owners apart even when
-// their Centre IDs collide (e.g. two owners both having a "STN-01").
-async function generateWorkerCode() {
-  for (let i = 0; i < 50; i++) {
-    const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-    const candidate = `WK-${rand}`;
-    const exists = await prisma.user.findUnique({ where: { workerCode: candidate } });
-    if (!exists) return candidate;
-  }
-  // Extremely unlikely fallback — still unique-checked by the DB constraint.
-  return `WK-${Date.now().toString(36).toUpperCase().slice(-6)}`;
-}
-
 // ── GET /api/workers/ ─────────────────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
   try {
@@ -76,7 +60,6 @@ router.get('/', async (req, res, next) => {
       fullName:     w.fullName,
       nim:          w.nim,
       phone:        w.phone,
-      workerCode:   w.workerCode,
       isActive:     w.isActive,
       assignedCentre: w.assignments?.[0]?.centre || null,
     })));
@@ -104,7 +87,7 @@ router.post('/', async (req, res, next) => {
       return res.status(409).json({ error: 'duplicate', detail: 'A worker with this phone number already exists.' });
 
     const worker = await prisma.user.create({
-      data: { fullName, phone, role: 'worker', workerCode: await generateWorkerCode() },
+      data: { fullName, phone, role: 'worker' },
     });
 
     // If centreId provided, assign immediately
@@ -119,10 +102,7 @@ router.post('/', async (req, res, next) => {
 
     await redis.cacheDel(redis.CacheKey.workers(req.user.id));
     await logAction(req.user.id, logAction.ACTIONS.WORKER_REGISTERED, { req, workerId: worker.id });
-    return res.status(201).json({
-      id: worker.id, fullName: worker.fullName, phone: worker.phone,
-      workerCode: worker.workerCode, // give this to the worker for login
-    });
+    return res.status(201).json({ id: worker.id, fullName: worker.fullName, phone: worker.phone });
   } catch (err) { next(err); }
 });
 
