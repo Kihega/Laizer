@@ -5,10 +5,9 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, RefreshControl,
+  ActivityIndicator, Alert, FlatList, RefreshControl,
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
-import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { Ionicons }        from '@expo/vector-icons';
 import { centreService, getApiError } from '@/services/api';
 import { Card, Button, Input, StatusBadge } from '@/components/ui';
@@ -45,19 +44,19 @@ export default function CentresScreen() {
 
   const handleCreate = async () => {
     if (!form.name || !form.location) {
-      CustomAlert.alert('Missing fields', 'Please fill in Centre name and location.'); return;
+      Alert.alert('Missing fields', 'Please fill in Centre name and location.'); return;
     }
     setSaving(true);
     try {
       await centreService.create({ name: form.name.toUpperCase(), location: form.location.toUpperCase() });
       setShowForm(false); setForm({ name:'', location:'' });
       await load();
-    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    } catch (e) { Alert.alert('Error', getApiError(e)); }
     finally { setSaving(false); }
   };
 
   const confirmDelete = (item: any) => {
-    CustomAlert.alert(
+    Alert.alert(
       'Delete Centre',
       `Are you sure you want to permanently delete "${item.name}"?\nWorkers will no longer be able to log in.`,
       [
@@ -68,7 +67,7 @@ export default function CentresScreen() {
             try {
               await centreService.delete(item.id);
               await load();
-            } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+            } catch (e) { Alert.alert('Error', getApiError(e)); }
           },
         },
       ],

@@ -8,21 +8,6 @@ import { useAuthStore, SmssUser }    from '@/store/authStore';
 export interface AuthError { code: string; message: string; }
 interface LoginResult { success: boolean; role?: string; error?: AuthError; notice?: string | null; }
 
-// __LAIZER_PATCH_V10__
-// Guarantees the login spinner can never spin forever: if the request
-// hasn't settled within 20s (dropped connection, unexpected server
-// hang, etc.) this rejects with a normal network-style error so the
-// existing catch block below shows it instead of leaving the button
-// stuck on "loading".
-function withLoginTimeout<T>(promise: Promise<T>, ms = 20000): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => setTimeout(() => reject({
-      response: { data: { error: 'timeout', detail: 'This is taking too long. Check your connection and try again.' } },
-    }), ms)),
-  ]);
-}
-
 export function useAuth() {
   const { setAuth, clearAuth, refreshToken, user, isAuthenticated } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +16,7 @@ export function useAuth() {
   const ownerLogin = useCallback(async (email: string, password: string): Promise<LoginResult> => {
     setIsLoading(true); setError(null);
     try {
-      const { data } = await withLoginTimeout(authService.ownerLogin(email.trim(), password));
+      const { data } = await authService.ownerLogin(email.trim(), password);
       await setAuth(data.access, data.refresh, data.user as SmssUser);
       if (data.centreInfo) useAuthStore.getState().setCentreInfo(data.centreInfo);
       return { success: true, role: data.user.role };
@@ -60,7 +45,7 @@ export function useAuth() {
   const workerLogin = useCallback(async (workerId: string, centreId: string): Promise<LoginResult> => { // __LAIZER_PATCH_V9__
     setIsLoading(true); setError(null);
     try {
-      const { data } = await withLoginTimeout(authService.workerLogin(workerId.trim(), centreId.trim()));
+      const { data } = await authService.workerLogin(workerId.trim(), centreId.trim());
       await setAuth(data.access, data.refresh, data.user as SmssUser);
       if (data.centreInfo) useAuthStore.getState().setCentreInfo(data.centreInfo);
       return { success: true, role: data.user.role, notice: data.notice ?? null };

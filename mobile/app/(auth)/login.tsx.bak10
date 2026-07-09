@@ -5,10 +5,9 @@
  */
 import { useState } from 'react';
 import {
-  Image, KeyboardAvoidingView, Modal, Platform,
+  Alert, Image, KeyboardAvoidingView, Modal, Platform,
   ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
-import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import type { ReactNode }   from 'react';
 import * as ImagePicker     from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -100,7 +99,7 @@ export default function LoginScreen() {
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      CustomAlert.alert('Permission required', `Allow ${src} access in your device settings.`); return;
+      Alert.alert('Permission required', `Allow ${src} access in your device settings.`); return;
     }
     const result = src === 'camera'
       ? await ImagePicker.launchCameraAsync({ allowsEditing:true, aspect:[1,1], quality:1 })
@@ -143,7 +142,7 @@ export default function LoginScreen() {
           photoBase64: `data:image/png;base64,${compressed.base64 ?? ''}`,
         }));
       } catch {
-        CustomAlert.alert('Image error', 'Could not process the image. Please try another.');
+        Alert.alert('Image error', 'Could not process the image. Please try another.');
       }
     }
   };
@@ -234,13 +233,14 @@ export default function LoginScreen() {
               </>
             ) : (
               <>
-                {/* __LAIZER_PATCH_V10__ — instruction paragraphs removed, label + placeholder only */}
                 <Input label="Worker ID" placeholder="WK-A1B2"
                   value={workerId} onChangeText={(t:string) => { setWorkerId(t.toUpperCase()); clearError(); }}
-                  autoCapitalize="characters" returnKeyType="next" />
+                  autoCapitalize="characters" returnKeyType="next"
+                  hint="Given to you by the shop owner when you were registered. Leave blank only for a brand-new branch with no workers yet." />
                 <Input label="Centre ID" placeholder="STN-01"
                   value={centreId} onChangeText={(t:string) => { setCentreId(t.toUpperCase()); clearError(); }}
-                  autoCapitalize="characters" returnKeyType="done" onSubmitEditing={handleLogin} />
+                  autoCapitalize="characters" returnKeyType="done" onSubmitEditing={handleLogin}
+                  hint="Your Centre ID is provided by the shop owner." />
               </>
             )}
 

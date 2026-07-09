@@ -4,5 +4,3 @@ export { Card }                  from './Card';
 export { Input }                 from './Input';
 // StatusBadge uses `export default function` — keep default re-export
 export { default as StatusBadge } from './StatusBadge';
-// __LAIZER_PATCH_V10__
-export { CustomAlert, CustomAlertHost } from './CustomAlert';

@@ -31,7 +31,7 @@ const SUBTYPES      = ['black_and_white', 'colour'];
 async function bustReportCaches(centreId, when = new Date()) {
   const dateStr   = when.toISOString().slice(0, 10);
   const weekStart = new Date(when);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // __LAIZER_PATCH_V10__ — Sunday, matches reports.js
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
   const weekStartStr = weekStart.toISOString().slice(0, 10);
 
   await redis.cacheDelPattern(`report:d:*:${dateStr}`);
