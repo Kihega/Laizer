@@ -244,13 +244,6 @@ export const reportService = {
     const q = new URLSearchParams(params as Record<string, string>).toString();
     return apiClient.get(API_ROUTES.reportWeekly + (q ? `?${q}` : ''));
   },
-  // __LAIZER_PATCH_V11__ — this was missing entirely, which is why tapping a
-  // report card threw a plain JS "not a function" error that the generic
-  // handler rendered as "Something went wrong."
-  detail: (params: { centreId: string; mode?: 'daily' | 'weekly'; date?: string; weekStart?: string }) => {
-    const q = new URLSearchParams(params as unknown as Record<string, string>).toString();
-    return apiClient.get(API_ROUTES.reportDetail + (q ? `?${q}` : ''));
-  },
 };
 
 // ── Push token ─────────────────────────────────────────────────────────────────

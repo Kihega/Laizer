@@ -20,16 +20,6 @@ function wordCount(txt: string) {
   return txt.trim().split(/\s+/).filter(Boolean).length;
 }
 
-// __LAIZER_PATCH_V11__
-function expiryLabel(expiresAt?: string | null): string | null {
-  if (!expiresAt) return null;
-  const diffMs = new Date(expiresAt).getTime() - Date.now();
-  if (diffMs <= 0) return 'Expired';
-  const hrs  = Math.floor(diffMs / 3600000);
-  const mins = Math.floor((diffMs % 3600000) / 60000);
-  return hrs >= 1 ? `Expires in ${hrs}h${mins ? ` ${mins}m` : ''}` : `Expires in ${mins}m`;
-}
-
 export default function NoticesOwnerScreen() {
   const [notices,    setNotices]    = useState<any[]>([]);
   const [centres,    setCentres]    = useState<any[]>([]);
@@ -95,7 +85,7 @@ export default function NoticesOwnerScreen() {
         <Card style={N.form}>
           <Text style={N.formTitle}>Send Notice to Workers</Text>
           <Text style={{ fontSize: FontSize.xs, color: Colors.textDisabled, marginBottom: Spacing.sm }}>
-            Notices for today are cleared automatically at midnight — send a new one each day.
+            Notices are automatically removed after 48 hours.
           </Text>
 
           {/* Centre dropdown */}
@@ -173,9 +163,6 @@ export default function NoticesOwnerScreen() {
                 <Text style={N.itemMeta}>{new Date(item.createdAt).toLocaleDateString()}</Text>
                 <Text style={N.readCount}>{item._count?.reads ?? 0} read</Text>
               </View>
-              {expiryLabel(item.expiresAt) && (
-                <Text style={N.expiryTxt}>{expiryLabel(item.expiresAt)}</Text>
-              )}
             </Card>
           )}
         />
@@ -212,5 +199,4 @@ const N = StyleSheet.create({
   itemFooter:   { flexDirection:'row', justifyContent:'space-between', marginTop:Spacing.sm },
   itemMeta:     { fontSize:FontSize.xs, color:Colors.textDisabled },
   readCount:    { fontSize:FontSize.xs, color:Colors.primary },
-  expiryTxt:    { fontSize:FontSize.xs, color:Colors.textDisabled, marginTop:Spacing.xs, fontStyle:'italic' }, // __LAIZER_PATCH_V11__
 });

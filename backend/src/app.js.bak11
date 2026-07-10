@@ -67,21 +67,4 @@ app.use((_req, res) =>
 
 app.use(errorHandler);
 
-// __LAIZER_PATCH_V11__
-// Second layer of the daily-notice cleanup (see routes/notices.js for the
-// primary lazy-delete-on-read layer): sweeps for anything already expired
-// every 15 minutes while the process is awake, so notices don't linger
-// purely because nobody happened to open the Notices screen.
-(function scheduleNoticeCleanup() {
-  const prisma = require('./lib/prisma');
-  const sweep = async () => {
-    try {
-      const { count } = await prisma.notice.deleteMany({ where: { expiresAt: { lte: new Date() } } });
-      if (count) console.log(`[Notices] Cleaned up ${count} expired notice(s).`);
-    } catch (e) { console.error('[Notices] cleanup sweep failed:', e.message); }
-  };
-  sweep();
-  setInterval(sweep, 15 * 60 * 1000);
-})();
-
 module.exports = app;

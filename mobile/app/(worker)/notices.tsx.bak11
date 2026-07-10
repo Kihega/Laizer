@@ -11,16 +11,6 @@ import { noticeService, getApiError } from '@/services/api';
 import { Card, StatusBadge } from '@/components/ui';
 import { Colors, FontSize, FontWeight, Radius, Shadows, Spacing } from '@/constants/theme';
 
-// __LAIZER_PATCH_V11__
-function expiryLabel(expiresAt?: string | null): string | null {
-  if (!expiresAt) return null;
-  const diffMs = new Date(expiresAt).getTime() - Date.now();
-  if (diffMs <= 0) return 'Expired';
-  const hrs  = Math.floor(diffMs / 3600000);
-  const mins = Math.floor((diffMs % 3600000) / 60000);
-  return hrs >= 1 ? `Expires in ${hrs}h${mins ? ` ${mins}m` : ''}` : `Expires in ${mins}m`;
-}
-
 export default function WorkerNoticesScreen() {
   const [notices,    setNotices]   = useState<any[]>([]);
   const [loading,    setLoading]   = useState(true);
@@ -109,9 +99,6 @@ export default function WorkerNoticesScreen() {
                     })}
                   </Text>
                 </View>
-                {expiryLabel(item.expiresAt) && (
-                  <Text style={NS.expiryTxt}>{expiryLabel(item.expiresAt)}</Text>
-                )}
               </Card>
             </TouchableOpacity>
           )}
@@ -158,9 +145,6 @@ export default function WorkerNoticesScreen() {
                       })}
                     </Text>
                   )}
-                  {expiryLabel(selected.expiresAt) && (
-                    <Text style={NS.expiryTxt}>{expiryLabel(selected.expiresAt)}</Text>
-                  )}
                 </>
               )}
             </ScrollView>
@@ -198,7 +182,6 @@ const NS = StyleSheet.create({
   itemFooter:     { flexDirection: 'row', justifyContent: 'space-between' },
   itemSender:     { fontSize: FontSize.xs, color: Colors.textDisabled },
   itemTime:       { fontSize: FontSize.xs, color: Colors.textDisabled },
-  expiryTxt:      { fontSize: FontSize.xs, color: Colors.textDisabled, marginTop: 4, fontStyle:'italic' }, // __LAIZER_PATCH_V11__
 
   // Modal
   modalOverlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)',
