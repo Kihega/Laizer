@@ -9,6 +9,7 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useAuthStore } from '@/store/authStore';
 import { Colors, FontSize, FontWeight } from '@/constants/theme';
 import { CustomAlertHost } from '@/components/ui'; // __LAIZER_PATCH_V10__
+import { ThemeProvider } from '@/store/ThemeProvider'; // __LAIZER_PATCH_V11__
 
 export default function RootLayout() {
   const { isAuthenticated, isLoading, loadingStatus, user, loadStoredAuth } = useAuthStore();
@@ -60,10 +61,10 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <ThemeProvider>
       <Slot />
       <StatusBar style="auto" />
       <CustomAlertHost />
-    </>
+    </ThemeProvider>
   );
 }

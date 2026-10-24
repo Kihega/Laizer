@@ -9,7 +9,7 @@ import {
   ScrollView, Share, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing    from 'expo-sharing';
 import { Ionicons }    from '@expo/vector-icons';
 import { reportService, getApiError } from '@/services/api';
@@ -273,7 +273,7 @@ export default function ReportsScreen() {
                   <StatItem label="Services" value={String((row.totalEvents as number) ?? 0)} />
                   {(row.topService as string) && <StatItem label="Top Service" value={row.topService as string} />}
                 </View>
-                {row.byServiceType && Object.keys(row.byServiceType as object).length > 0 && (
+                {!!row.byServiceType && Object.keys(row.byServiceType as object).length > 0 && (
                   <View style={RS.breakdown}>
                     {Object.entries(row.byServiceType as Record<string, number>).map(([type, count]) => (
                       <Text key={type} style={RS.breakdownRow}>
@@ -334,7 +334,7 @@ const RS = StyleSheet.create({
 
 // Detail sheet styles
 const D = StyleSheet.create({
-  backdrop:      { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  backdrop:      { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet:         { position: 'absolute', bottom: 0, left: 0, right: 0,
                    backgroundColor: Colors.backgroundCard, borderTopLeftRadius: 20, borderTopRightRadius: 20,
                    maxHeight: '88%', shadowColor: '#000', shadowOffset: { width:0, height:-4 },

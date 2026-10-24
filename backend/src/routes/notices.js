@@ -18,6 +18,12 @@ router.use(authenticate);
 // ── GET /api/notices/ ─────────────────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
   try {
+    // __LAIZER_PATCH_V11__ — belt-and-braces cleanup: hard-delete anything past
+    // its expiry before answering, so this is correct immediately even if
+    // the periodic sweep in app.js hasn't run yet (e.g. server just woke
+    // up from a free-tier sleep).
+    await prisma.notice.deleteMany({ where: { expiresAt: { lte: new Date() } } });
+
     if (req.user.role === 'worker') {
       const nowFilter = new Date();
       const notices = await prisma.notice.findMany({
@@ -87,8 +93,11 @@ router.post('/', ownerOnly, async (req, res, next) => {
 
     const body  = parsed.data.body;
     const title = parsed.data.title ?? (body.length > 60 ? body.substring(0,60)+'…' : body);
-    // Notices expire automatically after 48 hours
-    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    // __LAIZER_PATCH_V11__ — a notice belongs to the day it was sent: it expires
+    // at the next midnight, not a fixed 48h window, so the owner writes a
+    // fresh one each day rather than yesterday's notice quietly carrying over.
+    const expiresAt = new Date();
+    expiresAt.setHours(24, 0, 0, 0); // rolls forward to tomorrow 00:00:00
     const notice = await prisma.notice.create({
       data: {
         centreId: parsed.data.centreId,

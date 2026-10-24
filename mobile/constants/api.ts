@@ -117,6 +117,7 @@ export const API_ROUTES = {
   // Reports
   reportDaily:  '/api/reports/daily/',
   reportWeekly: '/api/reports/weekly/',
+  reportDetail: '/api/reports/detail/', // __LAIZER_PATCH_V11__
 
   // Push token
   pushToken:    '/api/push-token/',
