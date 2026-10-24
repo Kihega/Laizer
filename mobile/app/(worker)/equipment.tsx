@@ -130,7 +130,7 @@ export default function EquipmentScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={ES.itemName}>{item.itemName}</Text>
                   <View style={ES.itemMeta}>
-                    <StatusBadge type={item.condition} size="sm" />
+                    <StatusBadge type={item.condition as any} size="sm" />
                     <Text style={ES.qty}>{item.quantity} unit{item.quantity === 1 ? '' : 's'}</Text>
                   </View>
                   {item.category ? <Text style={ES.category}>{item.category}</Text> : null}

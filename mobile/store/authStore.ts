@@ -92,7 +92,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       let isExpired = true;
       try {
         const payload = JSON.parse(
-          Buffer.from(access.split('.')[1], 'base64').toString('utf-8')
+          ((s: string) => atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '=')))(access.split('.')[1])
         );
         isExpired = (payload.exp ?? 0) * 1000 < Date.now();
       } catch { isExpired = true; }

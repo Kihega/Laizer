@@ -27,23 +27,23 @@ export default function OwnerLayout() {
     >
       <Tabs.Screen
         name="dashboard"
-        options={{ title: 'Dashboard', tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} /> }}
+        options={{ title: 'Dashboard', tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color as string} /> }}
       />
       <Tabs.Screen
         name="centres"
-        options={{ title: 'Centres', tabBarIcon: ({ color, size }) => <Ionicons name="storefront-outline" size={size} color={color} /> }}
+        options={{ title: 'Centres', tabBarIcon: ({ color, size }) => <Ionicons name="storefront-outline" size={size} color={color as string} /> }}
       />
       <Tabs.Screen
         name="workers"
-        options={{ title: 'Workers', tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} /> }}
+        options={{ title: 'Workers', tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color as string} /> }}
       />
       <Tabs.Screen
         name="reports"
-        options={{ title: 'Reports', tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color} /> }}
+        options={{ title: 'Reports', tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color as string} /> }}
       />
       <Tabs.Screen
         name="notices"
-        options={{ title: 'Notices', tabBarIcon: ({ color, size }) => <Ionicons name="megaphone-outline" size={size} color={color} /> }}
+        options={{ title: 'Notices', tabBarIcon: ({ color, size }) => <Ionicons name="megaphone-outline" size={size} color={color as string} /> }}
       />
     </Tabs>
   );
