@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 10.0.0"
+    "version": ">= 10.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -10,7 +11,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.0.2.2:8000"
+        "EXPO_PUBLIC_API_URL": "https://laizer-juwv.onrender.com"
       }
     },
     "preview": {
@@ -19,7 +20,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://smss-api.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://laizer-juwv.onrender.com"
       }
     },
     "production": {
@@ -27,7 +28,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://smss-api.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://laizer-juwv.onrender.com"
       }
     }
   },

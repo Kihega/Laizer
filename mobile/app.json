@@ -7,11 +7,6 @@
     "scheme": "smss",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/images/icon.png",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#1D4ED8"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -25,7 +20,6 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#1D4ED8"
       },
-      "edgeToEdgeEnabled": true,
       "permissions": []
     },
     "web": {
@@ -44,7 +38,8 @@
         }
       ],
       "expo-sharing",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
