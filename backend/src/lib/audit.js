@@ -26,6 +26,7 @@ const ACTIONS = {
   SERVICE_DELETED:       'SERVICE_DELETED',
   NOTICE_SENT:           'NOTICE_SENT',
   NOTICE_READ:           'NOTICE_READ',
+  NOTICE_DELETED:        'NOTICE_DELETED',
 };
 
 /**

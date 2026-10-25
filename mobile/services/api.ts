@@ -65,8 +65,8 @@ apiClient.interceptors.response.use(
           data: {
             error: isTimeout ? 'timeout' : 'network_error',
             detail: isTimeout
-              ? 'The server took too long. It may be waking up — try again in a moment.'
-              : `Cannot reach the server at ${API_BASE_URL}. Check your network.`,
+              ? 'The server is taking too long to respond. Check your internet connection and try again.'
+              : 'Check your internet connection and try again.', // __LAIZER_PATCH_V12__
           },
         },
       });
@@ -140,26 +140,44 @@ const ERROR_PREFIXES: Record<string, string> = {
   too_many_requests:     '',
 };
 
-export function getApiError(err: unknown, fallback = 'Something went wrong.'): string {
-  if (axios.isAxiosError(err)) {
-    const d = (err.response?.data as { error?: string; detail?: unknown });
-    const prefix = d?.error ? (ERROR_PREFIXES[d.error] ?? '') : '';
-    if (d?.detail) {
-      if (typeof d.detail === 'string') return `${prefix}${d.detail}`;
-      const fe = (d.detail as any)?.fieldErrors;
-      if (fe) {
-        const msgs = Object.entries(fe)
-          .filter(([, v]) => Array.isArray(v) && (v as string[]).length)
-          .map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`);
-        if (msgs.length) return msgs.join(' | ');
-      }
-      if (typeof d.detail === 'object') {
-        try { return `${prefix}${JSON.stringify(d.detail)}`; } catch { /* fallthrough */ }
-      }
-    }
-    if (!err.response) return 'No internet connection. Check your network and try again.';
-    return `Server error (${err.response.status}). Please try again.`;
+export function getApiError(err: unknown, fallback = 'Something went wrong. Please try again.'): string {
+  // __LAIZER_PATCH_V12__
+  // Works for real AxiosErrors AND for the plain objects the response
+  // interceptor builds for network failures / timeouts (those lose the
+  // AxiosError prototype, so axios.isAxiosError() is false for them — which is
+  // why every connection problem used to show the generic fallback).
+  // Status codes (401, 500, …) are never shown to the user.
+  const e = err as any;
+  const resp = e?.response;
+  const d = resp?.data as { error?: string; detail?: unknown } | undefined;
+
+  if (d?.error === 'network_error' || d?.error === 'timeout') {
+    return 'Check your internet connection and try again.';
   }
+  if (!resp) {
+    if (axios.isAxiosError(err) || e?.code === 'ECONNABORTED' || e?.message === 'Network Error') {
+      return 'Check your internet connection and try again.';
+    }
+    return fallback;
+  }
+
+  const prefix = d?.error ? (ERROR_PREFIXES[d.error] ?? '') : '';
+  if (d?.detail) {
+    if (typeof d.detail === 'string') return `${prefix}${d.detail}`;
+    const fe = (d.detail as any)?.fieldErrors;
+    if (fe) {
+      const msgs = Object.entries(fe)
+        .filter(([, v]) => Array.isArray(v) && (v as string[]).length)
+        .map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`);
+      if (msgs.length) return msgs.join(' | ');
+    }
+  }
+
+  const status: number | undefined = resp.status;
+  if (status === 401) return 'Your session has expired. Please sign in again.';
+  if (status === 403) return 'You do not have permission to do that.';
+  if (status === 404) return 'That item could not be found.';
+  if (status !== undefined && status >= 500) return 'Something went wrong on our side. Please try again in a moment.';
   return fallback;
 }
 
@@ -204,6 +222,8 @@ export const stockService = {
   create: (body: object)             => apiClient.post(API_ROUTES.stock, body),
   update: (id: string, body: object) => apiClient.patch(API_ROUTES.stockItem(id), body),
   delete: (id: string)               => apiClient.delete(API_ROUTES.stockItem(id)),
+  // __LAIZER_PATCH_V12__ — consume pcs; the item is removed automatically at 0
+  use:    (id: string, quantity: number) => apiClient.post(API_ROUTES.stockUse(id), { quantity }),
 };
 
 // ── Equipment (office utilities) ───────────────────────────────────────────────
@@ -232,6 +252,7 @@ export const noticeService = {
     apiClient.get(API_ROUTES.notices + (centreId ? `?centreId=${centreId}` : '')),
   send:   (body: object) => apiClient.post(API_ROUTES.notices, body),
   markRead:(id: string)  => apiClient.post(API_ROUTES.readNotice(id), {}),
+  remove: (id: string)   => apiClient.delete(API_ROUTES.noticeItem(id)), // __LAIZER_PATCH_V12__
 };
 
 // ── Reports ────────────────────────────────────────────────────────────────────
@@ -247,10 +268,9 @@ export const reportService = {
   // __LAIZER_PATCH_V11__ — this was missing entirely, which is why tapping a
   // report card threw a plain JS "not a function" error that the generic
   // handler rendered as "Something went wrong."
-  detail: (params: { centreId: string; mode?: 'daily' | 'weekly'; date?: string; weekStart?: string }) => {
-    const q = new URLSearchParams(params as unknown as Record<string, string>).toString();
-    return apiClient.get(API_ROUTES.reportDetail + (q ? `?${q}` : ''));
-  },
+  // __LAIZER_PATCH_V12__ — let axios build the query string (RN's URLSearchParams is partial)
+  detail: (params: { centreId: string; mode?: 'daily' | 'weekly'; date?: string; weekStart?: string }) =>
+    apiClient.get(API_ROUTES.reportDetail, { params }),
 };
 
 // ── Push token ─────────────────────────────────────────────────────────────────

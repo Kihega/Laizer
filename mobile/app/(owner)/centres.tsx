@@ -11,7 +11,7 @@ import {
 import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { Ionicons }        from '@expo/vector-icons';
 import { centreService, getApiError } from '@/services/api';
-import { Card, Button, Input, StatusBadge } from '@/components/ui';
+import { Card, Button, Input, KeyboardAwareScrollView, StatusBadge } from '@/components/ui'; // __LAIZER_PATCH_V12__
 import { Colors, FontSize, FontWeight, Spacing }         from '@/constants/theme';
 
 export default function CentresScreen() {
@@ -83,6 +83,7 @@ export default function CentresScreen() {
       </View>
 
       {showForm && (
+        <KeyboardAwareScrollView style={{ flexGrow: 0, maxHeight: '85%' }}>
         <Card style={S.form}>
           <Text style={S.formTitle}>New Centre</Text>
           {[
@@ -103,6 +104,7 @@ export default function CentresScreen() {
             <Button label="Create"  onPress={handleCreate} loading={saving} style={{ flex:1 }} />
           </View>
         </Card>
+        </KeyboardAwareScrollView>
       )}
 
       {loading ? (

@@ -6,3 +6,5 @@ export { Input }                 from './Input';
 export { default as StatusBadge } from './StatusBadge';
 // __LAIZER_PATCH_V10__
 export { CustomAlert, CustomAlertHost } from './CustomAlert';
+// __LAIZER_PATCH_V12__
+export { KeyboardAwareScrollView } from './KeyboardAwareScrollView';

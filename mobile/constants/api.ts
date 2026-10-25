@@ -101,6 +101,7 @@ export const API_ROUTES = {
   // Stock
   stock:        '/api/stock/',
   stockItem:    (id: string) => `/api/stock/${id}/`,
+  stockUse:     (id: string) => `/api/stock/${id}/use/`, // __LAIZER_PATCH_V12__
 
   // Equipment (office utilities)
   equipment:     '/api/equipment/',
@@ -113,6 +114,7 @@ export const API_ROUTES = {
   // Notices
   notices:      '/api/notices/',
   readNotice:   (id: string) => `/api/notices/${id}/read/`,
+  noticeItem:   (id: string) => `/api/notices/${id}/`, // __LAIZER_PATCH_V12__
 
   // Reports
   reportDaily:  '/api/reports/daily/',

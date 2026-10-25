@@ -11,23 +11,13 @@ import {
 import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { Ionicons }        from '@expo/vector-icons';
 import { noticeService, centreService, getApiError } from '@/services/api';
-import { Card, Button, Input, StatusBadge } from '@/components/ui';
+import { Card, Button, Input, KeyboardAwareScrollView } from '@/components/ui'; // __LAIZER_PATCH_V12__
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 
 const MAX_WORDS = 100;
 
 function wordCount(txt: string) {
   return txt.trim().split(/\s+/).filter(Boolean).length;
-}
-
-// __LAIZER_PATCH_V11__
-function expiryLabel(expiresAt?: string | null): string | null {
-  if (!expiresAt) return null;
-  const diffMs = new Date(expiresAt).getTime() - Date.now();
-  if (diffMs <= 0) return 'Expired';
-  const hrs  = Math.floor(diffMs / 3600000);
-  const mins = Math.floor((diffMs % 3600000) / 60000);
-  return hrs >= 1 ? `Expires in ${hrs}h${mins ? ` ${mins}m` : ''}` : `Expires in ${mins}m`;
 }
 
 export default function NoticesOwnerScreen() {
@@ -92,11 +82,9 @@ export default function NoticesOwnerScreen() {
       </View>
 
       {showForm && (
+        <KeyboardAwareScrollView style={{ flexGrow: 0, maxHeight: '85%' }}>
         <Card style={N.form}>
           <Text style={N.formTitle}>Send Notice to Workers</Text>
-          <Text style={{ fontSize: FontSize.xs, color: Colors.textDisabled, marginBottom: Spacing.sm }}>
-            Notices for today are cleared automatically at midnight — send a new one each day.
-          </Text>
 
           {/* Centre dropdown */}
           <Text style={N.fieldLabel}>Target Centre <Text style={{ color:Colors.error }}>*</Text></Text>
@@ -150,6 +138,7 @@ export default function NoticesOwnerScreen() {
             <Button label="Send Notice" onPress={handleSend} loading={saving} style={{ flex:1 }} disabled={overLimit} />
           </View>
         </Card>
+        </KeyboardAwareScrollView>
       )}
 
       {loading ? <ActivityIndicator style={{ marginTop:60 }} color={Colors.primary} /> : (
@@ -166,16 +155,12 @@ export default function NoticesOwnerScreen() {
                   <Ionicons name="megaphone-outline" size={16} color={Colors.primary} />
                   <Text style={N.itemCentre} numberOfLines={1}>{item.centre?.name ?? '—'}</Text>
                 </View>
-                <StatusBadge type={item.priority} size="sm" />
               </View>
               <Text style={N.itemBody} numberOfLines={3}>{item.body}</Text>
               <View style={N.itemFooter}>
                 <Text style={N.itemMeta}>{new Date(item.createdAt).toLocaleDateString()}</Text>
                 <Text style={N.readCount}>{item._count?.reads ?? 0} read</Text>
               </View>
-              {expiryLabel(item.expiresAt) && (
-                <Text style={N.expiryTxt}>{expiryLabel(item.expiresAt)}</Text>
-              )}
             </Card>
           )}
         />
