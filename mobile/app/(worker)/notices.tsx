@@ -159,19 +159,17 @@ export default function WorkerNoticesScreen() {
             >
               {selected && (
                 <>
+                  <View style={NS.modalSender}>
+                    <Text style={NS.modalSenderLabel}>From:</Text>
+                    <Text style={NS.modalSenderName}>{selected.sender?.fullName ?? 'Owner'}</Text>
+                  </View>
+
                   <Text style={NS.modalTime}>
                     {new Date(selected.createdAt).toLocaleDateString('en-TZ', {
                       weekday:'short', day:'numeric', month:'short',
                       hour:'2-digit', minute:'2-digit',
                     })}
                   </Text>
-
-                  <Text style={NS.modalTitle}>{selected.title}</Text>
-
-                  <View style={NS.modalSender}>
-                    <Text style={NS.modalSenderLabel}>From:</Text>
-                    <Text style={NS.modalSenderName}>{selected.sender?.fullName ?? 'Owner'}</Text>
-                  </View>
 
                   <View style={NS.modalDivider} />
 
@@ -228,11 +226,11 @@ const NS = StyleSheet.create({
   modalBox:       { width: '100%', maxHeight: '80%', backgroundColor: Colors.white,
                     borderRadius: Radius.xl, padding: Spacing.xl, ...Shadows.lg },
   modalScroll:    { flexGrow: 0 },
-  modalTime:      { fontSize: FontSize.xs, color: Colors.textDisabled, marginBottom: Spacing.sm },
+  modalTime:      { fontSize: FontSize.xs, color: Colors.textDisabled, marginBottom: Spacing.md },
   modalTitle:     { fontSize: FontSize.xl, fontWeight: FontWeight.bold,
                     color: Colors.textPrimary, marginBottom: Spacing.sm, lineHeight: 28 },
   modalSender:    { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
-                    marginBottom: Spacing.md },
+                    marginBottom: Spacing.xs },
   modalSenderLabel:{ fontSize: FontSize.sm, color: Colors.textDisabled },
   modalSenderName: { fontSize: FontSize.sm, color: Colors.primary,
                      fontWeight: FontWeight.semiBold },

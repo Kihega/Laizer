@@ -4,14 +4,14 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, RefreshControl,
+  ActivityIndicator, Modal, RefreshControl,
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { serviceEventService, getApiError } from '@/services/api';
 import { Card, Button, Input, KeyboardAwareScrollView, StatusBadge } from '@/components/ui';
 import { ConfirmModal } from '@/components/ConfirmModal';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Colors, FontSize, FontWeight, Radius, Shadows, Spacing } from '@/constants/theme';
 import { serviceLabel } from '@/constants/labels';
 
 // __LAIZER_PATCH_V12__
@@ -149,9 +149,80 @@ export default function ServicesScreen() {
         }
         contentContainerStyle={{ padding: Spacing.base }}
       >
-        {/* Log / Edit Form */}
-        {showForm && (
-        <Card style={S.form}>
+
+
+        {/* Events list */}
+        {loading ? (
+          <ActivityIndicator style={{ marginTop: 60 }} color={Colors.primary} />
+        ) : events.length === 0 ? (
+          <Text style={S.empty}>No service events logged today. Tap + Log Service to start.</Text>
+        ) : events.map(item => {
+          const editable = canEdit(item.createdAt);
+          return (
+            <Card key={item.id} style={S.item}>
+              <View style={S.itemTop}>
+                <StatusBadge type={item.serviceType} />
+                {item.serviceSubtype && (
+                  <Text style={S.subtype}>
+                    {item.serviceSubtype === 'black_and_white' ? 'B&W' : 'Colour'}
+                  </Text>
+                )}
+                <Text style={S.itemTotal}>{fmt(Number(item.totalAmountTshs))}</Text>
+              </View>
+
+              {(item.pages != null || item.pricePerPageTshs != null) && (
+                <View style={S.itemMid}>
+                  {item.pages != null && (
+                    <Text style={S.itemDetail}>📄 {item.pages} pages</Text>
+                  )}
+                  {item.pricePerPageTshs != null && (
+                    <Text style={S.itemDetail}>
+                      @ Tshs {Number(item.pricePerPageTshs).toLocaleString()}/pg
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              <View style={S.itemBottom}>
+                <Text style={S.itemTime}>
+                  {new Date(item.createdAt).toLocaleTimeString('en-TZ', {
+                    hour: '2-digit', minute: '2-digit',
+                  })}
+                </Text>
+                {editable && (
+                  <View style={S.itemActions}>
+                    <TouchableOpacity onPress={() => openForm(item)}>
+                      <Text style={S.editBtn}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setDelTarget(item)}>
+                      <Text style={S.deleteBtn}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </Card>
+          );
+        })}
+      </KeyboardAwareScrollView>
+
+      {/* Log / Edit form — popup over the logged-services list */}
+      <Modal
+        visible={showForm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setShowForm(false); setEditTarget(null); }}
+      >
+        <View style={S.overlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => { setShowForm(false); setEditTarget(null); }}
+          />
+          <KeyboardAwareScrollView
+            style={{ width: '100%', flexGrow: 0, maxHeight: '96%' }}
+            contentContainerStyle={{ padding: Spacing.base }}
+          >
+            <View style={S.formBox}>
           <Text style={S.formTitle}>{editTarget ? 'Edit Service Event' : 'Log New Service'}</Text>
 
           {/* Service Type */}
@@ -240,63 +311,10 @@ export default function ServicesScreen() {
               style={{ flex: 1 }}
             />
           </View>
-        </Card>
-      )}
-
-
-        {/* Events list */}
-        {loading ? (
-          <ActivityIndicator style={{ marginTop: 60 }} color={Colors.primary} />
-        ) : events.length === 0 ? (
-          <Text style={S.empty}>No service events logged today. Tap + Log Service to start.</Text>
-        ) : events.map(item => {
-          const editable = canEdit(item.createdAt);
-          return (
-            <Card key={item.id} style={S.item}>
-              <View style={S.itemTop}>
-                <StatusBadge type={item.serviceType} />
-                {item.serviceSubtype && (
-                  <Text style={S.subtype}>
-                    {item.serviceSubtype === 'black_and_white' ? 'B&W' : 'Colour'}
-                  </Text>
-                )}
-                <Text style={S.itemTotal}>{fmt(Number(item.totalAmountTshs))}</Text>
-              </View>
-
-              {(item.pages != null || item.pricePerPageTshs != null) && (
-                <View style={S.itemMid}>
-                  {item.pages != null && (
-                    <Text style={S.itemDetail}>📄 {item.pages} pages</Text>
-                  )}
-                  {item.pricePerPageTshs != null && (
-                    <Text style={S.itemDetail}>
-                      @ Tshs {Number(item.pricePerPageTshs).toLocaleString()}/pg
-                    </Text>
-                  )}
-                </View>
-              )}
-
-              <View style={S.itemBottom}>
-                <Text style={S.itemTime}>
-                  {new Date(item.createdAt).toLocaleTimeString('en-TZ', {
-                    hour: '2-digit', minute: '2-digit',
-                  })}
-                </Text>
-                {editable && (
-                  <View style={S.itemActions}>
-                    <TouchableOpacity onPress={() => openForm(item)}>
-                      <Text style={S.editBtn}>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setDelTarget(item)}>
-                      <Text style={S.deleteBtn}>Delete</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            </Card>
-          );
-        })}
-      </KeyboardAwareScrollView>
+                    </View>
+          </KeyboardAwareScrollView>
+        </View>
+      </Modal>
 
       <ConfirmModal
         visible={!!delTarget}
@@ -317,7 +335,9 @@ const S = StyleSheet.create({
   header:        { flexDirection:'row', justifyContent:'space-between', alignItems:'center',
                    padding: Spacing.xl, paddingTop: 60, backgroundColor: Colors.primary },
   title:         { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.white },
-  form:          { marginBottom: Spacing.base },
+  overlay:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center' },
+  formBox:       { width: '100%', backgroundColor: Colors.white, borderRadius: Radius.xl,
+                   padding: Spacing.xl, ...Shadows.lg },
   formTitle:     { fontSize: FontSize.md, fontWeight: FontWeight.bold,
                    color: Colors.textPrimary, marginBottom: Spacing.md },
   fieldLabel:    { fontSize: FontSize.sm, fontWeight: FontWeight.semiBold,

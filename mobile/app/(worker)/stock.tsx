@@ -46,7 +46,7 @@ export default function StockScreen() {
     if (isNaN(qty) || qty < 1) { CustomAlert.alert('Invalid quantity', 'Quantity must be 1 piece or more.'); return; }
     setSaving(true);
     try {
-      const { data } = await stockService.create({ itemName: name, quantity: qty });
+      const { data } = await stockService.create({ itemName: name, quantity: qty, unit: 'pcs', netStockPriceTshs: 0 });
       setShowForm(false); setForm(BLANK_FORM);
       await load();
       if (data?.merged) {
