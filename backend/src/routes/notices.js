@@ -1,9 +1,13 @@
 /**
  * SMSS — Notices routes
+ * __LAIZER_PATCH_V12__ — notices no longer expire or auto-delete. A worker
+ * removes a notice from THEIR list with DELETE (stored as NoticeRead.deletedAt),
+ * so other workers at the same centre, and the owner's sent list, are unaffected.
  *
- * GET  /api/notices/         — worker: inbox for their centre; owner: sent notices
- * POST /api/notices/         — owner: send notice (triggers push notifications)
- * POST /api/notices/:id/read/— worker: mark as read
+ * GET    /api/notices/          — worker: inbox for their centre; owner: sent notices
+ * POST   /api/notices/          — owner: send notice (triggers push notifications)
+ * POST   /api/notices/:id/read/ — worker: mark as read
+ * DELETE /api/notices/:id/      — worker: delete from my list
  */
 const { Router }          = require('express');
 const { z }               = require('zod');
@@ -18,21 +22,18 @@ router.use(authenticate);
 // ── GET /api/notices/ ─────────────────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
   try {
-    // __LAIZER_PATCH_V11__ — belt-and-braces cleanup: hard-delete anything past
-    // its expiry before answering, so this is correct immediately even if
-    // the periodic sweep in app.js hasn't run yet (e.g. server just woke
-    // up from a free-tier sleep).
-    await prisma.notice.deleteMany({ where: { expiresAt: { lte: new Date() } } });
-
     if (req.user.role === 'worker') {
-      const nowFilter = new Date();
+      const workerId = req.user.id;
       const notices = await prisma.notice.findMany({
-        where:   { centreId: req.user.centreId,
-                   OR: [{ expiresAt: null }, { expiresAt: { gt: nowFilter } }] },
+        where: {
+          centreId: req.user.centreId,
+          // hide only the notices THIS worker deleted
+          NOT: { reads: { some: { workerId, deletedAt: { not: null } } } },
+        },
         orderBy: { createdAt: 'desc' },
         include: {
           sender: { select: { id:true, fullName:true } },
-          reads:  { where: { workerId: req.user.id }, select: { readAt:true } },
+          reads:  { where: { workerId }, select: { readAt:true } },
         },
       });
       return res.json(notices.map(n => ({
@@ -48,12 +49,11 @@ router.get('/', async (req, res, next) => {
         where:  { ownerId: req.user.id, isActive: true, ...(centreId ? { id: centreId } : {}) },
         select: { id: true },
       });
-      const nowFilter2 = new Date();
       try {
         const notices = await prisma.notice.findMany({
-          where:   { centreId: { in: centres.map(c => c.id) },
-                     OR: [{ expiresAt: null }, { expiresAt: { gt: nowFilter2 } }] },
+          where:   { centreId: { in: centres.map(c => c.id) } },
           orderBy: { createdAt: 'desc' },
+          take:    100,
           include: {
             centre: { select: { id:true, name:true, centreNo:true } },
             _count: { select: { reads: true } },
@@ -93,11 +93,6 @@ router.post('/', ownerOnly, async (req, res, next) => {
 
     const body  = parsed.data.body;
     const title = parsed.data.title ?? (body.length > 60 ? body.substring(0,60)+'…' : body);
-    // __LAIZER_PATCH_V11__ — a notice belongs to the day it was sent: it expires
-    // at the next midnight, not a fixed 48h window, so the owner writes a
-    // fresh one each day rather than yesterday's notice quietly carrying over.
-    const expiresAt = new Date();
-    expiresAt.setHours(24, 0, 0, 0); // rolls forward to tomorrow 00:00:00
     const notice = await prisma.notice.create({
       data: {
         centreId: parsed.data.centreId,
@@ -105,7 +100,6 @@ router.post('/', ownerOnly, async (req, res, next) => {
         priority: parsed.data.priority ?? 'normal',
         title,
         senderId: req.user.id,
-        expiresAt,
       },
     });
 
@@ -114,7 +108,7 @@ router.post('/', ownerOnly, async (req, res, next) => {
       centre.id,
       `📢 ${notice.title}`,
       notice.body,
-      { noticeId: notice.id, priority: notice.priority }
+      { noticeId: notice.id }
     ).catch(e => console.error('[Notices] push failed:', e.message));
 
     await logAction(req.user.id, logAction.ACTIONS.NOTICE_SENT, { req, noticeId: notice.id });
@@ -132,6 +126,26 @@ router.post('/:id/read/', workerOnly, async (req, res, next) => {
     });
     await logAction(req.user.id, logAction.ACTIONS.NOTICE_READ, { req, noticeId: req.params.id });
     return res.json({ detail: 'Notice marked as read.' });
+  } catch (err) { next(err); }
+});
+
+// ── DELETE /api/notices/:id/ ──────────────────────────────────────────────────
+router.delete('/:id/', workerOnly, async (req, res, next) => {
+  try {
+    const notice = await prisma.notice.findFirst({
+      where:  { id: req.params.id, centreId: req.user.centreId },
+      select: { id: true },
+    });
+    if (!notice) return res.status(404).json({ error: 'not_found', detail: 'Notice not found.' });
+
+    const now = new Date();
+    await prisma.noticeRead.upsert({
+      where:  { noticeId_workerId: { noticeId: notice.id, workerId: req.user.id } },
+      create: { noticeId: notice.id, workerId: req.user.id, deletedAt: now },
+      update: { deletedAt: now },
+    });
+    await logAction(req.user.id, logAction.ACTIONS.NOTICE_DELETED, { req, noticeId: notice.id });
+    return res.json({ detail: 'Notice deleted.' });
   } catch (err) { next(err); }
 });
 

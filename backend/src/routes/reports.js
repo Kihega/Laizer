@@ -205,12 +205,24 @@ router.get('/detail/', async (req, res, next) => {
     let stock = [];
     try {
       stock = await prisma.stockItem.findMany({
-        where:  { centreId: centre.id },
-        select: { itemName:true, quantity:true, unit:true, netStockPriceTshs:true },
+        where:  { centreId: centre.id, quantity: { gt: 0 } },
+        select: { itemName:true, quantity:true, unit:true },
         orderBy: { itemName: 'asc' },
       });
     } catch (e) {
       console.error('[reports/detail] stock error:', e.message);
+    }
+
+    // __LAIZER_PATCH_V12__ — office utilities registered by the branch's workers
+    let equipment = [];
+    try {
+      equipment = await prisma.equipment.findMany({
+        where:   { centreId: centre.id },
+        select:  { itemName:true, quantity:true, notes:true },
+        orderBy: { itemName: 'asc' },
+      });
+    } catch (e) {
+      console.error('[reports/detail] equipment error:', e.message);
     }
 
     const totalRevenue = events.reduce((s, e) => s + Number(e.totalAmountTshs), 0);
@@ -230,6 +242,8 @@ router.get('/detail/', async (req, res, next) => {
       byServiceType:   byType,
       events,
       stock,
+      equipment,
+      generatedAt: new Date().toISOString(),
     };
     await redis.cacheSet(cacheKey, payload, redis.CacheTTL.REPORT_DETAIL);
     return res.json(payload);

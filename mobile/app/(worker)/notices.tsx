@@ -1,25 +1,24 @@
 /**
  * SMSS — Worker: Notices Screen
  * Inbox of notices sent by the owner. Marks as read on open.
+ *
+ * __LAIZER_PATCH_V12__
+ *  • No priority/status badges.
+ *  • Notices are never removed automatically — they stay until the worker
+ *    deletes them with the trash icon on the card.
+ *  • The full message opens in a card in the MIDDLE of the screen and scrolls
+ *    when the message is long.
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator, FlatList, Modal, RefreshControl,
   ScrollView, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { CustomAlert } from '@/components/ui/CustomAlert';
 import { noticeService, getApiError } from '@/services/api';
-import { Card, StatusBadge } from '@/components/ui';
+import { Card } from '@/components/ui';
 import { Colors, FontSize, FontWeight, Radius, Shadows, Spacing } from '@/constants/theme';
-
-// __LAIZER_PATCH_V11__
-function expiryLabel(expiresAt?: string | null): string | null {
-  if (!expiresAt) return null;
-  const diffMs = new Date(expiresAt).getTime() - Date.now();
-  if (diffMs <= 0) return 'Expired';
-  const hrs  = Math.floor(diffMs / 3600000);
-  const mins = Math.floor((diffMs % 3600000) / 60000);
-  return hrs >= 1 ? `Expires in ${hrs}h${mins ? ` ${mins}m` : ''}` : `Expires in ${mins}m`;
-}
 
 export default function WorkerNoticesScreen() {
   const [notices,    setNotices]   = useState<any[]>([]);
@@ -47,6 +46,26 @@ export default function WorkerNoticesScreen() {
         );
       } catch { /* non-critical */ }
     }
+  };
+
+  const confirmDelete = (item: any) => {
+    CustomAlert.alert(
+      'Delete notice',
+      'Delete this notice from your list?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive',
+          onPress: async () => {
+            try {
+              await noticeService.remove(item.id);
+              setNotices(prev => prev.filter(n => n.id !== item.id));
+              setSelected((s: any) => (s?.id === item.id ? null : s));
+            } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+          },
+        },
+      ],
+    );
   };
 
   const unreadCount = notices.filter(n => !n.isRead).length;
@@ -77,75 +96,80 @@ export default function WorkerNoticesScreen() {
             <Text style={NS.empty}>No notices from the owner yet.</Text>
           }
           renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => openNotice(item)} activeOpacity={0.85}>
-              <Card
-                style={[NS.item, !item.isRead && NS.itemUnread]}
-                onPress={() => openNotice(item)}
-              >
-                <View style={NS.itemTop}>
-                  <View style={NS.itemTitleRow}>
-                    {!item.isRead && <View style={NS.dot} />}
-                    <Text
-                      style={[NS.itemTitle, !item.isRead && NS.itemTitleBold]}
-                      numberOfLines={1}
-                    >
-                      {item.title}
-                    </Text>
-                  </View>
-                  <StatusBadge type={item.priority} size="sm" />
+            <Card
+              style={[NS.item, !item.isRead && NS.itemUnread]}
+              onPress={() => openNotice(item)}
+            >
+              <View style={NS.itemTop}>
+                <View style={NS.itemTitleRow}>
+                  {!item.isRead && <View style={NS.dot} />}
+                  <Text
+                    style={[NS.itemTitle, !item.isRead && NS.itemTitleBold]}
+                    numberOfLines={1}
+                  >
+                    {item.title}
+                  </Text>
                 </View>
+                <TouchableOpacity
+                  onPress={() => confirmDelete(item)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityLabel="Delete notice"
+                >
+                  <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                </TouchableOpacity>
+              </View>
 
-                <Text style={NS.itemBody} numberOfLines={2}>
-                  {item.body}
+              <Text style={NS.itemBody} numberOfLines={2}>
+                {item.body}
+              </Text>
+
+              <View style={NS.itemFooter}>
+                <Text style={NS.itemSender}>
+                  From: {item.sender?.fullName ?? 'Owner'}
                 </Text>
-
-                <View style={NS.itemFooter}>
-                  <Text style={NS.itemSender}>
-                    From: {item.sender?.fullName ?? 'Owner'}
-                  </Text>
-                  <Text style={NS.itemTime}>
-                    {new Date(item.createdAt).toLocaleDateString('en-TZ', {
-                      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                    })}
-                  </Text>
-                </View>
-                {expiryLabel(item.expiresAt) && (
-                  <Text style={NS.expiryTxt}>{expiryLabel(item.expiresAt)}</Text>
-                )}
-              </Card>
-            </TouchableOpacity>
+                <Text style={NS.itemTime}>
+                  {new Date(item.createdAt).toLocaleDateString('en-TZ', {
+                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                  })}
+                </Text>
+              </View>
+            </Card>
           )}
         />
       )}
 
-      {/* Notice detail modal */}
+      {/* Notice detail — centred card, scrolls for long messages */}
       <Modal
         visible={!!selected}
-        animationType="slide"
+        animationType="fade"
         transparent
         onRequestClose={() => setSelected(null)}
       >
         <View style={NS.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setSelected(null)}
+          />
           <View style={NS.modalBox}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={NS.modalScroll}
+              showsVerticalScrollIndicator
+              nestedScrollEnabled
+            >
               {selected && (
                 <>
-                  <View style={NS.modalHeader}>
-                    <StatusBadge type={selected.priority} />
-                    <Text style={NS.modalTime}>
-                      {new Date(selected.createdAt).toLocaleDateString('en-TZ', {
-                        weekday:'short', day:'numeric', month:'short',
-                        hour:'2-digit', minute:'2-digit',
-                      })}
-                    </Text>
-                  </View>
-
-                  <Text style={NS.modalTitle}>{selected.title}</Text>
-
                   <View style={NS.modalSender}>
                     <Text style={NS.modalSenderLabel}>From:</Text>
                     <Text style={NS.modalSenderName}>{selected.sender?.fullName ?? 'Owner'}</Text>
                   </View>
+
+                  <Text style={NS.modalTime}>
+                    {new Date(selected.createdAt).toLocaleDateString('en-TZ', {
+                      weekday:'short', day:'numeric', month:'short',
+                      hour:'2-digit', minute:'2-digit',
+                    })}
+                  </Text>
 
                   <View style={NS.modalDivider} />
 
@@ -157,9 +181,6 @@ export default function WorkerNoticesScreen() {
                         hour:'2-digit', minute:'2-digit',
                       })}
                     </Text>
-                  )}
-                  {expiryLabel(selected.expiresAt) && (
-                    <Text style={NS.expiryTxt}>{expiryLabel(selected.expiresAt)}</Text>
                   )}
                 </>
               )}
@@ -198,27 +219,24 @@ const NS = StyleSheet.create({
   itemFooter:     { flexDirection: 'row', justifyContent: 'space-between' },
   itemSender:     { fontSize: FontSize.xs, color: Colors.textDisabled },
   itemTime:       { fontSize: FontSize.xs, color: Colors.textDisabled },
-  expiryTxt:      { fontSize: FontSize.xs, color: Colors.textDisabled, marginTop: 4, fontStyle:'italic' }, // __LAIZER_PATCH_V11__
 
-  // Modal
+  // Modal — centred card
   modalOverlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)',
-                    justifyContent: 'flex-end' },
-  modalBox:       { backgroundColor: Colors.white, borderTopLeftRadius: 24,
-                    borderTopRightRadius: 24, padding: Spacing.xl,
-                    maxHeight: '80%', ...Shadows.lg },
-  modalHeader:    { flexDirection: 'row', justifyContent: 'space-between',
-                    alignItems: 'center', marginBottom: Spacing.md },
-  modalTime:      { fontSize: FontSize.xs, color: Colors.textDisabled },
+                    justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },
+  modalBox:       { width: '100%', maxHeight: '80%', backgroundColor: Colors.white,
+                    borderRadius: Radius.xl, padding: Spacing.xl, ...Shadows.lg },
+  modalScroll:    { flexGrow: 0 },
+  modalTime:      { fontSize: FontSize.xs, color: Colors.textDisabled, marginBottom: Spacing.md },
   modalTitle:     { fontSize: FontSize.xl, fontWeight: FontWeight.bold,
                     color: Colors.textPrimary, marginBottom: Spacing.sm, lineHeight: 28 },
   modalSender:    { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
-                    marginBottom: Spacing.md },
+                    marginBottom: Spacing.xs },
   modalSenderLabel:{ fontSize: FontSize.sm, color: Colors.textDisabled },
   modalSenderName: { fontSize: FontSize.sm, color: Colors.primary,
                      fontWeight: FontWeight.semiBold },
   modalDivider:   { height: 1, backgroundColor: Colors.divider, marginBottom: Spacing.md },
   modalBody:      { fontSize: FontSize.base, color: Colors.textPrimary,
-                    lineHeight: 24, marginBottom: Spacing.xl },
+                    lineHeight: 24, marginBottom: Spacing.base },
   readAt:         { fontSize: FontSize.xs, color: Colors.success,
                     marginBottom: Spacing.base },
   closeBtn:       { height: 50, backgroundColor: Colors.grey100,

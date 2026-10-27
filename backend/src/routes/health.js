@@ -19,6 +19,7 @@ router.get('/', async (_req, res) => {
   res.status(ok ? 200 : 503).json({
     status: ok ? 'ok' : 'degraded',
     service: 'SMSS API', version: '1.0.0',
+    build: 'v13-stock-pcs-notices-passport', // lets you confirm which code Render is running
     environment: process.env.NODE_ENV || 'development',
     database: db, redis: cache,
     timestamp: new Date().toISOString(),

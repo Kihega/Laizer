@@ -17,7 +17,7 @@ import { useAuth }        from '@/hooks/useAuth';
 import { useTheme }       from '@/hooks/useTheme';
 import { reportService, centreService, apiClient } from '@/services/api';
 import { API_ROUTES }     from '@/constants/api';
-import { Card }           from '@/components/ui';
+import { Card, KeyboardAwareScrollView } from '@/components/ui'; // __LAIZER_PATCH_V12__
 import { BrandColors, Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 
 function fmt(n: number) {
@@ -271,6 +271,7 @@ export default function OwnerDashboard() {
       {/* ── Change Password Modal ─────────────────────────────── */}
       <Modal visible={showPwModal} animationType="fade" transparent onRequestClose={() => setShowPwModal(false)}>
         <View style={S.pwOverlay}>
+          <KeyboardAwareScrollView style={{ width:'100%', flexGrow:0, maxHeight:'100%' }} contentContainerStyle={{ flexGrow:1, justifyContent:'center' }}>
           <View style={[S.pwModal, { backgroundColor: tc.card }]}>
             <Text style={[S.pwTitle, { color: tc.text }]}>Change Password</Text>
 
@@ -320,6 +321,7 @@ export default function OwnerDashboard() {
               </TouchableOpacity>
             </View>
           </View>
+          </KeyboardAwareScrollView>
         </View>
       </Modal>
     </View>

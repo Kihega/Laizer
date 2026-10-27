@@ -10,7 +10,7 @@ import {
 import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { Ionicons }       from '@expo/vector-icons';
 import { workerService, centreService, getApiError } from '@/services/api';
-import { Card, Button, Input, StatusBadge } from '@/components/ui';
+import { Card, Button, Input, KeyboardAwareScrollView, StatusBadge } from '@/components/ui'; // __LAIZER_PATCH_V12__
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 
 export default function WorkersScreen() {
@@ -92,6 +92,7 @@ export default function WorkersScreen() {
       </View>
 
       {showForm && (
+        <KeyboardAwareScrollView style={{ flexGrow: 0, maxHeight: '85%' }}>
         <Card style={W.form}>
           <Text style={W.formTitle}>Register Worker</Text>
           <Input label="Full Name" placeholder="JOHN DOE" value={form.fullName}
@@ -112,6 +113,7 @@ export default function WorkersScreen() {
             <Button label="Register" onPress={handleRegister} loading={saving} style={{ flex:1 }} />
           </View>
         </Card>
+        </KeyboardAwareScrollView>
       )}
 
       {loading ? <ActivityIndicator style={W.loader} color={Colors.primary} /> : (

@@ -80,7 +80,7 @@ model StockItem {
   itemName          String    @map("item_name")
   quantity          Decimal   @db.Decimal(10, 2)
   unit              StockUnit
-  netStockPriceTshs Decimal   @map("net_stock_price_tshs") @db.Decimal(12, 2)
+  netStockPriceTshs Decimal   @default(0) @map("net_stock_price_tshs") @db.Decimal(12, 2) // __LAIZER_PATCH_V12__ price no longer entered
   notes             String?
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
@@ -158,6 +158,7 @@ model NoticeRead {
   noticeId String   @map("notice_id")
   workerId String   @map("worker_id")
   readAt   DateTime @default(now()) @map("read_at")
+  deletedAt DateTime? @map("deleted_at") // __LAIZER_PATCH_V12__ worker removed it from their list
   notice   Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
   worker   User     @relation(fields: [workerId], references: [id])
 
@@ -203,6 +204,7 @@ enum ServiceType {
   lamination
   scanning
   designing
+  passport_size // __LAIZER_PATCH_V12__
   other
 }
 

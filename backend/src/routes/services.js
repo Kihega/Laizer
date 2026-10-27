@@ -17,7 +17,11 @@ const { authenticate, workerOnly } = require('../middleware/auth');
 const router = Router();
 router.use(authenticate);
 
-const SERVICE_TYPES = ['photocopy', 'printing', 'lamination', 'scanning', 'designing', 'other'];
+// __LAIZER_PATCH_V12__ — "passport_size" added ("other" still accepted so old records stay editable).
+const SERVICE_TYPES = ['photocopy', 'printing', 'lamination', 'scanning', 'designing', 'passport_size', 'other'];
+// Only these are billed per page (pages × price/page); every other service is one flat price.
+const PAGE_TYPES    = ['photocopy', 'printing', 'scanning'];
+const round2        = n => Math.round(n * 100) / 100;
 const SUBTYPES      = ['black_and_white', 'colour'];
 
 // __LAIZER_PATCH_V9__
@@ -97,6 +101,7 @@ const CreateServiceSchema = z.object({
   category:         z.string().optional(),
   pages:            z.number().int().min(1).optional(),
   pricePerPageTshs: z.number().min(0).optional(),
+  totalAmountTshs:  z.number().min(0).optional(),   // flat price for non-page services
   customerNote:     z.string().optional(),
 });
 
@@ -106,19 +111,25 @@ router.post('/', workerOnly, async (req, res, next) => {
     if (!parsed.success)
       return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
 
-    const { pages, pricePerPageTshs, ...rest } = parsed.data;
+    const { pages, pricePerPageTshs, totalAmountTshs: flat, ...rest } = parsed.data;
 
-    // Server-side total calculation — never trust client total
-    const totalAmountTshs = (pages && pricePerPageTshs)
-      ? Math.round(pages * pricePerPageTshs * 100) / 100
-      : 0;
+    // Server-side money calculation. Page-billed services: pages × price/page
+    // (never trust a client total). Everything else: the single price entered.
+    let money;
+    if (PAGE_TYPES.includes(rest.serviceType)) {
+      if (!pages || !pricePerPageTshs)
+        return res.status(400).json({ error: 'validation_error', detail: 'Pages and price per page are required for this service.' });
+      money = { pages, pricePerPageTshs, totalAmountTshs: round2(pages * pricePerPageTshs) };
+    } else {
+      if (!flat)
+        return res.status(400).json({ error: 'validation_error', detail: 'Enter the price for this service.' });
+      money = { pages: null, pricePerPageTshs: null, totalAmountTshs: round2(flat) };
+    }
 
     const event = await prisma.serviceEvent.create({
       data: {
         ...rest,
-        pages,
-        pricePerPageTshs,
-        totalAmountTshs,
+        ...money,
         centreId: req.user.centreId,
         workerId: req.user.id,
       },
@@ -147,16 +158,26 @@ router.patch('/:id/', workerOnly, async (req, res, next) => {
     if (!parsed.success)
       return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
 
-    const { pages, pricePerPageTshs, ...rest } = parsed.data;
-    const newPages = pages          ?? Number(existing.pages);
-    const newPrice = pricePerPageTshs ?? Number(existing.pricePerPageTshs);
-    const totalAmountTshs = (newPages && newPrice)
-      ? Math.round(newPages * newPrice * 100) / 100
-      : Number(existing.totalAmountTshs);
+    const { pages, pricePerPageTshs, totalAmountTshs: flat, ...rest } = parsed.data;
+    const type = rest.serviceType ?? existing.serviceType;
+
+    let money;
+    if (PAGE_TYPES.includes(type)) {
+      const p = pages ?? (existing.pages != null ? Number(existing.pages) : null);
+      const r = pricePerPageTshs ?? (existing.pricePerPageTshs != null ? Number(existing.pricePerPageTshs) : null);
+      if (!p || !r)
+        return res.status(400).json({ error: 'validation_error', detail: 'Pages and price per page are required for this service.' });
+      money = { pages: p, pricePerPageTshs: r, totalAmountTshs: round2(p * r) };
+    } else {
+      const amount = flat ?? Number(existing.totalAmountTshs);
+      if (!amount)
+        return res.status(400).json({ error: 'validation_error', detail: 'Enter the price for this service.' });
+      money = { pages: null, pricePerPageTshs: null, totalAmountTshs: round2(amount) };
+    }
 
     const updated = await prisma.serviceEvent.update({
       where: { id: req.params.id },
-      data:  { ...rest, pages: newPages, pricePerPageTshs: newPrice, totalAmountTshs },
+      data:  { ...rest, ...money },
     });
 
     await logAction(req.user.id, logAction.ACTIONS.SERVICE_EDITED, { req, eventId: req.params.id });

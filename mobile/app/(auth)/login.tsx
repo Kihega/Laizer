@@ -5,8 +5,8 @@
  */
 import { useState } from 'react';
 import {
-  Image, KeyboardAvoidingView, Modal, Platform,
-  ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,
+  Image, Modal,
+  StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import type { ReactNode }   from 'react';
@@ -15,7 +15,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { LinearGradient }   from 'expo-linear-gradient';
 import { Ionicons }         from '@expo/vector-icons';
 import { useAuth }         from '@/hooks/useAuth';
-import { Button, Input }   from '@/components/ui';
+import { Button, Input, KeyboardAwareScrollView } from '@/components/ui'; // __LAIZER_PATCH_V12__
 import { BrandColors, Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { apiClient, getApiError } from '@/services/api'; // __LAIZER_PATCH_V8__
 import { API_ROUTES }      from '@/constants/api';
@@ -43,8 +43,22 @@ function strength(pw: string) {
   return { ...map[s], score: s };
 }
 
+// __LAIZER_PATCH_V12__
+// Upper-cases the text and inserts the "-" automatically as soon as the fixed
+// prefix is typed (WK -> WK-, STN -> STN-). Only adds the dash while the user is
+// typing forward, so Backspace can still delete it.
+function autoDash(next: string, prev: string, prefix: 'WK' | 'STN'): string {
+  const t = next.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  if (t.length < prev.length) return t;                       // deleting
+  if (t === prefix) return `${prefix}-`;                      // just typed the prefix
+  if (t.startsWith(prefix) && t.length > prefix.length && t[prefix.length] !== '-') {
+    return `${prefix}-${t.slice(prefix.length)}`;             // typed/pasted "WKA1B2" -> "WK-A1B2"
+  }
+  return t;
+}
+
 export default function LoginScreen() {
-  const { ownerLogin, workerLogin, isLoading, error, clearError } = useAuth();
+  const { ownerLogin, workerLogin, isLoading, clearError } = useAuth();
   const [mode,     setMode]     = useState<LoginMode>('owner');
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -64,18 +78,28 @@ export default function LoginScreen() {
 
   const [notice, setNotice] = useState<string | null>(null);
 
+  // __LAIZER_PATCH_V12__ — every login problem is shown in an alert card
+  // (CustomAlert, with an OK button) instead of text inside the form.
   const handleLogin = async () => {
     clearError();
     setNotice(null);
     if (mode === 'owner') {
-      if (!email.trim() || !password.trim()) return;
-      await ownerLogin(email, password);
+      if (!email.trim() || !password.trim()) {
+        CustomAlert.alert('Missing details', 'Enter your email and password.');
+        return;
+      }
+      const result = await ownerLogin(email, password);
+      if (!result.success && result.error) CustomAlert.alert(result.error.title, result.error.message);
     } else {
-      if (!centreId.trim()) return;
+      if (!centreId.trim()) {
+        CustomAlert.alert('Missing details', 'Enter your Centre ID.');
+        return;
+      }
       // workerLogin returns the raw result; the backend may include a `notice`
       // field when authorising a branch that has no assigned workers yet.
       const result = await workerLogin(workerId.toUpperCase(), centreId.toUpperCase());
-      if (result?.notice) setNotice(result.notice as string);
+      if (!result.success && result.error) CustomAlert.alert(result.error.title, result.error.message);
+      else if (result?.notice) setNotice(result.notice as string);
     }
   };
 
@@ -178,8 +202,7 @@ export default function LoginScreen() {
   return (
     <LinearGradient colors={[BrandColors.blueDark, BrandColors.blue, '#3B82F6']}
       start={{ x:0.1, y:0 }} end={{ x:0.9, y:1 }} style={L.gradient}>
-      <KeyboardAvoidingView behavior={Platform.OS==='ios' ? 'padding' : undefined} style={L.kav}>
-        <ScrollView contentContainerStyle={L.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView style={L.kav} contentContainerStyle={L.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
           {/* Brand */}
           <View style={L.header}>
@@ -214,7 +237,6 @@ export default function LoginScreen() {
               ))}
             </View>
 
-            {error && <View style={L.errBanner}><Text style={L.errTxt}>⚠️  {error.message}</Text></View>}
             {notice && (
               <View style={[L.errBanner, { borderLeftColor: '#D97706', backgroundColor: '#FEF3C7' }]}>
                 <Text style={[L.errTxt, { color: '#92400E' }]}>ℹ️  {notice}</Text>
@@ -236,11 +258,11 @@ export default function LoginScreen() {
               <>
                 {/* __LAIZER_PATCH_V10__ — instruction paragraphs removed, label + placeholder only */}
                 <Input label="Worker ID" placeholder="WK-A1B2"
-                  value={workerId} onChangeText={(t:string) => { setWorkerId(t.toUpperCase()); clearError(); }}
-                  autoCapitalize="characters" returnKeyType="next" />
+                  value={workerId} onChangeText={(t:string) => { setWorkerId(prev => autoDash(t, prev, 'WK')); clearError(); }}
+                  autoCapitalize="characters" autoCorrect={false} returnKeyType="next" />
                 <Input label="Centre ID" placeholder="STN-01"
-                  value={centreId} onChangeText={(t:string) => { setCentreId(t.toUpperCase()); clearError(); }}
-                  autoCapitalize="characters" returnKeyType="done" onSubmitEditing={handleLogin} />
+                  value={centreId} onChangeText={(t:string) => { setCentreId(prev => autoDash(t, prev, 'STN')); clearError(); }}
+                  autoCapitalize="characters" autoCorrect={false} returnKeyType="done" onSubmitEditing={handleLogin} />
               </>
             )}
 
@@ -253,14 +275,13 @@ export default function LoginScreen() {
               </TouchableOpacity>
             )}
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
 
       {/* ── Registration Modal ───────────────────────────────────── */}
       <Modal visible={showReg} animationType="slide" transparent onRequestClose={() => setShowReg(false)}>
         <View style={L.overlay}>
           <TouchableOpacity style={{ flex:1 }} activeOpacity={1} onPress={() => setShowReg(false)} />
-          <KeyboardAvoidingView behavior={Platform.OS==='ios' ? 'padding' : undefined}>
+          <View>
             <View style={L.sheet}>
               <View style={L.handle} />
 
@@ -303,7 +324,7 @@ export default function LoginScreen() {
                   <Button label="Done" onPress={() => setShowReg(false)} fullWidth size="md" style={{ marginTop:24 }} />
                 </View>
               ) : (
-                <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                <KeyboardAwareScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                   {!!regErr && <View style={L.errBanner}><Text style={L.errTxt}>⚠️  {regErr}</Text></View>}
 
                   {step===1 ? (
@@ -402,10 +423,10 @@ export default function LoginScreen() {
                       <View style={{ height:24 }} />
                     </>
                   )}
-                </ScrollView>
+                </KeyboardAwareScrollView>
               )}
             </View>
-          </KeyboardAvoidingView>
+          </View>
         </View>
       </Modal>
     </LinearGradient>

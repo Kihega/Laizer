@@ -7,7 +7,7 @@
  *
  * GET    /api/equipment/      — worker: their centre; owner: all centres (filter ?centreId=)
  * POST   /api/equipment/      — worker: register equipment
- * PATCH  /api/equipment/:id/  — worker: update quantity/condition/notes
+ * PATCH  /api/equipment/:id/  — worker: update name/quantity/notes
  * DELETE /api/equipment/:id/  — worker: remove entry
  */
 const { Router }                   = require('express');
@@ -20,7 +20,7 @@ const { authenticate, workerOnly } = require('../middleware/auth');
 const router = Router();
 router.use(authenticate);
 
-const CONDITIONS = ['good', 'fair', 'needs_repair', 'broken'];
+// __LAIZER_PATCH_V12__ — condition & category were removed from the API; workers put them in `notes`.
 
 // ── GET /api/equipment/ ───────────────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
@@ -67,10 +67,8 @@ router.get('/', async (req, res, next) => {
 
 // ── POST /api/equipment/ ──────────────────────────────────────────────────────
 const CreateEquipmentSchema = z.object({
-  itemName: z.string().min(1).max(80),
-  category: z.string().max(50).optional(),
-  quantity: z.number().int().min(0).default(1),
-  condition: z.enum(CONDITIONS).default('good'),
+  itemName: z.string().trim().min(1).max(80),
+  quantity: z.number().int().min(1).default(1),
   notes:    z.string().max(300).optional(),
 });
 
@@ -89,6 +87,7 @@ router.post('/', workerOnly, async (req, res, next) => {
     });
 
     await redis.cacheDel(redis.CacheKey.equipment(req.user.centreId));
+    await redis.cacheDelPattern(`report:x:${req.user.centreId}:*`);
     await logAction(req.user.id, logAction.ACTIONS.EQUIPMENT_CREATED, { req, itemId: item.id });
     return res.status(201).json(item);
   } catch (err) { next(err); }
@@ -96,10 +95,8 @@ router.post('/', workerOnly, async (req, res, next) => {
 
 // ── PATCH /api/equipment/:id/ ─────────────────────────────────────────────────
 const UpdateEquipmentSchema = z.object({
-  itemName:  z.string().min(1).max(80).optional(),
-  category:  z.string().max(50).optional(),
+  itemName:  z.string().trim().min(1).max(80).optional(),
   quantity:  z.number().int().min(0).optional(),
-  condition: z.enum(CONDITIONS).optional(),
   notes:     z.string().max(300).optional(),
 });
 
@@ -116,6 +113,7 @@ router.patch('/:id/', workerOnly, async (req, res, next) => {
     if (!result.count) return res.status(404).json({ error: 'not_found', detail: 'Equipment item not found.' });
 
     await redis.cacheDel(redis.CacheKey.equipment(req.user.centreId));
+    await redis.cacheDelPattern(`report:x:${req.user.centreId}:*`);
     await logAction(req.user.id, logAction.ACTIONS.EQUIPMENT_UPDATED, { req, itemId: req.params.id });
     return res.json({ detail: 'Equipment updated.' });
   } catch (err) { next(err); }
@@ -130,6 +128,7 @@ router.delete('/:id/', workerOnly, async (req, res, next) => {
     if (!result.count) return res.status(404).json({ error: 'not_found', detail: 'Equipment item not found.' });
 
     await redis.cacheDel(redis.CacheKey.equipment(req.user.centreId));
+    await redis.cacheDelPattern(`report:x:${req.user.centreId}:*`);
     await logAction(req.user.id, logAction.ACTIONS.EQUIPMENT_DELETED, { req, itemId: req.params.id });
     return res.json({ detail: 'Equipment deleted.' });
   } catch (err) { next(err); }

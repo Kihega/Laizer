@@ -4,16 +4,21 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, RefreshControl,
+  ActivityIndicator, Modal, RefreshControl,
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { serviceEventService, getApiError } from '@/services/api';
-import { Card, Button, Input, StatusBadge } from '@/components/ui';
+import { Card, Button, Input, KeyboardAwareScrollView, StatusBadge } from '@/components/ui';
 import { ConfirmModal } from '@/components/ConfirmModal';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { Colors, FontSize, FontWeight, Radius, Shadows, Spacing } from '@/constants/theme';
+import { serviceLabel } from '@/constants/labels';
 
-const SERVICE_TYPES  = ['photocopy','printing','lamination','scanning','designing','other'] as const;
+// __LAIZER_PATCH_V12__
+// "Other" was replaced by "Passport size". Only printing / photocopy / scanning
+// are billed per page; every other service is just one price.
+const SERVICE_TYPES  = ['photocopy','printing','lamination','scanning','designing','passport_size'] as const;
+const PAGE_TYPES: readonly string[] = ['photocopy','printing','scanning'];
 const SERVICE_SUBS   = ['black_and_white','colour'] as const;
 const EDIT_WINDOW_MS = 60 * 60 * 1000; // 60 minutes
 
@@ -30,7 +35,7 @@ const BLANK_FORM = {
   serviceSubtype: '' as string,
   pages: '',
   pricePerPageTshs: '',
-  customerNote: '',
+  flatPrice: '',            // price for services that are not billed per page
 };
 
 export default function ServicesScreen() {
@@ -43,8 +48,14 @@ export default function ServicesScreen() {
   const [saving,     setSaving]    = useState(false);
   const [form,       setForm]      = useState(BLANK_FORM);
 
+  const isPaged = PAGE_TYPES.includes(form.serviceType);
+
   // Auto-calculated total (preview only — server recomputes)
   const previewTotal = (() => {
+    if (!isPaged) {
+      const f = parseFloat(form.flatPrice);
+      return (!isNaN(f) && f > 0) ? f : 0;
+    }
     const p = parseFloat(form.pages);
     const r = parseFloat(form.pricePerPageTshs);
     return (!isNaN(p) && !isNaN(r) && p > 0 && r > 0) ? p * r : 0;
@@ -67,8 +78,8 @@ export default function ServicesScreen() {
         serviceType:      item.serviceType,
         serviceSubtype:   item.serviceSubtype ?? '',
         pages:            item.pages != null ? String(item.pages) : '',
-        pricePerPageTshs: item.pricePerPageTshs != null ? String(item.pricePerPageTshs) : '',
-        customerNote:     item.customerNote ?? '',
+        pricePerPageTshs: item.pricePerPageTshs != null ? String(Number(item.pricePerPageTshs)) : '',
+        flatPrice:        !PAGE_TYPES.includes(item.serviceType) ? String(Number(item.totalAmountTshs)) : '',
       });
     } else {
       setEditTarget(null);
@@ -80,27 +91,23 @@ export default function ServicesScreen() {
   const handleSubmit = async () => {
     if (!form.serviceType) { CustomAlert.alert('Select a service type'); return; }
 
-    const pages = form.pages ? parseInt(form.pages, 10) : undefined;
-    const price = form.pricePerPageTshs ? parseFloat(form.pricePerPageTshs) : undefined;
-
-    if (pages !== undefined && (isNaN(pages) || pages < 1)) {
-      CustomAlert.alert('Invalid pages', 'Pages must be a positive number.'); return;
-    }
-    if (price !== undefined && (isNaN(price) || price < 0)) {
-      CustomAlert.alert('Invalid price', 'Price must be 0 or more.'); return;
-    }
-
-    // Total computed server-side; send 0 as placeholder — backend will recalculate
-    const totalAmountTshs = (pages && price) ? pages * price : 0;
-
     const body: any = {
-      serviceType:    form.serviceType,
-      totalAmountTshs,
-      ...(form.serviceSubtype   ? { serviceSubtype:   form.serviceSubtype   } : {}),
-      ...(pages !== undefined   ? { pages                                   } : {}),
-      ...(price !== undefined   ? { pricePerPageTshs: price                 } : {}),
-      ...(form.customerNote     ? { customerNote:     form.customerNote     } : {}),
+      serviceType: form.serviceType,
+      ...(form.serviceSubtype ? { serviceSubtype: form.serviceSubtype } : {}),
     };
+
+    if (isPaged) {
+      const pages = parseInt(form.pages, 10);
+      const price = parseFloat(form.pricePerPageTshs);
+      if (isNaN(pages) || pages < 1) { CustomAlert.alert('Invalid pages', 'Enter the number of pages.'); return; }
+      if (isNaN(price) || price <= 0) { CustomAlert.alert('Invalid price', 'Enter the price per page.'); return; }
+      body.pages = pages;
+      body.pricePerPageTshs = price;
+    } else {
+      const amount = parseFloat(form.flatPrice);
+      if (isNaN(amount) || amount <= 0) { CustomAlert.alert('Invalid price', 'Enter the price for this service.'); return; }
+      body.totalAmountTshs = amount;
+    }
 
     setSaving(true);
     try {
@@ -136,9 +143,86 @@ export default function ServicesScreen() {
         <Button label="+ Log Service" size="sm" onPress={() => openForm()} />
       </View>
 
-      {/* Log / Edit Form */}
-      {showForm && (
-        <Card style={S.form}>
+      <KeyboardAwareScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefresh(true); load(); }} />
+        }
+        contentContainerStyle={{ padding: Spacing.base }}
+      >
+
+
+        {/* Events list */}
+        {loading ? (
+          <ActivityIndicator style={{ marginTop: 60 }} color={Colors.primary} />
+        ) : events.length === 0 ? (
+          <Text style={S.empty}>No service events logged today. Tap + Log Service to start.</Text>
+        ) : events.map(item => {
+          const editable = canEdit(item.createdAt);
+          return (
+            <Card key={item.id} style={S.item}>
+              <View style={S.itemTop}>
+                <StatusBadge type={item.serviceType} />
+                {item.serviceSubtype && (
+                  <Text style={S.subtype}>
+                    {item.serviceSubtype === 'black_and_white' ? 'B&W' : 'Colour'}
+                  </Text>
+                )}
+                <Text style={S.itemTotal}>{fmt(Number(item.totalAmountTshs))}</Text>
+              </View>
+
+              {(item.pages != null || item.pricePerPageTshs != null) && (
+                <View style={S.itemMid}>
+                  {item.pages != null && (
+                    <Text style={S.itemDetail}>📄 {item.pages} pages</Text>
+                  )}
+                  {item.pricePerPageTshs != null && (
+                    <Text style={S.itemDetail}>
+                      @ Tshs {Number(item.pricePerPageTshs).toLocaleString()}/pg
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              <View style={S.itemBottom}>
+                <Text style={S.itemTime}>
+                  {new Date(item.createdAt).toLocaleTimeString('en-TZ', {
+                    hour: '2-digit', minute: '2-digit',
+                  })}
+                </Text>
+                {editable && (
+                  <View style={S.itemActions}>
+                    <TouchableOpacity onPress={() => openForm(item)}>
+                      <Text style={S.editBtn}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setDelTarget(item)}>
+                      <Text style={S.deleteBtn}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </Card>
+          );
+        })}
+      </KeyboardAwareScrollView>
+
+      {/* Log / Edit form — popup over the logged-services list */}
+      <Modal
+        visible={showForm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setShowForm(false); setEditTarget(null); }}
+      >
+        <View style={S.overlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => { setShowForm(false); setEditTarget(null); }}
+          />
+          <KeyboardAwareScrollView
+            style={{ width: '100%', flexGrow: 0, maxHeight: '96%' }}
+            contentContainerStyle={{ padding: Spacing.base }}
+          >
+            <View style={S.formBox}>
           <Text style={S.formTitle}>{editTarget ? 'Edit Service Event' : 'Log New Service'}</Text>
 
           {/* Service Type */}
@@ -151,7 +235,7 @@ export default function ServicesScreen() {
                 onPress={() => setForm(p => ({ ...p, serviceType: t }))}
               >
                 <Text style={[S.chipText, form.serviceType === t && S.chipTextActive]}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                  {serviceLabel(t)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -175,25 +259,35 @@ export default function ServicesScreen() {
             ))}
           </View>
 
-          {/* Pages & Price */}
-          <View style={S.twoCol}>
+          {/* Pages & Price — pages only for printing / photocopy / scanning */}
+          {isPaged ? (
+            <View style={S.twoCol}>
+              <Input
+                label="Pages"
+                placeholder="20"
+                value={form.pages}
+                onChangeText={t => setForm(p => ({ ...p, pages: t.replace(/[^0-9]/g, '') }))}
+                keyboardType="numeric"
+                containerStyle={{ flex: 1 }}
+              />
+              <Input
+                label="Price / page (Tshs)"
+                placeholder="100"
+                value={form.pricePerPageTshs}
+                onChangeText={t => setForm(p => ({ ...p, pricePerPageTshs: t }))}
+                keyboardType="numeric"
+                containerStyle={{ flex: 1 }}
+              />
+            </View>
+          ) : (
             <Input
-              label="Pages"
-              placeholder="20"
-              value={form.pages}
-              onChangeText={t => setForm(p => ({ ...p, pages: t }))}
+              label="Price (Tshs)"
+              placeholder="e.g. 5000"
+              value={form.flatPrice}
+              onChangeText={t => setForm(p => ({ ...p, flatPrice: t }))}
               keyboardType="numeric"
-              containerStyle={{ flex: 1 }}
             />
-            <Input
-              label="Price / page (Tshs)"
-              placeholder="100"
-              value={form.pricePerPageTshs}
-              onChangeText={t => setForm(p => ({ ...p, pricePerPageTshs: t }))}
-              keyboardType="numeric"
-              containerStyle={{ flex: 1 }}
-            />
-          </View>
+          )}
 
           {/* Auto total preview */}
           {previewTotal > 0 && (
@@ -202,13 +296,6 @@ export default function ServicesScreen() {
               <Text style={S.totalValue}>{fmt(previewTotal)}</Text>
             </View>
           )}
-
-          <Input
-            label="Customer note (optional)"
-            placeholder="e.g. John's thesis"
-            value={form.customerNote}
-            onChangeText={t => setForm(p => ({ ...p, customerNote: t }))}
-          />
 
           <View style={S.formBtns}>
             <Button
@@ -224,73 +311,10 @@ export default function ServicesScreen() {
               style={{ flex: 1 }}
             />
           </View>
-        </Card>
-      )}
-
-      {/* Events list */}
-      {loading ? (
-        <ActivityIndicator style={{ marginTop: 60 }} color={Colors.primary} />
-      ) : (
-        <FlatList
-          data={events}
-          keyExtractor={i => i.id}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => { setRefresh(true); load(); }} />
-          }
-          contentContainerStyle={{ padding: Spacing.base }}
-          ListEmptyComponent={
-            <Text style={S.empty}>No service events logged today. Tap + Log Service to start.</Text>
-          }
-          renderItem={({ item }) => {
-            const editable = canEdit(item.createdAt);
-            return (
-              <Card style={S.item}>
-                <View style={S.itemTop}>
-                  <StatusBadge type={item.serviceType} />
-                  {item.serviceSubtype && (
-                    <Text style={S.subtype}>
-                      {item.serviceSubtype === 'black_and_white' ? 'B&W' : 'Colour'}
-                    </Text>
-                  )}
-                  <Text style={S.itemTotal}>{fmt(Number(item.totalAmountTshs))}</Text>
-                </View>
-
-                <View style={S.itemMid}>
-                  {item.pages != null && (
-                    <Text style={S.itemDetail}>📄 {item.pages} pages</Text>
-                  )}
-                  {item.pricePerPageTshs != null && (
-                    <Text style={S.itemDetail}>
-                      @ Tshs {Number(item.pricePerPageTshs).toLocaleString()}/pg
-                    </Text>
-                  )}
-                  {item.customerNote && (
-                    <Text style={S.itemNote} numberOfLines={1}>📝 {item.customerNote}</Text>
-                  )}
-                </View>
-
-                <View style={S.itemBottom}>
-                  <Text style={S.itemTime}>
-                    {new Date(item.createdAt).toLocaleTimeString('en-TZ', {
-                      hour: '2-digit', minute: '2-digit',
-                    })}
-                  </Text>
-                  {editable && (
-                    <View style={S.itemActions}>
-                      <TouchableOpacity onPress={() => openForm(item)}>
-                        <Text style={S.editBtn}>Edit</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setDelTarget(item)}>
-                        <Text style={S.deleteBtn}>Delete</Text>
-                      </TouchableOpacity>
                     </View>
-                  )}
-                </View>
-              </Card>
-            );
-          }}
-        />
-      )}
+          </KeyboardAwareScrollView>
+        </View>
+      </Modal>
 
       <ConfirmModal
         visible={!!delTarget}
@@ -311,7 +335,9 @@ const S = StyleSheet.create({
   header:        { flexDirection:'row', justifyContent:'space-between', alignItems:'center',
                    padding: Spacing.xl, paddingTop: 60, backgroundColor: Colors.primary },
   title:         { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.white },
-  form:          { margin: Spacing.base },
+  overlay:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center' },
+  formBox:       { width: '100%', backgroundColor: Colors.white, borderRadius: Radius.xl,
+                   padding: Spacing.xl, ...Shadows.lg },
   formTitle:     { fontSize: FontSize.md, fontWeight: FontWeight.bold,
                    color: Colors.textPrimary, marginBottom: Spacing.md },
   fieldLabel:    { fontSize: FontSize.sm, fontWeight: FontWeight.semiBold,
@@ -342,7 +368,6 @@ const S = StyleSheet.create({
                    fontWeight: FontWeight.bold, color: Colors.accent },
   itemMid:       { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginBottom: Spacing.xs },
   itemDetail:    { fontSize: FontSize.xs, color: Colors.textSecondary },
-  itemNote:      { fontSize: FontSize.xs, color: Colors.textSecondary, fontStyle: 'italic' },
   itemBottom:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                    borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: Spacing.xs },
   itemTime:      { fontSize: FontSize.xs, color: Colors.textDisabled },

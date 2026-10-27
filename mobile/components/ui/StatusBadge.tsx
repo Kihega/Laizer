@@ -6,7 +6,7 @@ import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { Colors, FontSize, FontWeight, Radius }          from '@/constants/theme';
 
 type BadgeVariant =
-  | 'photocopy' | 'printing' | 'lamination' | 'scanning' | 'designing' | 'other'
+  | 'photocopy' | 'printing' | 'lamination' | 'scanning' | 'designing' | 'passport_size' | 'other'
   | 'urgent' | 'normal' | 'low'
   | 'active' | 'inactive'
   | 'pcs' | 'boxes'
@@ -19,6 +19,7 @@ const CONFIG: Record<BadgeVariant, { bg: string; text: string; label: string }> 
   lamination: { bg: '#DCFCE7', text: '#14532D', label: 'Lamination' },
   scanning:   { bg: '#CCFBF1', text: '#134E4A', label: 'Scanning'   },
   designing:  { bg: '#FEF9C3', text: '#713F12', label: 'Designing'  },
+  passport_size: { bg: '#FCE7F3', text: '#9D174D', label: 'Passport size' }, // __LAIZER_PATCH_V12__
   other:      { bg: '#F3F4F6', text: '#374151', label: 'Other'      },
   // Notice priorities
   urgent:  { bg: Colors.errorSurface,   text: Colors.error,   label: 'Urgent'  },
