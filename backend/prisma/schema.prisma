@@ -92,8 +92,10 @@ model StockItem {
 }
 
 // ── Equipment ─────────────────────────────────────────────────────────────────
-// Office utilities/tools used to provide services: printers, scanners, laptops,
-// desktops, cameras, etc. Distinct from StockItem (consumables like paper/ink).
+// LEGACY — the app no longer reads or writes this table (the equipment / office
+// utilities feature was removed). The model is kept only so existing rows are
+// not dropped by `prisma db push`. Delete this model + EquipmentCondition and the
+// two relations (Worker.registeredEquipment, Centre.equipment) to drop the table.
 
 model Equipment {
   id           String             @id @default(uuid())
@@ -145,6 +147,7 @@ model Notice {
   priority  NoticePriority @default(normal)
   createdAt DateTime       @default(now()) @map("created_at")
   expiresAt DateTime?      @map("expires_at") // __LAIZER_PATCH_V9__ — routes/notices.js already relies on this field
+  ownerDeletedAt DateTime? @map("owner_deleted_at") // __LAIZER_PATCH_V16__ owner removed it from THEIR list (workers still see it)
   reads     NoticeRead[]
   centre    Centre         @relation(fields: [centreId], references: [id], onDelete: Cascade)
   sender    User           @relation(fields: [senderId], references: [id])

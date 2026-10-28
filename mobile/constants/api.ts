@@ -103,10 +103,6 @@ export const API_ROUTES = {
   stockItem:    (id: string) => `/api/stock/${id}/`,
   stockUse:     (id: string) => `/api/stock/${id}/use/`, // __LAIZER_PATCH_V12__
 
-  // Equipment (office utilities)
-  equipment:     '/api/equipment/',
-  equipmentItem: (id: string) => `/api/equipment/${id}/`,
-
   // Services
   services:     '/api/services/',
   service:      (id: string) => `/api/services/${id}/`,
@@ -118,8 +114,9 @@ export const API_ROUTES = {
 
   // Reports
   reportDaily:  '/api/reports/daily/',
-  reportWeekly: '/api/reports/weekly/',
-  reportDetail: '/api/reports/detail/', // __LAIZER_PATCH_V11__
+  reportDays:   '/api/reports/days/',     // a branch's daily report cards
+  reportDetail: '/api/reports/detail/',   // full report of one day
+  reportDay:    '/api/reports/day/',      // DELETE one day's report
 
   // Push token
   pushToken:    '/api/push-token/',

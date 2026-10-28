@@ -1,0 +1,189 @@
+/**
+ * SMSS — Centres routes (owner only)
+ *
+ * GET    /api/centres/           — list owner's active centres
+ * POST   /api/centres/           — create centre
+ * GET    /api/centres/:id/       — centre detail + active workers
+ * PATCH  /api/centres/:id/       — update name/location
+ * DELETE /api/centres/:id/       — hard delete + auto-renumber remaining centres
+ *
+ * __LAIZER_PATCH_V9__
+ * Centre IDs (STN-XX) are scoped PER OWNER (see prisma schema — the unique
+ * constraint moved from a bare `centreId` column to a compound
+ * [ownerId, centreId] index), so every owner's first centre is always
+ * STN-01 regardless of what other owners have created. Deleting a centre
+ * now closes the gap immediately — remaining centres are renumbered so the
+ * sequence STN-01..STN-NN always stays contiguous, matching what the owner
+ * sees on screen.
+ */
+const { Router }       = require('express');
+const { z }            = require('zod');
+const prisma           = require('../lib/prisma');
+const redis            = require('../lib/redis');
+const logAction        = require('../lib/audit');
+const { authenticate, ownerOnly } = require('../middleware/auth');
+
+const router = Router();
+router.use(authenticate, ownerOnly);
+
+// Renumber all of an owner's active centres to a contiguous STN-01..STN-NN
+// sequence, ordered by original creation time. Safe to call any time (it's
+// a no-op if the sequence is already contiguous) — called after every
+// delete so gaps never appear.
+async function renumberCentres(ownerId) {
+  const centres = await prisma.centre.findMany({
+    where:   { ownerId, isActive: true },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  const updates = [];
+  centres.forEach((c, idx) => {
+    const target = `STN-${String(idx + 1).padStart(2, '0')}`;
+    if (c.centreId !== target || c.centreNo !== target) {
+      updates.push(prisma.centre.update({
+        where: { id: c.id },
+        data:  { centreId: target, centreNo: target },
+      }));
+    }
+  });
+
+  if (updates.length) await prisma.$transaction(updates);
+  return centres.length;
+}
+
+// ── GET /api/centres/ ─────────────────────────────────────────────────────────
+router.get('/', async (req, res, next) => {
+  try {
+    const ownerId  = req.user.id;
+    const cacheKey = redis.CacheKey.centres(ownerId);
+    let centres    = await redis.cacheGet(cacheKey);
+
+    if (!centres) {
+      centres = await prisma.centre.findMany({
+        where:   { ownerId, isActive: true },
+        orderBy: { createdAt: 'asc' },
+        include: {
+          _count: { select: { assignments: { where: { isActive: true } } } },
+        },
+      });
+      await redis.cacheSet(cacheKey, centres, redis.CacheTTL.CENTRES);
+    }
+    return res.json(centres);
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/centres/ ────────────────────────────────────────────────────────
+const CreateCentreSchema = z.object({
+  name:     z.string().min(2).transform(s => s.trim().toUpperCase()),
+  location: z.string().min(2).transform(s => s.trim().toUpperCase()),
+});
+
+router.post('/', async (req, res, next) => {
+  try {
+    const parsed = CreateCentreSchema.safeParse(req.body);
+    if (!parsed.success)
+      return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
+
+    const { name, location } = parsed.data;
+
+    // Auto-generate STN-XX — scoped to THIS owner only (a compound
+    // [ownerId, centreId] unique index in the schema allows different
+    // owners to both have a "STN-01"). Gap-safe: since renumberCentres()
+    // keeps the sequence contiguous after every delete, this is normally
+    // just "count of active centres + 1", but we still scan for a free
+    // slot defensively in case of concurrent requests.
+    const count = await prisma.centre.count({ where: { ownerId: req.user.id, isActive: true } });
+    let seq = count + 1;
+    let centreId;
+    for (let i = 0; i < 100; i++) {
+      const candidate = `STN-${String(seq).padStart(2, '0')}`;
+      const exists    = await prisma.centre.findFirst({ where: { ownerId: req.user.id, centreId: candidate } });
+      if (!exists) { centreId = candidate; break; }
+      seq++;
+    }
+    if (!centreId)
+      return res.status(500).json({ error: 'id_exhausted', detail: 'Could not generate a unique Centre ID.' });
+
+    const centreNo = centreId;
+    console.log(`[Centres] Creating: ${JSON.stringify({ centreId, name, location, owner: req.user.id })}`);
+
+    let centre;
+    try {
+      centre = await prisma.centre.create({
+        data: { centreNo, centreId, name, location, ownerId: req.user.id },
+      });
+      console.log(`[Centres] Created OK: ${centre.id} (${centreId})`);
+    } catch (dbErr) {
+      console.error('[Centres] DB error:', dbErr?.message ?? dbErr);
+      return res.status(500).json({
+        error: 'db_error',
+        detail: `Database error: ${dbErr?.message ?? 'Unknown DB error'}`,
+      });
+    }
+
+    await redis.cacheDel(redis.CacheKey.centres(req.user.id));
+    await logAction(req.user.id, logAction.ACTIONS.CENTRE_CREATED, { req, centreId: centre.id });
+    return res.status(201).json(centre);
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/centres/:id/ ─────────────────────────────────────────────────────
+router.get('/:id/', async (req, res, next) => {
+  try {
+    const centre = await prisma.centre.findFirst({
+      where:   { id: req.params.id, ownerId: req.user.id },
+      include: {
+        assignments: {
+          where:   { isActive: true },
+          include: { worker: { select: { id:true, fullName:true, nim:true, phone:true, workerCode:true } } },
+        },
+      },
+    });
+    if (!centre) return res.status(404).json({ error: 'not_found', detail: 'Centre not found.' });
+    return res.json(centre);
+  } catch (err) { next(err); }
+});
+
+// ── PATCH /api/centres/:id/ ───────────────────────────────────────────────────
+router.patch('/:id/', async (req, res, next) => {
+  try {
+    const { name, location } = req.body;
+    const centre = await prisma.centre.updateMany({
+      where: { id: req.params.id, ownerId: req.user.id },
+      data:  { ...(name ? { name } : {}), ...(location ? { location } : {}) },
+    });
+    if (!centre.count) return res.status(404).json({ error: 'not_found', detail: 'Centre not found.' });
+    await redis.cacheDel(redis.CacheKey.centres(req.user.id));
+    return res.json({ detail: 'Centre updated.' });
+  } catch (err) { next(err); }
+});
+
+// ── DELETE /api/centres/:id/ — hard-delete, then close the ID gap ────────────
+router.delete('/:id/', authenticate, ownerOnly, async (req, res, next) => {
+  try {
+    const centre = await prisma.centre.findFirst({
+      where: { id: req.params.id, ownerId: req.user.id },
+    });
+    if (!centre) return res.status(404).json({ error: 'not_found', detail: 'Centre not found.' });
+
+    await prisma.workerCentreAssignment.deleteMany({ where: { centreId: centre.id } });
+    await prisma.stockItem.deleteMany({ where: { centreId: centre.id } });
+    await prisma.serviceEvent.deleteMany({ where: { centreId: centre.id } });
+    await prisma.notice.deleteMany({ where: { centreId: centre.id } });
+    await prisma.centre.delete({ where: { id: centre.id } });
+
+    // Close the gap: STN-01, STN-02… stays contiguous for this owner.
+    await renumberCentres(req.user.id);
+
+    await redis.cacheDel(redis.CacheKey.centres(req.user.id));
+    // __LAIZER_PATCH_V10__ — a deleted centre must disappear from the report
+    // cards immediately, not just once the cache TTL happens to expire.
+    await redis.cacheDelPattern('report:d:*');
+    await redis.cacheDelPattern('report:w:*');
+    await redis.cacheDelPattern(`report:x:${centre.id}:*`);
+    await logAction(req.user.id, 'CENTRE_DELETED', { req, centreId: centre.id });
+    return res.json({ detail: 'Centre deleted successfully. Remaining centres were renumbered.' });
+  } catch (err) { next(err); }
+});
+
+module.exports = router;

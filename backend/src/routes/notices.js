@@ -7,7 +7,8 @@
  * GET    /api/notices/          — worker: inbox for their centre; owner: sent notices
  * POST   /api/notices/          — owner: send notice (triggers push notifications)
  * POST   /api/notices/:id/read/ — worker: mark as read
- * DELETE /api/notices/:id/      — worker: delete from my list
+ * DELETE /api/notices/:id/      — worker: delete from my list; owner: delete from the sent list
+ *                                (each only hides it on their own side — the other side is unaffected)
  */
 const { Router }          = require('express');
 const { z }               = require('zod');
@@ -51,7 +52,7 @@ router.get('/', async (req, res, next) => {
       });
       try {
         const notices = await prisma.notice.findMany({
-          where:   { centreId: { in: centres.map(c => c.id) } },
+          where:   { centreId: { in: centres.map(c => c.id) }, ownerDeletedAt: null },
           orderBy: { createdAt: 'desc' },
           take:    100,
           include: {
@@ -130,8 +131,23 @@ router.post('/:id/read/', workerOnly, async (req, res, next) => {
 });
 
 // ── DELETE /api/notices/:id/ ──────────────────────────────────────────────────
-router.delete('/:id/', workerOnly, async (req, res, next) => {
+router.delete('/:id/', async (req, res, next) => {
   try {
+    // Owner: hide it from the owner's sent list only — workers keep seeing it.
+    if (req.user.role === 'owner') {
+      const mine = await prisma.notice.findFirst({
+        where:  { id: req.params.id, centre: { ownerId: req.user.id } },
+        select: { id: true },
+      });
+      if (!mine) return res.status(404).json({ error: 'not_found', detail: 'Notice not found.' });
+      await prisma.notice.update({ where: { id: mine.id }, data: { ownerDeletedAt: new Date() } });
+      await logAction(req.user.id, logAction.ACTIONS.NOTICE_DELETED, { req, noticeId: mine.id });
+      return res.json({ detail: 'Notice deleted.' });
+    }
+    if (req.user.role !== 'worker')
+      return res.status(403).json({ error: 'forbidden', detail: 'Not allowed.' });
+
+    // Worker: hide it from this worker's list only.
     const notice = await prisma.notice.findFirst({
       where:  { id: req.params.id, centreId: req.user.centreId },
       select: { id: true },

@@ -22,3 +22,12 @@ export function serviceLabel(type: string): string {
 export function fmtMoney(n: number): string {
   return `Tshs ${Number(n || 0).toLocaleString('en-TZ', { maximumFractionDigits: 0 })}`;
 }
+
+/** 'YYYY-MM-DD' (a report day) -> "Wed, 28 Oct 2026". Built from the parts, so no timezone shift. */
+export function fmtDay(key: string): string {
+  const [y, m, d] = String(key).split('-').map(Number);
+  if (!y || !m || !d) return String(key);
+  return new Date(y, m - 1, d).toLocaleDateString('en-GB', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+  });
+}

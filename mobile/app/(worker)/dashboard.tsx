@@ -107,7 +107,6 @@ export default function WorkerDashboard() {
             { label:'Log Service', icon:'create-outline'    as const, route:'/(worker)/services' },
             { label:'View Stock',  icon:'cube-outline'      as const, route:'/(worker)/stock'    },
             { label:'Notices',     icon:'megaphone-outline' as const, route:'/(worker)/notices'  },
-            { label:'Office Utilities', icon:'hardware-chip-outline' as const, route:'/(worker)/equipment' },
           ].map(a => (
             <Card key={a.route} onPress={() => router.push(a.route as any)}
               style={[WD.actionCard, { backgroundColor: tc.card, borderColor: tc.border }]}>

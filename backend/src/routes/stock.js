@@ -22,10 +22,8 @@ const { authenticate, workerOnly }  = require('../middleware/auth');
 const router = Router();
 router.use(authenticate);
 
-// Stock list + the owner's cached full reports both show stock.
 async function bustCaches(centreId) {
   await redis.cacheDel(redis.CacheKey.stock(centreId));
-  await redis.cacheDelPattern(`report:x:${centreId}:*`);
 }
 
 const cleanName = s => s.replace(/\s+/g, ' ').trim();

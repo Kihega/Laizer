@@ -226,15 +226,6 @@ export const stockService = {
   use:    (id: string, quantity: number) => apiClient.post(API_ROUTES.stockUse(id), { quantity }),
 };
 
-// ── Equipment (office utilities) ───────────────────────────────────────────────
-export const equipmentService = {
-  list:   (centreId?: string) =>
-    apiClient.get(API_ROUTES.equipment + (centreId ? `?centreId=${centreId}` : '')),
-  create: (body: object)             => apiClient.post(API_ROUTES.equipment, body),
-  update: (id: string, body: object) => apiClient.patch(API_ROUTES.equipmentItem(id), body),
-  delete: (id: string)               => apiClient.delete(API_ROUTES.equipmentItem(id)),
-};
-
 // ── Service events ─────────────────────────────────────────────────────────────
 export const serviceEventService = {
   list:   (params?: { centreId?: string; date?: string; type?: string }) => {
@@ -261,16 +252,15 @@ export const reportService = {
     const q = new URLSearchParams(params as Record<string, string>).toString();
     return apiClient.get(API_ROUTES.reportDaily + (q ? `?${q}` : ''));
   },
-  weekly: (params?: { weekStart?: string; centreId?: string }) => {
-    const q = new URLSearchParams(params as Record<string, string>).toString();
-    return apiClient.get(API_ROUTES.reportWeekly + (q ? `?${q}` : ''));
-  },
-  // __LAIZER_PATCH_V11__ — this was missing entirely, which is why tapping a
-  // report card threw a plain JS "not a function" error that the generic
-  // handler rendered as "Something went wrong."
-  // __LAIZER_PATCH_V12__ — let axios build the query string (RN's URLSearchParams is partial)
-  detail: (params: { centreId: string; mode?: 'daily' | 'weekly'; date?: string; weekStart?: string }) =>
-    apiClient.get(API_ROUTES.reportDetail, { params }),
+  // A branch's daily report cards: last 7 days, or every day with records (history).
+  days: (centreId: string, all = false) =>
+    apiClient.get(API_ROUTES.reportDays, { params: { centreId, ...(all ? { all: 1 } : {}) } }),
+  // Full report of one branch on one day (date = YYYY-MM-DD).
+  detail: (centreId: string, date: string) =>
+    apiClient.get(API_ROUTES.reportDetail, { params: { centreId, date } }),
+  // Delete one day's report (all service records of that day).
+  removeDay: (centreId: string, date: string) =>
+    apiClient.delete(API_ROUTES.reportDay, { params: { centreId, date } }),
 };
 
 // ── Push token ─────────────────────────────────────────────────────────────────

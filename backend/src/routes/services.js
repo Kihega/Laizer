@@ -12,6 +12,7 @@ const prisma              = require('../lib/prisma');
 const logAction           = require('../lib/audit');
 const cfg                 = require('../config');
 const redis               = require('../lib/redis');
+const { dayKey }          = require('../lib/dates');
 const { authenticate, workerOnly } = require('../middleware/auth');
 
 const router = Router();
@@ -24,23 +25,11 @@ const PAGE_TYPES    = ['photocopy', 'printing', 'scanning'];
 const round2        = n => Math.round(n * 100) / 100;
 const SUBTYPES      = ['black_and_white', 'colour'];
 
-// __LAIZER_PATCH_V9__
-// Report caches are keyed by EITHER a centreId OR an ownerId (see
-// reports.js — `centreId || ownerId`, used for the owner's "all centres"
-// dashboard view), plus the per-centre detail-card cache. A wildcard
-// pattern-delete busts every variant for the affected date/week in one
-// call, regardless of which id an owner's screen happened to be cached
-// under — this is what makes new services show up on report cards
-// immediately instead of only after the cache TTL expires.
-async function bustReportCaches(centreId, when = new Date()) {
-  const dateStr   = when.toISOString().slice(0, 10);
-  const weekStart = new Date(when);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // __LAIZER_PATCH_V10__ — Sunday, matches reports.js
-  const weekStartStr = weekStart.toISOString().slice(0, 10);
-
-  await redis.cacheDelPattern(`report:d:*:${dateStr}`);
-  await redis.cacheDelPattern(`report:w:*:${weekStartStr}`);
-  await redis.cacheDelPattern(`report:x:${centreId}:*`);
+// Daily report cards are cached per (centre-or-owner, day) — see reports.js.
+// A wildcard delete clears every variant for the affected Tanzanian day so a new,
+// edited or deleted service shows up on the report cards immediately.
+async function bustReportCaches(_centreId, when = new Date()) {
+  await redis.cacheDelPattern(`report:d:*:${dayKey(when)}`);
 }
 
 // ── GET /api/services/ ────────────────────────────────────────────────────────

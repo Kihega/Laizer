@@ -190,7 +190,7 @@ export default function OwnerDashboard() {
             )}
             {report.length > 0 && (
               <>
-                <Text style={[S.sectionTitle, { color: tc.text }]}>Today by Centre</Text>
+                <Text style={[S.sectionTitle, { color: tc.text }]}>Branches</Text>
                 {report.map((r, i) => (
                   <Card key={i} style={[S.centreCard, { backgroundColor: tc.card }]}>
                     <View style={S.centreRow}>

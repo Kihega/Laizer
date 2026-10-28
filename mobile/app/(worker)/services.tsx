@@ -4,14 +4,14 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Modal, RefreshControl,
+  ActivityIndicator, RefreshControl,
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { serviceEventService, getApiError } from '@/services/api';
-import { Card, Button, Input, KeyboardAwareScrollView, StatusBadge } from '@/components/ui';
+import { Card, Button, Input, FormModal, KeyboardAwareScrollView, StatusBadge } from '@/components/ui';
 import { ConfirmModal } from '@/components/ConfirmModal';
-import { Colors, FontSize, FontWeight, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { serviceLabel } from '@/constants/labels';
 
 // __LAIZER_PATCH_V12__
@@ -206,23 +206,7 @@ export default function ServicesScreen() {
       </KeyboardAwareScrollView>
 
       {/* Log / Edit form — popup over the logged-services list */}
-      <Modal
-        visible={showForm}
-        transparent
-        animationType="fade"
-        onRequestClose={() => { setShowForm(false); setEditTarget(null); }}
-      >
-        <View style={S.overlay}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => { setShowForm(false); setEditTarget(null); }}
-          />
-          <KeyboardAwareScrollView
-            style={{ width: '100%', flexGrow: 0, maxHeight: '96%' }}
-            contentContainerStyle={{ padding: Spacing.base }}
-          >
-            <View style={S.formBox}>
+      <FormModal visible={showForm} onClose={() => { setShowForm(false); setEditTarget(null); }}>
           <Text style={S.formTitle}>{editTarget ? 'Edit Service Event' : 'Log New Service'}</Text>
 
           {/* Service Type */}
@@ -311,10 +295,7 @@ export default function ServicesScreen() {
               style={{ flex: 1 }}
             />
           </View>
-                    </View>
-          </KeyboardAwareScrollView>
-        </View>
-      </Modal>
+      </FormModal>
 
       <ConfirmModal
         visible={!!delTarget}
@@ -335,9 +316,6 @@ const S = StyleSheet.create({
   header:        { flexDirection:'row', justifyContent:'space-between', alignItems:'center',
                    padding: Spacing.xl, paddingTop: 60, backgroundColor: Colors.primary },
   title:         { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.white },
-  overlay:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center' },
-  formBox:       { width: '100%', backgroundColor: Colors.white, borderRadius: Radius.xl,
-                   padding: Spacing.xl, ...Shadows.lg },
   formTitle:     { fontSize: FontSize.md, fontWeight: FontWeight.bold,
                    color: Colors.textPrimary, marginBottom: Spacing.md },
   fieldLabel:    { fontSize: FontSize.sm, fontWeight: FontWeight.semiBold,
