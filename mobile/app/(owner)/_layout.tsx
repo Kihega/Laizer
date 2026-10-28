@@ -41,8 +41,6 @@ export default function OwnerLayout() {
         name="reports"
         options={{ title: 'Reports', tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color as string} /> }}
       />
-      {/* __LAIZER_PATCH_V12__ — full report screen: reachable from Reports, not a tab */}
-      <Tabs.Screen name="report-detail" options={{ href: null }} />
       <Tabs.Screen
         name="notices"
         options={{ title: 'Notices', tabBarIcon: ({ color, size }) => <Ionicons name="megaphone-outline" size={size} color={color as string} /> }}

@@ -1,28 +1,40 @@
 /**
  * SMSS — Reports routes (owner only)
+ * __LAIZER_PATCH_V16__ — daily reports only (no weekly report).
  *
- * GET /api/reports/daily/   — daily summary per centre (?date=YYYY-MM-DD &centreId=)
- * GET /api/reports/weekly/  — weekly summary per centre (?weekStart=YYYY-MM-DD &centreId=)
+ * GET    /api/reports/daily/   — today's (or ?date=) summary per centre  (?centreId= optional)
+ * GET    /api/reports/days/    — one centre's daily report cards: last 7 days, or every
+ *                                day that has records with ?all=1       (?centreId= required)
+ * GET    /api/reports/detail/  — full report of one centre on one day    (?centreId=&date=)
+ * DELETE /api/reports/day/     — delete every service record of one centre on one day
  */
 const { Router }          = require('express');
 const prisma              = require('../lib/prisma');
 const redis               = require('../lib/redis');
+const logAction           = require('../lib/audit');
+const { dayKey, isDayKey, dayRange, lastDayKeys } = require('../lib/dates');
 const { authenticate, ownerOnly } = require('../middleware/auth');
 
 const router = Router();
 router.use(authenticate, ownerOnly);
 
+const round2 = n => Math.round(n * 100) / 100;
+
+const bad = (res, detail) => res.status(400).json({ error: 'validation_error', detail });
+
+// The owner's centre, or null.
+const ownCentre = (ownerId, id, select) =>
+  prisma.centre.findFirst({ where: { id, ownerId, isActive: true }, select });
+
 // ── GET /api/reports/daily/ ───────────────────────────────────────────────────
 router.get('/daily/', async (req, res, next) => {
   try {
-    const ownerId   = req.user.id;
-    const dateStr   = req.query.date || new Date().toISOString().slice(0, 10);
-    const centreId  = req.query.centreId;
+    const ownerId  = req.user.id;
+    const dateStr  = req.query.date || dayKey();
+    const centreId = req.query.centreId;
+    if (!isDayKey(dateStr)) return bad(res, 'date must be YYYY-MM-DD.');
 
-    const date = new Date(dateStr);
-    date.setHours(0, 0, 0, 0);
-    const nextDay = new Date(date);
-    nextDay.setDate(nextDay.getDate() + 1);
+    const { start, end } = dayRange(dateStr);
 
     const cacheKey = redis.CacheKey.reportDaily(centreId || ownerId, dateStr);
     let   report   = await redis.cacheGet(cacheKey);
@@ -34,34 +46,28 @@ router.get('/daily/', async (req, res, next) => {
       });
 
       report = await Promise.all(centres.map(async centre => {
-        // Graceful fallback — returns 0 if service_events table is empty
-        // or doesn't exist yet (first deploy before any services are logged).
+        // Graceful fallback — a failed query shows 0 instead of breaking the whole list.
         let events = [];
         try {
           events = await prisma.serviceEvent.findMany({
-            where:  { centreId: centre.id, createdAt: { gte: date, lt: nextDay } },
+            where:  { centreId: centre.id, createdAt: { gte: start, lt: end } },
             select: { serviceType:true, totalAmountTshs:true },
           });
         } catch (evtErr) {
           console.error(`[reports/daily] serviceEvent query failed for centre ${centre.id}:`, evtErr.message);
         }
 
-        const totalEvents  = events.length;
         const totalRevenue = events.reduce((s, e) => s + Number(e.totalAmountTshs), 0);
-
-        // Breakdown by service type
         const byType = {};
-        for (const e of events) {
-          byType[e.serviceType] = (byType[e.serviceType] || 0) + 1;
-        }
+        for (const e of events) byType[e.serviceType] = (byType[e.serviceType] || 0) + 1;
         const topService = Object.entries(byType).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
 
         return {
           centre,
           date: dateStr,
-          totalEvents,
-          totalRevenueTshs: Math.round(totalRevenue * 100) / 100,
-          byServiceType: byType,
+          totalEvents:      events.length,
+          totalRevenueTshs: round2(totalRevenue),
+          byServiceType:    byType,
           topService,
         };
       }));
@@ -73,127 +79,69 @@ router.get('/daily/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ── GET /api/reports/weekly/ ──────────────────────────────────────────────────
-router.get('/weekly/', async (req, res, next) => {
+// ── GET /api/reports/days/ ────────────────────────────────────────────────────
+// The cards on a centre's report list. Default: the last 7 days, always 7 cards
+// (days without records show 0). ?all=1 → every day that has records (history).
+router.get('/days/', async (req, res, next) => {
   try {
-    const ownerId     = req.user.id;
-    const centreId    = req.query.centreId;
+    const centreId = req.query.centreId;
+    if (!centreId) return bad(res, 'centreId is required.');
 
-    // __LAIZER_PATCH_V10__ — weekStart defaults to the most recent Sunday
-    // 00:00, so weekly report cards reset every Sunday.
-    let weekStart;
-    if (req.query.weekStart) {
-      weekStart = new Date(req.query.weekStart);
-    } else {
-      weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday
+    const centre = await ownCentre(req.user.id, centreId, { id:true, name:true, centreNo:true, centreId:true });
+    if (!centre) return res.status(404).json({ error: 'not_found', detail: 'Centre not found.' });
+
+    const all   = req.query.all === '1' || req.query.all === 'true';
+    const today = dayKey();
+    const keys  = lastDayKeys(7);
+
+    const where = { centreId: centre.id };
+    if (!all) where.createdAt = { gte: dayRange(keys[keys.length - 1]).start };
+
+    const events = await prisma.serviceEvent.findMany({
+      where,
+      select: { totalAmountTshs: true, createdAt: true },
+    });
+
+    const byDay = {};
+    for (const e of events) {
+      const k = dayKey(e.createdAt);
+      const d = byDay[k] || (byDay[k] = { date: k, totalEvents: 0, totalRevenueTshs: 0 });
+      d.totalEvents += 1;
+      d.totalRevenueTshs += Number(e.totalAmountTshs);
     }
-    weekStart.setHours(0, 0, 0, 0);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 7);
+    for (const d of Object.values(byDay)) d.totalRevenueTshs = round2(d.totalRevenueTshs);
 
-    const weekStartStr = weekStart.toISOString().slice(0, 10);
-    const cacheKey     = redis.CacheKey.reportWeekly(centreId || ownerId, weekStartStr);
-    let   report       = await redis.cacheGet(cacheKey);
+    const days = all
+      ? Object.values(byDay).sort((a, b) => (a.date < b.date ? 1 : -1))
+      : keys.map(k => byDay[k] || { date: k, totalEvents: 0, totalRevenueTshs: 0 });
 
-    if (!report) {
-      const centres = await prisma.centre.findMany({
-        where:  { ownerId, isActive: true, ...(centreId ? { id: centreId } : {}) },
-        select: { id:true, name:true, centreNo:true, centreId:true },
-      });
-
-      report = await Promise.all(centres.map(async centre => {
-        let events = [];
-        try {
-          events = await prisma.serviceEvent.findMany({
-            where:  { centreId: centre.id, createdAt: { gte: weekStart, lt: weekEnd } },
-            select: { serviceType:true, totalAmountTshs:true, createdAt:true },
-          });
-        } catch (evtErr) {
-          console.error(`[reports/weekly] serviceEvent query failed for centre ${centre.id}:`, evtErr.message);
-        }
-
-        const totalEvents   = events.length;
-        const totalRevenue  = events.reduce((s, e) => s + Number(e.totalAmountTshs), 0);
-
-        // Group by day
-        const byDay = {};
-        for (const e of events) {
-          const day = new Date(e.createdAt).toISOString().slice(0, 10);
-          if (!byDay[day]) byDay[day] = { events: 0, revenue: 0 };
-          byDay[day].events  += 1;
-          byDay[day].revenue += Number(e.totalAmountTshs);
-        }
-
-        return {
-          centre,
-          weekStart: weekStartStr,
-          weekEnd:   weekEnd.toISOString().slice(0, 10),
-          totalEvents,
-          totalRevenueTshs: Math.round(totalRevenue * 100) / 100,
-          byDay,
-        };
-      }));
-
-      await redis.cacheSet(cacheKey, report, redis.CacheTTL.REPORT_WEEKLY);
-    }
-
-    return res.json(report);
+    return res.json({ centre, today, all, days });
   } catch (err) { next(err); }
 });
 
 // ── GET /api/reports/detail/ ─────────────────────────────────────────────────
-// Returns a full centre report: service events breakdown + stock snapshot.
-// Used by the mobile popup card.
+// Full report of one centre on one day: every service record plus (for today
+// only — stock has no history) the stock on hand.
 router.get('/detail/', async (req, res, next) => {
   try {
-    const ownerId  = req.user.id;
     const centreId = req.query.centreId;
-    const mode     = req.query.mode === 'weekly' ? 'weekly' : 'daily';
+    const date     = req.query.date || dayKey();
+    if (!centreId)        return bad(res, 'centreId is required.');
+    if (!isDayKey(date))  return bad(res, 'date must be YYYY-MM-DD.');
 
-    if (!centreId)
-      return res.status(400).json({ error: 'missing_param', detail: 'centreId is required.' });
+    const centre = await ownCentre(req.user.id, centreId,
+      { id:true, name:true, centreNo:true, centreId:true, location:true });
+    if (!centre) return res.status(404).json({ error: 'not_found', detail: 'Centre not found.' });
 
-    const centre = await prisma.centre.findFirst({
-      where: { id: centreId, ownerId, isActive: true },
-      select: { id:true, name:true, centreNo:true, centreId:true, location:true },
-    });
-    if (!centre)
-      return res.status(404).json({ error: 'not_found', detail: 'Centre not found.' });
+    const { start, end } = dayRange(date);
+    const isToday = date === dayKey();
 
-    let rangeStart, rangeEnd, label;
-    if (mode === 'weekly') {
-      // __LAIZER_PATCH_V11__ — Sunday, matches /weekly/'s boundary
-      const ws = req.query.weekStart ? new Date(req.query.weekStart) : (() => {
-        const d = new Date(); d.setDate(d.getDate() - d.getDay()); return d;
-      })();
-      ws.setHours(0, 0, 0, 0);
-      rangeStart = ws;
-      rangeEnd   = new Date(ws); rangeEnd.setDate(ws.getDate() + 7);
-      label = `Week of ${ws.toISOString().slice(0,10)}`;
-    } else {
-      const dateStr = req.query.date || new Date().toISOString().slice(0, 10);
-      rangeStart = new Date(dateStr); rangeStart.setHours(0, 0, 0, 0);
-      rangeEnd   = new Date(rangeStart); rangeEnd.setDate(rangeStart.getDate() + 1);
-      label = dateStr;
-    }
-
-    // __LAIZER_PATCH_V9__ — serve from cache if a service/stock mutation hasn't
-    // invalidated it since the last identical request (see services.js
-    // bustReportCaches()). Speeds up repeated card opens without risking
-    // staleness, since any mutation busts this exact key immediately.
-    const cacheKey = redis.CacheKey.reportDetail(centre.id, mode, label);
-    const cached   = await redis.cacheGet(cacheKey);
-    if (cached) return res.json(cached);
-
-    // Service events in range
     let events = [];
     try {
       events = await prisma.serviceEvent.findMany({
-        where:  { centreId: centre.id, createdAt: { gte: rangeStart, lt: rangeEnd } },
+        where:  { centreId: centre.id, createdAt: { gte: start, lt: end } },
         select: { id:true, serviceType:true, serviceSubtype:true, pages:true,
-                  pricePerPageTshs:true, totalAmountTshs:true,
-                  customerNote:true, createdAt:true,
+                  pricePerPageTshs:true, totalAmountTshs:true, createdAt:true,
                   worker: { select: { fullName:true } } },
         orderBy: { createdAt: 'asc' },
       });
@@ -201,52 +149,55 @@ router.get('/detail/', async (req, res, next) => {
       console.error('[reports/detail] serviceEvent error:', e.message);
     }
 
-    // Stock snapshot
     let stock = [];
-    try {
-      stock = await prisma.stockItem.findMany({
-        where:  { centreId: centre.id, quantity: { gt: 0 } },
-        select: { itemName:true, quantity:true, unit:true },
-        orderBy: { itemName: 'asc' },
-      });
-    } catch (e) {
-      console.error('[reports/detail] stock error:', e.message);
+    if (isToday) {
+      try {
+        stock = await prisma.stockItem.findMany({
+          where:   { centreId: centre.id, quantity: { gt: 0 } },
+          select:  { itemName:true, quantity:true, unit:true },
+          orderBy: { itemName: 'asc' },
+        });
+      } catch (e) {
+        console.error('[reports/detail] stock error:', e.message);
+      }
     }
 
-    // __LAIZER_PATCH_V12__ — office utilities registered by the branch's workers
-    let equipment = [];
-    try {
-      equipment = await prisma.equipment.findMany({
-        where:   { centreId: centre.id },
-        select:  { itemName:true, quantity:true, notes:true },
-        orderBy: { itemName: 'asc' },
-      });
-    } catch (e) {
-      console.error('[reports/detail] equipment error:', e.message);
-    }
-
-    const totalRevenue = events.reduce((s, e) => s + Number(e.totalAmountTshs), 0);
     const byType = {};
-    for (const e of events) {
-      byType[e.serviceType] = (byType[e.serviceType] || 0) + 1;
-    }
+    for (const e of events) byType[e.serviceType] = (byType[e.serviceType] || 0) + 1;
 
-    const payload = {
+    return res.json({
       centre,
-      label,
-      mode,
-      rangeStart: rangeStart.toISOString(),
-      rangeEnd:   rangeEnd.toISOString(),
-      totalEvents:     events.length,
-      totalRevenueTshs: Math.round(totalRevenue * 100) / 100,
-      byServiceType:   byType,
+      date,
+      isToday,
+      totalEvents:      events.length,
+      totalRevenueTshs: round2(events.reduce((s, e) => s + Number(e.totalAmountTshs), 0)),
+      byServiceType:    byType,
       events,
       stock,
-      equipment,
       generatedAt: new Date().toISOString(),
-    };
-    await redis.cacheSet(cacheKey, payload, redis.CacheTTL.REPORT_DETAIL);
-    return res.json(payload);
+    });
+  } catch (err) { next(err); }
+});
+
+// ── DELETE /api/reports/day/ ─────────────────────────────────────────────────
+// Deletes the day's report = every service record the workers entered that day.
+router.delete('/day/', async (req, res, next) => {
+  try {
+    const { centreId, date } = req.query;
+    if (!centreId)       return bad(res, 'centreId is required.');
+    if (!isDayKey(date)) return bad(res, 'date must be YYYY-MM-DD.');
+
+    const centre = await ownCentre(req.user.id, centreId, { id: true });
+    if (!centre) return res.status(404).json({ error: 'not_found', detail: 'Centre not found.' });
+
+    const { start, end } = dayRange(date);
+    const gone = await prisma.serviceEvent.deleteMany({
+      where: { centreId: centre.id, createdAt: { gte: start, lt: end } },
+    });
+
+    await redis.cacheDelPattern(`report:d:*:${date}`);
+    await logAction(req.user.id, logAction.ACTIONS.REPORT_DELETED, { req, centreId: centre.id, date, deleted: gone.count });
+    return res.json({ detail: 'Report deleted.', date, deleted: gone.count });
   } catch (err) { next(err); }
 });
 

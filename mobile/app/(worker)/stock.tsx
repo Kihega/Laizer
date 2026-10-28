@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { stockService, getApiError } from '@/services/api';
-import { Card, Button, Input, KeyboardAwareScrollView, StatusBadge } from '@/components/ui';
+import { Card, Button, Input, FormModal, KeyboardAwareScrollView, StatusBadge } from '@/components/ui';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { Colors, FontSize, FontWeight, Radius, Shadows, Spacing } from '@/constants/theme';
 
@@ -88,22 +88,6 @@ export default function StockScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefresh(true); load(); }} />}
         contentContainerStyle={{ padding: Spacing.base }}
       >
-        {showForm && (
-          <Card style={SS.form}>
-            <Text style={SS.formTitle}>Register Stock Item</Text>
-            <Input label="Item Name" placeholder="e.g. A4 Paper Ream" value={form.itemName}
-              onChangeText={t => setForm(p => ({ ...p, itemName: t }))} />
-            <Input label="Quantity (pcs)" placeholder="0" value={form.quantity}
-              onChangeText={t => setForm(p => ({ ...p, quantity: t.replace(/[^0-9]/g, '') }))}
-              keyboardType="numeric"
-              hint="If this item is already in stock, the quantity is added to its card." />
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <Button label="Cancel" variant="secondary" onPress={() => setShowForm(false)} style={{ flex: 1 }} />
-              <Button label="Save" onPress={handleCreate} loading={saving} style={{ flex: 1 }} />
-            </View>
-          </Card>
-        )}
-
         {loading ? <ActivityIndicator style={{ marginTop: 60 }} color={Colors.primary} />
           : items.length === 0 ? (
             <Text style={SS.empty}>No stock items yet. Add your first item.</Text>
@@ -125,6 +109,21 @@ export default function StockScreen() {
             </Card>
           ))}
       </KeyboardAwareScrollView>
+
+      {/* __LAIZER_PATCH_V14__ — form opens as a popup over the list */}
+      <FormModal visible={showForm} onClose={() => setShowForm(false)}>
+            <Text style={SS.formTitle}>Register Stock Item</Text>
+            <Input label="Item Name" placeholder="e.g. A4 Paper Ream" value={form.itemName}
+              onChangeText={t => setForm(p => ({ ...p, itemName: t }))} />
+            <Input label="Quantity (pcs)" placeholder="0" value={form.quantity}
+              onChangeText={t => setForm(p => ({ ...p, quantity: t.replace(/[^0-9]/g, '') }))}
+              keyboardType="numeric"
+              hint="If this item is already in stock, the quantity is added to its card." />
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <Button label="Cancel" variant="secondary" onPress={() => setShowForm(false)} style={{ flex: 1 }} />
+              <Button label="Save" onPress={handleCreate} loading={saving} style={{ flex: 1 }} />
+            </View>
+      </FormModal>
 
       {/* Use (consume) stock */}
       <Modal visible={!!useItem} transparent animationType="fade" onRequestClose={() => setUseItem(null)}>

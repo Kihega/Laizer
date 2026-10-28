@@ -66,10 +66,7 @@ const CacheKey = {
   workers:       (ownerId)        => `workers:${ownerId}`,
   centreWorkers: (centreId)       => `cworkers:${centreId}`,
   stock:         (centreId)       => `stock:${centreId}`,
-  equipment:     (centreId)       => `equipment:${centreId}`,
   reportDaily:   (centreId, date) => `report:d:${centreId}:${date}`,
-  reportWeekly:  (centreId, ws)   => `report:w:${centreId}:${ws}`,
-  reportDetail:  (centreId, mode, label) => `report:x:${centreId}:${mode}:${label}`, // __LAIZER_PATCH_V9__
 };
 
 const CacheTTL = {
@@ -77,10 +74,7 @@ const CacheTTL = {
   CENTRES:       300,
   WORKERS:       300,
   STOCK:         120,
-  EQUIPMENT:     120,
   REPORT_DAILY:  600,
-  REPORT_WEEKLY: 1800,
-  REPORT_DETAIL: 300, // __LAIZER_PATCH_V9__
 };
 
 module.exports = { getClient, cacheGet, cacheSet, cacheDel, cacheDelPattern, CacheKey, CacheTTL };

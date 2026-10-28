@@ -1,0 +1,52 @@
+/**
+ * SMSS — Owner Tab Layout
+ */
+import { Tabs }         from 'expo-router';
+import { Platform }     from 'react-native';
+import { Ionicons }     from '@expo/vector-icons';
+import { Colors, FontSize, FontWeight, Shadows } from '@/constants/theme';
+
+export default function OwnerLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown:     false,
+        tabBarActiveTintColor:   Colors.primary,
+        tabBarInactiveTintColor: Colors.grey400,
+        tabBarLabelStyle: { fontSize: FontSize.xs, fontWeight: FontWeight.semiBold },
+        tabBarStyle: {
+          backgroundColor: Colors.white,
+          borderTopColor:  Colors.border,
+          borderTopWidth:  1,
+          paddingBottom:   Platform.OS === 'ios' ? 20 : 6,
+          paddingTop:      6,
+          height:          Platform.OS === 'ios' ? 82 : 62,
+          ...Shadows.sm,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="dashboard"
+        options={{ title: 'Dashboard', tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color as string} /> }}
+      />
+      <Tabs.Screen
+        name="centres"
+        options={{ title: 'Centres', tabBarIcon: ({ color, size }) => <Ionicons name="storefront-outline" size={size} color={color as string} /> }}
+      />
+      <Tabs.Screen
+        name="workers"
+        options={{ title: 'Workers', tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color as string} /> }}
+      />
+      <Tabs.Screen
+        name="reports"
+        options={{ title: 'Reports', tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color as string} /> }}
+      />
+      {/* __LAIZER_PATCH_V12__ — full report screen: reachable from Reports, not a tab */}
+      <Tabs.Screen name="report-detail" options={{ href: null }} />
+      <Tabs.Screen
+        name="notices"
+        options={{ title: 'Notices', tabBarIcon: ({ color, size }) => <Ionicons name="megaphone-outline" size={size} color={color as string} /> }}
+      />
+    </Tabs>
+  );
+}

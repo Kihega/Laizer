@@ -8,3 +8,5 @@ export { default as StatusBadge } from './StatusBadge';
 export { CustomAlert, CustomAlertHost } from './CustomAlert';
 // __LAIZER_PATCH_V12__
 export { KeyboardAwareScrollView } from './KeyboardAwareScrollView';
+// __LAIZER_PATCH_V14__
+export { FormModal } from './FormModal';

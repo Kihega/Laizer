@@ -10,7 +10,7 @@ import {
 import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { Ionicons }       from '@expo/vector-icons';
 import { workerService, centreService, getApiError } from '@/services/api';
-import { Card, Button, Input, KeyboardAwareScrollView, StatusBadge } from '@/components/ui'; // __LAIZER_PATCH_V12__
+import { Card, Button, Input, FormModal, StatusBadge } from '@/components/ui'; // __LAIZER_PATCH_V12__
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 
 export default function WorkersScreen() {
@@ -91,9 +91,8 @@ export default function WorkersScreen() {
         <Button label="+ Register" size="sm" onPress={() => setShowForm(v => !v)} />
       </View>
 
-      {showForm && (
-        <KeyboardAwareScrollView style={{ flexGrow: 0, maxHeight: '85%' }}>
-        <Card style={W.form}>
+      {/* __LAIZER_PATCH_V14__ — form opens as a popup over the list */}
+      <FormModal visible={showForm} onClose={() => setShowForm(false)}>
           <Text style={W.formTitle}>Register Worker</Text>
           <Input label="Full Name" placeholder="JOHN DOE" value={form.fullName}
             onChangeText={t => setForm(p => ({ ...p, fullName: t.toUpperCase() }))} autoCapitalize="characters" />
@@ -112,9 +111,7 @@ export default function WorkersScreen() {
             <Button label="Cancel"   variant="secondary" onPress={() => setShowForm(false)} style={{ flex:1 }} />
             <Button label="Register" onPress={handleRegister} loading={saving} style={{ flex:1 }} />
           </View>
-        </Card>
-        </KeyboardAwareScrollView>
-      )}
+      </FormModal>
 
       {loading ? <ActivityIndicator style={W.loader} color={Colors.primary} /> : (
         <FlatList data={workers} keyExtractor={i => i.id}

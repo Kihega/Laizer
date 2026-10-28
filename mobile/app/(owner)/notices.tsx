@@ -11,7 +11,7 @@ import {
 import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { Ionicons }        from '@expo/vector-icons';
 import { noticeService, centreService, getApiError } from '@/services/api';
-import { Card, Button, Input, KeyboardAwareScrollView } from '@/components/ui'; // __LAIZER_PATCH_V12__
+import { Card, Button, Input, FormModal } from '@/components/ui'; // __LAIZER_PATCH_V12__
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 
 const MAX_WORDS = 100;
@@ -58,6 +58,26 @@ export default function NoticesOwnerScreen() {
   const wc = wordCount(form.body);
   const overLimit = wc > MAX_WORDS;
 
+  // __LAIZER_PATCH_V15__ — delete a sent notice (it disappears for the workers too)
+  const confirmDelete = (item: any) => {
+    CustomAlert.alert(
+      'Delete notice',
+      'Delete this notice from your list? Workers will still see it.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive',
+          onPress: async () => {
+            try {
+              await noticeService.remove(item.id);
+              setNotices(prev => prev.filter(n => n.id !== item.id));
+            } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+          },
+        },
+      ],
+    );
+  };
+
   const handleSend = async () => {
     if (!form.centreId || !form.body.trim()) {
       CustomAlert.alert('Missing fields', 'Please select a centre and write a message.'); return;
@@ -81,9 +101,8 @@ export default function NoticesOwnerScreen() {
         <Button label="+ Send" size="sm" variant="onHeader" onPress={() => setShowForm(v => !v)} />
       </View>
 
-      {showForm && (
-        <KeyboardAwareScrollView style={{ flexGrow: 0, maxHeight: '85%' }}>
-        <Card style={N.form}>
+      {/* __LAIZER_PATCH_V14__ — form opens as a popup over the list */}
+      <FormModal visible={showForm} onClose={() => setShowForm(false)}>
           <Text style={N.formTitle}>Send Notice to Workers</Text>
 
           {/* Centre dropdown */}
@@ -137,9 +156,7 @@ export default function NoticesOwnerScreen() {
             <Button label="Cancel"      variant="secondary" onPress={() => setShowForm(false)} style={{ flex:1 }} />
             <Button label="Send Notice" onPress={handleSend} loading={saving} style={{ flex:1 }} disabled={overLimit} />
           </View>
-        </Card>
-        </KeyboardAwareScrollView>
-      )}
+      </FormModal>
 
       {loading ? <ActivityIndicator style={{ marginTop:60 }} color={Colors.primary} /> : (
         <FlatList
@@ -155,6 +172,13 @@ export default function NoticesOwnerScreen() {
                   <Ionicons name="megaphone-outline" size={16} color={Colors.primary} />
                   <Text style={N.itemCentre} numberOfLines={1}>{item.centre?.name ?? '—'}</Text>
                 </View>
+                <TouchableOpacity
+                  onPress={() => confirmDelete(item)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityLabel="Delete notice"
+                >
+                  <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                </TouchableOpacity>
               </View>
               <Text style={N.itemBody} numberOfLines={3}>{item.body}</Text>
               <View style={N.itemFooter}>

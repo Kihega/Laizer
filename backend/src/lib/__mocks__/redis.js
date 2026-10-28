@@ -23,7 +23,6 @@ const redisMock = {
     centreWorkers: (centreId)       => `cworkers:${centreId}`,
     stock:         (centreId)       => `stock:${centreId}`,
     reportDaily:   (centreId, date) => `report:d:${centreId}:${date}`,
-    reportWeekly:  (centreId, ws)   => `report:w:${centreId}:${ws}`,
   },
 
   // ── Cache TTL constants ───────────────────────────────────────────────────
@@ -33,7 +32,6 @@ const redisMock = {
     WORKERS:       300,
     STOCK:         120,
     REPORT_DAILY:  600,
-    REPORT_WEEKLY: 1800,
   },
 };
 

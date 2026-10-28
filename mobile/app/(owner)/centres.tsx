@@ -11,7 +11,7 @@ import {
 import { CustomAlert } from '@/components/ui/CustomAlert'; // __LAIZER_PATCH_V10__
 import { Ionicons }        from '@expo/vector-icons';
 import { centreService, getApiError } from '@/services/api';
-import { Card, Button, Input, KeyboardAwareScrollView, StatusBadge } from '@/components/ui'; // __LAIZER_PATCH_V12__
+import { Card, Button, Input, FormModal, StatusBadge } from '@/components/ui'; // __LAIZER_PATCH_V12__
 import { Colors, FontSize, FontWeight, Spacing }         from '@/constants/theme';
 
 export default function CentresScreen() {
@@ -82,9 +82,8 @@ export default function CentresScreen() {
         <Button label="+ Add" size="sm" variant="onHeader" onPress={() => setShowForm(v => !v)} />
       </View>
 
-      {showForm && (
-        <KeyboardAwareScrollView style={{ flexGrow: 0, maxHeight: '85%' }}>
-        <Card style={S.form}>
+      {/* __LAIZER_PATCH_V14__ — form opens as a popup over the list */}
+      <FormModal visible={showForm} onClose={() => setShowForm(false)}>
           <Text style={S.formTitle}>New Centre</Text>
           {[
             { key:'name',     label:'Name',     placeholder:'ARUSHA BRANCH' },
@@ -103,9 +102,7 @@ export default function CentresScreen() {
             <Button label="Cancel"  variant="secondary" onPress={() => setShowForm(false)} style={{ flex:1 }} />
             <Button label="Create"  onPress={handleCreate} loading={saving} style={{ flex:1 }} />
           </View>
-        </Card>
-        </KeyboardAwareScrollView>
-      )}
+      </FormModal>
 
       {loading ? (
         <ActivityIndicator style={S.loader} color={Colors.primary} />

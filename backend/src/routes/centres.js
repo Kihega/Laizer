@@ -179,8 +179,6 @@ router.delete('/:id/', authenticate, ownerOnly, async (req, res, next) => {
     // __LAIZER_PATCH_V10__ — a deleted centre must disappear from the report
     // cards immediately, not just once the cache TTL happens to expire.
     await redis.cacheDelPattern('report:d:*');
-    await redis.cacheDelPattern('report:w:*');
-    await redis.cacheDelPattern(`report:x:${centre.id}:*`);
     await logAction(req.user.id, 'CENTRE_DELETED', { req, centreId: centre.id });
     return res.json({ detail: 'Centre deleted successfully. Remaining centres were renumbered.' });
   } catch (err) { next(err); }

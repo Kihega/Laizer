@@ -1,0 +1,227 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              String                   @id @default(uuid())
+  email           String?                  @unique
+  phone           String?                  @unique
+  fullName        String                   @map("full_name")
+  nim             String?                  @unique
+  workerCode      String?                  @unique @map("worker_code") // __LAIZER_PATCH_V9__
+  passwordHash    String?                  @map("password_hash")
+  role            UserRole
+  isActive        Boolean                  @default(true) @map("is_active")
+  lastLogin       DateTime?                @map("last_login")
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @updatedAt @map("updated_at")
+  profilePicture  String?                  @map("profile_picture")
+  ownedCentres    Centre[]
+  pushTokens      ExpoPushToken[]
+  noticeReads     NoticeRead[]
+  sentNotices     Notice[]
+  serviceEvents   ServiceEvent[]
+  registeredStock StockItem[]
+  registeredEquipment Equipment[]
+  assignments     WorkerCentreAssignment[]
+
+  @@map("users")
+}
+
+model Centre {
+  id            String                   @id @default(uuid())
+  centreNo      String                   @map("centre_no") // __LAIZER_PATCH_V9__ — uniqueness now scoped per-owner below
+  centreId      String                   @map("centre_id")
+  name          String
+  location      String
+  ownerId       String                   @map("owner_id")
+  isActive      Boolean                  @default(true) @map("is_active")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+  owner         User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  notices       Notice[]
+  equipment     Equipment[]
+  serviceEvents ServiceEvent[]
+  stockItems    StockItem[]
+  assignments   WorkerCentreAssignment[]
+
+  @@index([ownerId])
+  @@unique([ownerId, centreId], name: "centre_owner_centreId")
+  @@unique([ownerId, centreNo], name: "centre_owner_centreNo")
+  @@map("centres")
+}
+
+model WorkerCentreAssignment {
+  id              String   @id @default(uuid())
+  workerId        String   @map("worker_id")
+  centreId        String   @map("centre_id")
+  isActive        Boolean  @default(true) @map("is_active")
+  assignedAt      DateTime @default(now()) @map("assigned_at")
+  transferredFrom String?  @map("transferred_from")
+  centre          Centre   @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  worker          User     @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([workerId])
+  @@index([centreId])
+  @@map("worker_centre_assignments")
+}
+
+model StockItem {
+  id                String    @id @default(uuid())
+  centreId          String    @map("centre_id")
+  registeredBy      String?   @map("registered_by")
+  itemName          String    @map("item_name")
+  quantity          Decimal   @db.Decimal(10, 2)
+  unit              StockUnit
+  netStockPriceTshs Decimal   @default(0) @map("net_stock_price_tshs") @db.Decimal(12, 2) // __LAIZER_PATCH_V12__ price no longer entered
+  notes             String?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  centre            Centre    @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  worker            User?     @relation(fields: [registeredBy], references: [id])
+
+  @@index([centreId])
+  @@map("stock_items")
+}
+
+// ── Equipment ─────────────────────────────────────────────────────────────────
+// Office utilities/tools used to provide services: printers, scanners, laptops,
+// desktops, cameras, etc. Distinct from StockItem (consumables like paper/ink).
+
+model Equipment {
+  id           String             @id @default(uuid())
+  centreId     String             @map("centre_id")
+  registeredBy String?            @map("registered_by")
+  itemName     String             @map("item_name")     // e.g. "Printer", "Scanner"
+  category     String?                                  // e.g. "Printing", "Computing"
+  quantity     Int                @default(1)
+  condition    EquipmentCondition @default(good)
+  notes        String?
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt        @map("updated_at")
+
+  centre Centre @relation(fields: [centreId],     references: [id], onDelete: Cascade)
+  worker User?  @relation(fields: [registeredBy], references: [id], onDelete: SetNull)
+
+  @@index([centreId])
+  @@map("equipment")
+}
+
+
+model ServiceEvent {
+  id               String          @id @default(uuid())
+  centreId         String          @map("centre_id")
+  workerId         String          @map("worker_id")
+  serviceType      ServiceType     @map("service_type")
+  serviceSubtype   ServiceSubtype? @map("service_subtype")
+  category         String?
+  pages            Int?
+  pricePerPageTshs Decimal?        @map("price_per_page_tshs") @db.Decimal(10, 2)
+  totalAmountTshs  Decimal         @map("total_amount_tshs") @db.Decimal(12, 2)
+  customerNote     String?         @map("customer_note")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  centre           Centre          @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  worker           User            @relation(fields: [workerId], references: [id])
+
+  @@index([centreId])
+  @@index([workerId])
+  @@index([createdAt])
+  @@map("service_events")
+}
+
+model Notice {
+  id        String         @id @default(uuid())
+  senderId  String         @map("sender_id")
+  centreId  String         @map("centre_id")
+  title     String
+  body      String
+  priority  NoticePriority @default(normal)
+  createdAt DateTime       @default(now()) @map("created_at")
+  expiresAt DateTime?      @map("expires_at") // __LAIZER_PATCH_V9__ — routes/notices.js already relies on this field
+  reads     NoticeRead[]
+  centre    Centre         @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  sender    User           @relation(fields: [senderId], references: [id])
+
+  @@index([centreId])
+  @@map("notices")
+}
+
+model NoticeRead {
+  id       String   @id @default(uuid())
+  noticeId String   @map("notice_id")
+  workerId String   @map("worker_id")
+  readAt   DateTime @default(now()) @map("read_at")
+  deletedAt DateTime? @map("deleted_at") // __LAIZER_PATCH_V12__ worker removed it from their list
+  notice   Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  worker   User     @relation(fields: [workerId], references: [id])
+
+  @@unique([noticeId, workerId])
+  @@index([workerId])
+  @@map("notice_reads")
+}
+
+model ExpoPushToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  platform  String?
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("expo_push_tokens")
+}
+
+model BlacklistedToken {
+  id        Int      @id @default(autoincrement())
+  jti       String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("blacklisted_tokens")
+}
+
+enum UserRole {
+  owner
+  worker
+}
+
+enum StockUnit {
+  pcs
+  boxes
+}
+
+enum ServiceType {
+  photocopy
+  printing
+  lamination
+  scanning
+  designing
+  passport_size // __LAIZER_PATCH_V12__
+  other
+}
+
+enum ServiceSubtype {
+  black_and_white
+  colour
+}
+
+enum NoticePriority {
+  low
+  normal
+  urgent
+}
+
+enum EquipmentCondition {
+  good
+  fair
+  needs_repair
+  broken
+}
