@@ -2,7 +2,7 @@
   "expo": {
     "name": "Laizer",
     "slug": "laizer",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "scheme": "smss",
     "userInterfaceStyle": "automatic",
@@ -16,6 +16,7 @@
     },
     "android": {
       "package": "com.smss.mobile",
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#1D4ED8"
@@ -45,7 +46,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "https://smss-api.onrender.com",
+      "apiUrl": "https://laizer-mz7u.onrender.com",
       "eas": {
         "projectId": "7c261c77-30d2-4946-b85c-0f7fd6ef6d56"
       },

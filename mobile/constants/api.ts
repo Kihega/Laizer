@@ -38,7 +38,7 @@ const extraApiUrl: string | undefined =
   (Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl ??
   (Constants.expoConfig?.extra as any)?.eas?.apiUrl;
 
-const PRODUCTION_API_URL = 'https://smss-api.onrender.com';
+const PRODUCTION_API_URL = 'https://laizer-mz7u.onrender.com';
 
 let resolvedFrom = 'production-fallback';
 let rawUrl: string;

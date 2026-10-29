@@ -3,8 +3,8 @@
  * __LAIZER_PATCH_V16__ — daily reports only (no weekly report).
  *
  * GET    /api/reports/daily/   — today's (or ?date=) summary per centre  (?centreId= optional)
- * GET    /api/reports/days/    — one centre's daily report cards: last 7 days, or every
- *                                day that has records with ?all=1       (?centreId= required)
+ * GET    /api/reports/days/    — one centre's daily report cards: its 7 most recent days that
+ *                                have records, or all of them with ?all=1  (?centreId= required)
  * GET    /api/reports/detail/  — full report of one centre on one day    (?centreId=&date=)
  * DELETE /api/reports/day/     — delete every service record of one centre on one day
  */
@@ -12,7 +12,7 @@ const { Router }          = require('express');
 const prisma              = require('../lib/prisma');
 const redis               = require('../lib/redis');
 const logAction           = require('../lib/audit');
-const { dayKey, isDayKey, dayRange, lastDayKeys } = require('../lib/dates');
+const { dayKey, isDayKey, dayRange } = require('../lib/dates');
 const { authenticate, ownerOnly } = require('../middleware/auth');
 
 const router = Router();
@@ -80,8 +80,9 @@ router.get('/daily/', async (req, res, next) => {
 });
 
 // ── GET /api/reports/days/ ────────────────────────────────────────────────────
-// The cards on a centre's report list. Default: the last 7 days, always 7 cards
-// (days without records show 0). ?all=1 → every day that has records (history).
+// The cards on a centre's report list. Only days that HAVE records are listed:
+// default = the 7 most recent of them (fewer if the branch has fewer),
+// ?all=1 = every one (history). Days with no records never get a card.
 router.get('/days/', async (req, res, next) => {
   try {
     const centreId = req.query.centreId;
@@ -92,13 +93,9 @@ router.get('/days/', async (req, res, next) => {
 
     const all   = req.query.all === '1' || req.query.all === 'true';
     const today = dayKey();
-    const keys  = lastDayKeys(7);
-
-    const where = { centreId: centre.id };
-    if (!all) where.createdAt = { gte: dayRange(keys[keys.length - 1]).start };
 
     const events = await prisma.serviceEvent.findMany({
-      where,
+      where:  { centreId: centre.id },
       select: { totalAmountTshs: true, createdAt: true },
     });
 
@@ -111,9 +108,8 @@ router.get('/days/', async (req, res, next) => {
     }
     for (const d of Object.values(byDay)) d.totalRevenueTshs = round2(d.totalRevenueTshs);
 
-    const days = all
-      ? Object.values(byDay).sort((a, b) => (a.date < b.date ? 1 : -1))
-      : keys.map(k => byDay[k] || { date: k, totalEvents: 0, totalRevenueTshs: 0 });
+    const newestFirst = Object.values(byDay).sort((a, b) => (a.date < b.date ? 1 : -1));
+    const days = all ? newestFirst : newestFirst.slice(0, 7);
 
     return res.json({ centre, today, all, days });
   } catch (err) { next(err); }
