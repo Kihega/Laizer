@@ -94,25 +94,34 @@ apiClient.interceptors.response.use(
         });
       }
 
-      orig._retry    = true;
-      isRefreshing   = true;
-      const refresh  = useAuthStore.getState().refreshToken;
+      // __LAIZER_PATCH_V17__ — check for a refresh token BEFORE raising the
+      // isRefreshing flag. It used to be raised first and never lowered when
+      // there was no token (e.g. right after sign-out), so every later 401
+      // waited in the queue forever and screens "just loaded".
+      orig._retry = true;
+      const refresh = useAuthStore.getState().refreshToken;
 
       if (!refresh) {
         await useAuthStore.getState().clearAuth();
         return Promise.reject(error);
       }
 
+      isRefreshing = true;
       try {
-        const { data } = await axios.post(`${API_BASE_URL}${API_ROUTES.refresh}`, { refresh });
+        const { data } = await axios.post(`${API_BASE_URL}${API_ROUTES.refresh}`, { refresh }, { timeout: 20000 });
         const newToken: string = data.access;
-        useAuthStore.getState().setAccessToken(newToken);
+        // The server rotates refresh tokens (the old one is blacklisted), so the
+        // new one MUST be kept or the next refresh fails and signs the user out.
+        useAuthStore.getState().setAccessToken(newToken, data.refresh);
         processQueue(null, newToken);
         orig.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(orig);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        await useAuthStore.getState().clearAuth();
+        // Sign out only when the server says the refresh token is really dead.
+        // A dropped connection or a timeout must not log the user out.
+        const st = (refreshError as AxiosError)?.response?.status;
+        if (st === 400 || st === 401 || st === 403) await useAuthStore.getState().clearAuth();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -189,8 +198,9 @@ export const authService = {
     apiClient.post(API_ROUTES.ownerRegister, body),
   workerLogin: (workerId: string, centreId: string) => // __LAIZER_PATCH_V9__
     apiClient.post(API_ROUTES.workerLogin, { workerId: workerId || undefined, centreId }),
+  // Best-effort server-side revoke; never keep the user waiting on it.
   logout:      (refresh: string) =>
-    apiClient.post(API_ROUTES.logout, { refresh }),
+    apiClient.post(API_ROUTES.logout, { refresh }, { timeout: 8000 }), // __LAIZER_PATCH_V17__
   me:          () => apiClient.get(API_ROUTES.me),
 };
 

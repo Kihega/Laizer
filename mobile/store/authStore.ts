@@ -30,7 +30,7 @@ interface AuthState {
 
   setAuth:        (access: string, refresh: string, user: SmssUser) => Promise<void>;
   setCentreInfo:  (info: CentreInfo | null) => void;
-  setAccessToken: (token: string) => void;
+  setAccessToken: (token: string, refresh?: string) => void;
   clearAuth:      () => Promise<void>;
   loadStoredAuth: () => Promise<void>;
 }
@@ -53,9 +53,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   setCentreInfo:  (centreInfo) => set({ centreInfo }),
-  setAccessToken: (token) => {
-    SecureStore.setItemAsync(KEYS.ACCESS, token);
-    set({ accessToken: token });
+  setAccessToken: (token, refresh) => {
+    SecureStore.setItemAsync(KEYS.ACCESS, token).catch(() => {});
+    if (refresh) SecureStore.setItemAsync(KEYS.REFRESH, refresh).catch(() => {});
+    set(refresh ? { accessToken: token, refreshToken: refresh } : { accessToken: token });
   },
 
   clearAuth: async () => {
@@ -70,12 +71,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   loadStoredAuth: async () => {
     set({ isLoading: true, loadingStatus: 'Loading stored session…' });
     // Hard 8-second timeout — prevents permanent spinner on network/SecureStore hang
-    const timeout = new Promise<void>(resolve =>
-      setTimeout(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<void>(resolve => {
+      timer = setTimeout(() => {
         set({ isLoading: false, loadingStatus: 'Timed out. Please retry.' });
         resolve();
-      }, 8000)
-    );
+      }, 8000);
+    });
     const load = (async () => {
     try {
       const [access, refresh, userJson] = await Promise.all([
@@ -88,42 +90,22 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ isLoading: false }); return;
       }
 
-      // Check expiry client-side
-      let isExpired = true;
-      try {
-        const payload = JSON.parse(
-          ((s: string) => atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '=')))(access.split('.')[1])
-        );
-        isExpired = (payload.exp ?? 0) * 1000 < Date.now();
-      } catch { isExpired = true; }
-
-      if (isExpired) {
-        set({
-          accessToken: access, refreshToken: refresh,
-          user: JSON.parse(userJson), isAuthenticated: false,
-        });
-        try {
-          const { authService } = require('@/services/api');
-          const { data } = await authService.refresh(refresh);
-          await useAuthStore.getState().setAuth(
-            data.access, data.refresh ?? refresh, JSON.parse(userJson)
-          );
-        } catch {
-          await useAuthStore.getState().clearAuth();
-        }
-        set({ isLoading: false });
-      } else {
-        set({
-          accessToken: access, refreshToken: refresh,
-          user: JSON.parse(userJson), isAuthenticated: true,
-          isLoading: false, loadingStatus: 'Session restored.',
-        });
-      }
+      // __LAIZER_PATCH_V17__ — restore the session as it is. If the access token
+      // has expired, the first API call gets a 401 and the response interceptor
+      // silently swaps it using the refresh token (and signs out only if that
+      // refresh token is really invalid). Nothing here waits on the network, so
+      // the app opens instantly even on a slow connection or a cold server.
+      set({
+        accessToken: access, refreshToken: refresh,
+        user: JSON.parse(userJson), isAuthenticated: true,
+        isLoading: false, loadingStatus: 'Session restored.',
+      });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Unknown error';
       set({ isLoading: false, loadingStatus: `Error: ${msg}` });
     }
     })(); // end load IIFE
     await Promise.race([load, timeout]);
+    if (timer) clearTimeout(timer);
   },
 }));
