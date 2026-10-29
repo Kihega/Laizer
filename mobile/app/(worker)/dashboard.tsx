@@ -18,7 +18,7 @@ import { useRouter }      from 'expo-router';
 import { useAuthStore }   from '@/store/authStore';
 import { useAuth }        from '@/hooks/useAuth';
 import { useTheme }       from '@/hooks/useTheme';
-import { serviceEventService, stockService, noticeService } from '@/services/api';
+import { serviceEventService, noticeService } from '@/services/api';
 import { Card }           from '@/components/ui';
 import { BrandColors, Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 
@@ -33,7 +33,6 @@ export default function WorkerDashboard() {
   const { theme, setTheme, isDark, tc } = useTheme();
   const router               = useRouter();
   const [events,     setEvents]     = useState<any[]>([]);
-  const [stockLow,   setStockLow]   = useState<any[]>([]);
   const [unreadCnt,  setUnreadCnt]  = useState(0);
   const [_loading,   setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,11 +45,10 @@ export default function WorkerDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const [ev, st, nt] = await Promise.allSettled([
-        serviceEventService.list(), stockService.list(), noticeService.list(),
+      const [ev, nt] = await Promise.allSettled([
+        serviceEventService.list(), noticeService.list(),
       ]);
       if (ev.status === 'fulfilled') setEvents(ev.value.data ?? []);
-      if (st.status === 'fulfilled') setStockLow((st.value.data ?? []).filter((i: any) => Number(i.quantity) < 5));
       if (nt.status === 'fulfilled') {
         const n = (nt.value.data ?? []).filter((n: any) => !n.isRead).length;
         setUnreadCnt(n); setGlobalUnreadCount(n);
@@ -115,17 +113,6 @@ export default function WorkerDashboard() {
             </Card>
           ))}
         </View>
-        {stockLow.length > 0 && (
-          <>
-            <Text style={[WD.sectionTitle, { color: tc.text }]}>⚠️ Low Stock</Text>
-            {stockLow.map((s, i) => (
-              <Card key={i} style={[WD.stockCard, { backgroundColor: tc.card, borderColor: tc.border }]}>
-                <Text style={[WD.stockName, { color: tc.text }]}>{s.itemName}</Text>
-                <Text style={WD.stockQty}>{s.quantity} left</Text>
-              </Card>
-            ))}
-          </>
-        )}
         <View style={{ height:40 }} />
       </ScrollView>
 
@@ -211,9 +198,6 @@ const WD = StyleSheet.create({
   actions:       { flexDirection:'row', flexWrap:'wrap', gap:Spacing.md, marginBottom:Spacing.sm },
   actionCard:    { flexBasis:'45%', flexGrow:1, alignItems:'center', paddingVertical:Spacing.base },
   actionLabel:   { fontSize:FontSize.sm, fontWeight:FontWeight.semiBold, color:Colors.textPrimary, textAlign:'center' },
-  stockCard:     { flexDirection:'row', justifyContent:'space-between', marginBottom:Spacing.xs },
-  stockName:     { fontSize:FontSize.sm, fontWeight:FontWeight.semiBold, color:Colors.textPrimary },
-  stockQty:      { fontSize:FontSize.sm, color:Colors.error, fontWeight:FontWeight.bold },
   // Side menu
   sideOverlay:   { position:'absolute', top:0, left:0, right:0, bottom:0, backgroundColor:'rgba(0,0,0,0.45)', zIndex:10 },
   sidebar:       { position:'absolute', top:0, left:0, bottom:0, width:280, zIndex:11, elevation:20 },

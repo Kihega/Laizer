@@ -102,12 +102,13 @@ export function useAuth() {
     } finally { setIsLoading(false); }
   }, [setAuth]);
 
+  // __LAIZER_PATCH_V17__ — sign out instantly: clear the local session first, then
+  // tell the server in the background. Waiting for the server made the button
+  // "just load" whenever the connection was slow or the server was waking up.
   const logout = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      if (refreshToken) await authService.logout(refreshToken);
-    } catch { /* clear local regardless */ }
-    finally { await clearAuth(); setIsLoading(false); }
+    const token = refreshToken;
+    await clearAuth();
+    if (token) authService.logout(token).catch(() => { /* already signed out locally */ });
   }, [refreshToken, clearAuth]);
 
   return {

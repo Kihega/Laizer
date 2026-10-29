@@ -2,10 +2,10 @@
  * Laizer — Owner: a branch's daily report cards
  * __LAIZER_PATCH_V16__
  *
- * Shows the last 7 days (always 7 cards, newest first). The history icon in the
- * top bar switches to every past day that has records. Each card has an Open
- * button (full report of that day) and a Delete button (removes that day's
- * records).
+ * Shows the 7 most recent days that have records (fewer if there are fewer;
+ * days without records get no card), newest first. The history icon in the top
+ * bar switches to every day that has records. Each card has an Open button
+ * (full report of that day) and a Delete button (removes that day's records).
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -77,7 +77,7 @@ export function BranchReports({ centreId, name, centreNo, onClose, onOpenDay }: 
         </TouchableOpacity>
         <View style={{ flex: 1, marginLeft: Spacing.md }}>
           <Text style={B.title} numberOfLines={1}>{name}</Text>
-          <Text style={B.sub}>{centreNo ? `${centreNo}  ·  ` : ''}{showAll ? 'All history' : 'Last 7 days'}</Text>
+          <Text style={B.sub}>{centreNo ? `${centreNo}  ·  ` : ''}{showAll ? 'All history' : 'Latest reports'}</Text>
         </View>
         <TouchableOpacity
           onPress={() => setShowAll(v => !v)}
@@ -127,16 +127,14 @@ export function BranchReports({ centreId, name, centreNo, onClose, onOpenDay }: 
                 >
                   <Ionicons name="document-text-outline" size={22} color={Colors.primary} />
                 </TouchableOpacity>
-                {d.totalEvents > 0 && (
-                  <TouchableOpacity
-                    onPress={() => confirmDelete(d)}
-                    hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
-                    accessibilityLabel="Delete report"
-                    style={B.iconBtn}
-                  >
-                    <Ionicons name="trash-outline" size={22} color={Colors.error} />
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  onPress={() => confirmDelete(d)}
+                  hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                  accessibilityLabel="Delete report"
+                  style={B.iconBtn}
+                >
+                  <Ionicons name="trash-outline" size={22} color={Colors.error} />
+                </TouchableOpacity>
               </Card>
             </TouchableOpacity>
           ))}
