@@ -8,7 +8,7 @@
  * PATCH  /api/workers/:id/password/     — set / reset the worker's password
  * POST   /api/workers/:id/assign/       — assign to centre
  * POST   /api/workers/:id/transfer/     — transfer to another centre
- * DELETE /api/workers/:id/              — deactivate worker
+ * DELETE /api/workers/:id/              — delete worker (branch records are kept)
  */
 const { Router }       = require('express');
 const bcrypt           = require('bcryptjs');
@@ -260,15 +260,35 @@ router.post('/:id/transfer/', async (req, res, next) => {
 });
 
 // ── DELETE /api/workers/:id/ ──────────────────────────────────────────────────
+// __LAIZER_PATCH_V19__ — really deletes the worker (login, assignments, push tokens,
+// read marks). The branch's records are kept: each service record keeps the worker's
+// name as plain text (workerName) and its worker link is cleared.
 router.delete('/:id/', async (req, res, next) => {
   try {
-    await prisma.user.update({
-      where: { id: req.params.id },
-      data:  { isActive: false },
+    const worker = await prisma.user.findFirst({
+      where: {
+        id: req.params.id, role: 'worker',
+        OR: [
+          { assignments: { some: { centre: { ownerId: req.user.id } } } },
+          { assignments: { none: {} } },
+        ],
+      },
+      select: { id: true, fullName: true, assignments: { select: { centreId: true } } },
     });
-    await redis.cacheDel(redis.CacheKey.user(req.params.id), redis.CacheKey.workers(req.user.id));
-    await logAction(req.user.id, logAction.ACTIONS.WORKER_DEACTIVATED, { req, workerId: req.params.id });
-    return res.json({ detail: 'Worker deactivated.' });
+    if (!worker) return res.status(404).json({ error: 'not_found', detail: 'Worker not found.' });
+
+    await prisma.$transaction([
+      prisma.serviceEvent.updateMany({ where: { workerId: worker.id }, data: { workerName: worker.fullName } }),
+      prisma.user.delete({ where: { id: worker.id } }),
+    ]);
+
+    await redis.cacheDel(
+      redis.CacheKey.user(worker.id), redis.CacheKey.workers(req.user.id),
+      ...worker.assignments.map(a => redis.CacheKey.centreWorkers(a.centreId)),
+    );
+    await redis.cacheDelPattern('report:d:*');
+    await logAction(req.user.id, logAction.ACTIONS.WORKER_DELETED, { req, workerId: worker.id, name: worker.fullName });
+    return res.json({ detail: 'Worker deleted.' });
   } catch (err) { next(err); }
 });
 

@@ -42,7 +42,7 @@ export function BranchReports({ centreId, name, centreNo, onClose, onOpenDay }: 
     setError(null);
     try {
       const { data } = await reportService.days(centreId, showAll);
-      setDays(Array.isArray(data?.days) ? data.days : []);
+      setDays(Array.isArray(data?.days) ? data.days.filter((d: DayCard) => d.totalEvents > 0) : []); // __LAIZER_PATCH_V19__ no empty cards
       setToday(String(data?.today ?? ''));
     } catch (e) {
       setError(getApiError(e, 'Could not load the reports.'));

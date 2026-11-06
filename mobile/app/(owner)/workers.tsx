@@ -67,9 +67,9 @@ export default function WorkersScreen() {
   };
 
   const confirmDelete = (w: any) => {
-    CustomAlert.alert('Remove Worker', `Remove "${w.fullName}" from the system? This cannot be undone.`, [
+    CustomAlert.alert('Delete Worker', `Delete "${w.fullName}" permanently? The worker can no longer log in. The records logged at the branch are kept.`, [
       { text:'Cancel', style:'cancel' },
-      { text:'Remove', style:'destructive', onPress: async () => {
+      { text:'Delete', style:'destructive', onPress: async () => {
         try { await workerService.remove(w.id); await load(); }
         catch (e) { CustomAlert.alert('Error', getApiError(e)); }
       }},

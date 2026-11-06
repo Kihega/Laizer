@@ -167,7 +167,8 @@ model Equipment {
 model ServiceEvent {
   id               String          @id @default(uuid())
   centreId         String          @map("centre_id")
-  workerId         String          @map("worker_id")
+  workerId         String?         @map("worker_id") // __LAIZER_PATCH_V19__ null once the worker is deleted
+  workerName       String?         @map("worker_name") // __LAIZER_PATCH_V19__ name kept after the worker is deleted
   serviceType      ServiceType     @map("service_type")
   serviceSubtype   ServiceSubtype? @map("service_subtype")
   category         String?
@@ -178,7 +179,7 @@ model ServiceEvent {
   ownerDeletedAt   DateTime?       @map("owner_deleted_at") // __LAIZER_PATCH_V18__ owner hid it; workers still see it
   createdAt        DateTime        @default(now()) @map("created_at")
   centre           Centre          @relation(fields: [centreId], references: [id], onDelete: Cascade)
-  worker           User            @relation(fields: [workerId], references: [id])
+  worker           User?           @relation(fields: [workerId], references: [id], onDelete: SetNull)
 
   @@index([centreId])
   @@index([workerId])
@@ -211,7 +212,7 @@ model NoticeRead {
   readAt   DateTime @default(now()) @map("read_at")
   deletedAt DateTime? @map("deleted_at") // __LAIZER_PATCH_V12__ worker removed it from their list
   notice   Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
-  worker   User     @relation(fields: [workerId], references: [id])
+  worker   User     @relation(fields: [workerId], references: [id], onDelete: Cascade) // __LAIZER_PATCH_V19__
 
   @@unique([noticeId, workerId])
   @@index([workerId])
