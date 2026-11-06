@@ -32,6 +32,8 @@ const WORKER_MESSAGES: Record<string, string> = {
   centre_mismatch:   'This Worker ID does not belong to that Centre ID.',
   worker_id_required:'Enter your Worker ID to continue.',
   not_assigned:      'You are not assigned to a centre yet. Contact your employer.',
+  invalid_password:  'Wrong password. Check it and try again.', // __LAIZER_PATCH_V18__
+  password_not_set:  'No password is set for you yet. Ask your employer to set one.',
 };
 
 /** Turn any login failure into { title, message } — never exposes status codes. */
@@ -56,13 +58,13 @@ function toAuthError(err: unknown, role: 'owner' | 'worker'): AuthError {
     if (fe?.email?.length) return { code, title: 'Login failed', message: 'Enter a valid email address.' };
     return {
       code, title: 'Login failed',
-      message: role === 'owner' ? 'Enter your email and password.' : 'Enter your Centre ID (and Worker ID).',
+      message: role === 'owner' ? 'Enter your email and password.' : 'Enter your Worker ID, Centre ID and password.',
     };
   }
 
   if (status === 401 || status === 403) {
     if (role === 'owner') return { code, title: 'Login failed', message: 'Wrong email or password.' };
-    return { code, title: 'Login failed', message: WORKER_MESSAGES[code] ?? 'Wrong Worker ID or Centre ID.' };
+    return { code, title: 'Login failed', message: WORKER_MESSAGES[code] ?? 'Wrong Worker ID, Centre ID or password.' };
   }
 
   // 5xx, database trouble, anything unexpected
@@ -88,10 +90,10 @@ export function useAuth() {
     } finally { setIsLoading(false); }
   }, [setAuth]);
 
-  const workerLogin = useCallback(async (workerId: string, centreId: string): Promise<LoginResult> => { // __LAIZER_PATCH_V9__
+  const workerLogin = useCallback(async (workerId: string, centreId: string, password = ''): Promise<LoginResult> => { // __LAIZER_PATCH_V18__
     setIsLoading(true); setError(null);
     try {
-      const { data } = await withLoginTimeout(authService.workerLogin(workerId.trim(), centreId.trim()));
+      const { data } = await withLoginTimeout(authService.workerLogin(workerId.trim(), centreId.trim(), password));
       await setAuth(data.access, data.refresh, data.user as SmssUser);
       if (data.centreInfo) useAuthStore.getState().setCentreInfo(data.centreInfo);
       return { success: true, role: data.user.role, notice: data.notice ?? null };

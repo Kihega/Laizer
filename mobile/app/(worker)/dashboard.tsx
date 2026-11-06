@@ -104,6 +104,7 @@ export default function WorkerDashboard() {
           {[
             { label:'Log Service', icon:'create-outline'    as const, route:'/(worker)/services' },
             { label:'View Stock',  icon:'cube-outline'      as const, route:'/(worker)/stock'    },
+            { label:'Utilities',   icon:'print-outline'     as const, route:'/(worker)/utilities' },
             { label:'Notices',     icon:'megaphone-outline' as const, route:'/(worker)/notices'  },
           ].map(a => (
             <Card key={a.route} onPress={() => router.push(a.route as any)}

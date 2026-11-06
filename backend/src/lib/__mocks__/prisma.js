@@ -63,6 +63,20 @@ const prismaMock = {
     delete:     jest.fn().mockResolvedValue({ id: 'mock-stock-id' }),
   },
 
+  // ── StockSale / Utility ───────────────────────────────────────────────────
+  stockSale: {
+    findMany:   jest.fn().mockResolvedValue([]),
+    create:     jest.fn().mockResolvedValue({ id: 'mock-sale-id' }),
+    updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+  },
+  utility: {
+    findFirst:  jest.fn().mockResolvedValue(null),
+    findMany:   jest.fn().mockResolvedValue([]),
+    create:     jest.fn().mockResolvedValue({ id: 'mock-utility-id' }),
+    updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+    deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+  },
+
   // ── ServiceEvent ──────────────────────────────────────────────────────────
   serviceEvent: {
     findUnique: jest.fn().mockResolvedValue(null),

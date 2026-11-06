@@ -69,6 +69,7 @@ router.get('/', async (req, res, next) => {
       const events = await prisma.serviceEvent.findMany({
         where: {
           centreId:    { in: centreIds },
+          ownerDeletedAt: null, // __LAIZER_PATCH_V18__
           createdAt:   { gte: date, lt: nextDay },
           ...(filterType ? { serviceType: filterType } : {}),
         },

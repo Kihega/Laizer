@@ -43,6 +43,7 @@ model Centre {
   location      String
   ownerId       String                   @map("owner_id")
   isActive      Boolean                  @default(true) @map("is_active")
+  utilitySeq    Int                      @default(0) @map("utility_seq") // __LAIZER_PATCH_V18__ last UTL-NN number issued
   createdAt     DateTime                 @default(now()) @map("created_at")
   updatedAt     DateTime                 @updatedAt @map("updated_at")
   owner         User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
@@ -50,6 +51,8 @@ model Centre {
   equipment     Equipment[]
   serviceEvents ServiceEvent[]
   stockItems    StockItem[]
+  stockSales    StockSale[]
+  utilities     Utility[]
   assignments   WorkerCentreAssignment[]
 
   @@index([ownerId])
@@ -91,6 +94,50 @@ model StockItem {
   @@map("stock_items")
 }
 
+// ── StockSale ── __LAIZER_PATCH_V18__ ─────────────────────────────────────────
+// One row per "Sell" on a stock card. itemName is a snapshot so the sale stays
+// in the report after the stock card is deleted (quantity reached 0).
+model StockSale {
+  id             String    @id @default(uuid())
+  centreId       String    @map("centre_id")
+  stockItemId    String?   @map("stock_item_id")
+  itemName       String    @map("item_name")
+  quantity       Int
+  unitPriceTshs  Decimal   @map("unit_price_tshs") @db.Decimal(12, 2)
+  totalTshs      Decimal   @map("total_tshs") @db.Decimal(12, 2)
+  soldBy         String?   @map("sold_by")
+  ownerDeletedAt DateTime? @map("owner_deleted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  centre         Centre    @relation(fields: [centreId], references: [id], onDelete: Cascade)
+
+  @@index([centreId, createdAt])
+  @@map("stock_sales")
+}
+
+// ── Utility ── __LAIZER_PATCH_V18__ ───────────────────────────────────────────
+// Office utility (scanner, printer, laptop...). `code` (UTL-01, UTL-02...) is
+// issued per branch from Centre.utilitySeq and is never reused.
+model Utility {
+  id           String       @id @default(uuid())
+  centreId     String       @map("centre_id")
+  code         String
+  name         String
+  state        UtilityState @default(good)
+  registeredBy String?      @map("registered_by")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  centre       Centre       @relation(fields: [centreId], references: [id], onDelete: Cascade)
+
+  @@unique([centreId, code], name: "utility_centre_code")
+  @@index([centreId])
+  @@map("utilities")
+}
+
+enum UtilityState {
+  good
+  defect
+}
+
 // ── Equipment ─────────────────────────────────────────────────────────────────
 // LEGACY — the app no longer reads or writes this table (the equipment / office
 // utilities feature was removed). The model is kept only so existing rows are
@@ -128,6 +175,7 @@ model ServiceEvent {
   pricePerPageTshs Decimal?        @map("price_per_page_tshs") @db.Decimal(10, 2)
   totalAmountTshs  Decimal         @map("total_amount_tshs") @db.Decimal(12, 2)
   customerNote     String?         @map("customer_note")
+  ownerDeletedAt   DateTime?       @map("owner_deleted_at") // __LAIZER_PATCH_V18__ owner hid it; workers still see it
   createdAt        DateTime        @default(now()) @map("created_at")
   centre           Centre          @relation(fields: [centreId], references: [id], onDelete: Cascade)
   worker           User            @relation(fields: [workerId], references: [id])

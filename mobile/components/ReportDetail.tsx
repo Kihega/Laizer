@@ -1,10 +1,11 @@
 /**
  * Laizer — Owner: Full report of ONE branch on ONE day
- * __LAIZER_PATCH_V16__
+ * __LAIZER_PATCH_V18__
  *
  * Opened from a daily report card (BranchReports). Shows everything the
  * branch's workers recorded that day: totals, services by type and the full
- * service log — plus the stock on hand when the day is today. Loads its own
+ * service log, stock sales — plus, when the day is today, the stock on hand and
+ * every office utility with its ID and state (good / defect). Loads its own
  * data, so any problem shows here with a Retry button.
  */
 import { useCallback, useEffect, useState } from 'react';
@@ -30,7 +31,11 @@ interface DayReport {
     createdAt: string;
     worker?: { fullName: string } | null;
   }>;
+  sales: Array<{ id: string; itemName: string; quantity: number; unitPriceTshs: number; totalTshs: number; createdAt: string }>;
   stock: Array<{ itemName: string; quantity: number; unit?: string }>;
+  utilities: Array<{ code: string; name: string; state: 'good' | 'defect' }>;
+  servicesRevenueTshs: number;
+  stockSalesTshs: number;
 }
 
 function normalise(data: any): DayReport {
@@ -40,6 +45,10 @@ function normalise(data: any): DayReport {
     byServiceType:    data.byServiceType ?? {},
     events:           Array.isArray(data.events) ? data.events : [],
     stock:            Array.isArray(data.stock)  ? data.stock  : [],
+    sales:            Array.isArray(data.sales)  ? data.sales  : [],
+    utilities:        Array.isArray(data.utilities) ? data.utilities : [],
+    servicesRevenueTshs: Number(data.servicesRevenueTshs ?? 0),
+    stockSalesTshs:      Number(data.stockSalesTshs ?? 0),
     totalEvents:      Number(data.totalEvents ?? 0),
     totalRevenueTshs: Number(data.totalRevenueTshs ?? 0),
   };
@@ -78,7 +87,7 @@ export function ReportDetail({ centreId, date, name, centreNo: centreNoProp, onC
 
   const title    = row?.centre.name ?? name ?? 'Report';
   const centreNo = row?.centre.centreNo ?? centreNoProp ?? '';
-  const isEmpty  = !!row && row.events.length === 0 && row.stock.length === 0;
+  const isEmpty  = !!row && row.events.length === 0 && row.sales.length === 0 && row.stock.length === 0 && row.utilities.length === 0;
 
   return (
     <View style={D.root}>
@@ -125,7 +134,7 @@ export function ReportDetail({ centreId, date, name, centreNo: centreNoProp, onC
             <View style={D.totalDivider} />
             <View style={D.totalBox}>
               <Text style={D.totalVal}>{row.totalEvents}</Text>
-              <Text style={D.totalLbl}>Services</Text>
+              <Text style={D.totalLbl}>Records</Text>
             </View>
           </View>
 
@@ -166,6 +175,49 @@ export function ReportDetail({ centreId, date, name, centreNo: centreNoProp, onC
               </View>
             ))}
           </View>
+
+          <View style={D.section}>
+            <Text style={D.sectionTitle}>STOCK SALES</Text>
+            {row.sales.length === 0 ? (
+              <Text style={D.none}>No stock sold.</Text>
+            ) : (
+              <>
+                {row.sales.map(s => (
+                  <View key={s.id} style={D.evtRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={D.evtType}>{s.itemName}</Text>
+                      <Text style={D.evtMeta}>{Number(s.quantity)} pcs @ {fmtMoney(Number(s.unitPriceTshs))}</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={D.evtAmt}>{fmtMoney(Number(s.totalTshs))}</Text>
+                      <Text style={D.evtMeta}>{fmtTime(s.createdAt)}</Text>
+                    </View>
+                  </View>
+                ))}
+                <View style={D.line}>
+                  <Text style={[D.lineName, { flex: 1, fontWeight: FontWeight.bold }]}>Stock sales total</Text>
+                  <Text style={D.lineCount}>{fmtMoney(row.stockSalesTshs)}</Text>
+                </View>
+              </>
+            )}
+          </View>
+
+          {row.isToday && (
+            <View style={D.section}>
+              <Text style={D.sectionTitle}>OFFICE UTILITIES</Text>
+              {row.utilities.length === 0 ? (
+                <Text style={D.none}>No utilities registered.</Text>
+              ) : row.utilities.map(u => (
+                <View key={u.code} style={D.line}>
+                  <Text style={D.utilCode}>{u.code}</Text>
+                  <Text style={[D.lineName, { flex: 1 }]}>{u.name}</Text>
+                  <Text style={[D.utilState, u.state === 'good' ? D.stateGood : D.stateBad]}>
+                    {u.state === 'good' ? 'Good' : 'Defect'}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {row.isToday && (
             <View style={D.section}>
@@ -212,5 +264,9 @@ const D = StyleSheet.create({
   evtRow:       { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: Colors.divider },
   evtType:      { fontSize: FontSize.sm, fontWeight: FontWeight.semiBold, color: Colors.textPrimary },
   evtMeta:      { fontSize: FontSize.xs, color: Colors.textDisabled, marginTop: 2 },
+  utilCode:     { fontSize: FontSize.xs, fontWeight: FontWeight.bold, color: Colors.primary },
+  utilState:    { fontSize: FontSize.xs, fontWeight: FontWeight.bold },
+  stateGood:    { color: Colors.accent },
+  stateBad:     { color: Colors.error },
   evtAmt:       { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: Colors.accent },
 });

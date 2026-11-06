@@ -5,7 +5,8 @@
  * Shows the 7 most recent days that have records (fewer if there are fewer;
  * days without records get no card), newest first. The history icon in the top
  * bar switches to every day that has records. Each card has an Open button
- * (full report of that day) and a Delete button (removes that day's records).
+ * (full report of that day) and — for previous days only — a Delete button that hides
+ * the report from the owner (workers keep their records).
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -53,7 +54,7 @@ export function BranchReports({ centreId, name, centreNo, onClose, onOpenDay }: 
   const confirmDelete = (d: DayCard) => {
     CustomAlert.alert(
       'Delete report',
-      `Delete the report of ${fmtDay(d.date)}? All ${d.totalEvents} service record${d.totalEvents === 1 ? '' : 's'} of that day will be permanently removed.`,
+      `Delete the report of ${fmtDay(d.date)}? It is removed from your reports only — the workers keep the records they logged.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -116,7 +117,7 @@ export function BranchReports({ centreId, name, centreNo, onClose, onOpenDay }: 
                     {d.date === today && <Text style={B.todayPill}>Today</Text>}
                   </View>
                   <Text style={B.meta}>
-                    {d.totalEvents} service{d.totalEvents === 1 ? '' : 's'}  ·  {fmtMoney(d.totalRevenueTshs)}
+                    {d.totalEvents} record{d.totalEvents === 1 ? '' : 's'}  ·  {fmtMoney(d.totalRevenueTshs)}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -127,14 +128,17 @@ export function BranchReports({ centreId, name, centreNo, onClose, onOpenDay }: 
                 >
                   <Ionicons name="document-text-outline" size={22} color={Colors.primary} />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => confirmDelete(d)}
-                  hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
-                  accessibilityLabel="Delete report"
-                  style={B.iconBtn}
-                >
-                  <Ionicons name="trash-outline" size={22} color={Colors.error} />
-                </TouchableOpacity>
+                {/* __LAIZER_PATCH_V18__ — today's report can never be deleted */}
+                {d.date !== today && (
+                  <TouchableOpacity
+                    onPress={() => confirmDelete(d)}
+                    hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                    accessibilityLabel="Delete report"
+                    style={B.iconBtn}
+                  >
+                    <Ionicons name="trash-outline" size={22} color={Colors.error} />
+                  </TouchableOpacity>
+                )}
               </Card>
             </TouchableOpacity>
           ))}
