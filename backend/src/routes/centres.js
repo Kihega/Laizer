@@ -168,6 +168,8 @@ router.delete('/:id/', authenticate, ownerOnly, async (req, res, next) => {
 
     await prisma.workerCentreAssignment.deleteMany({ where: { centreId: centre.id } });
     await prisma.stockItem.deleteMany({ where: { centreId: centre.id } });
+    await prisma.stockSale.deleteMany({ where: { centreId: centre.id } });
+    await prisma.utility.deleteMany({ where: { centreId: centre.id } });
     await prisma.serviceEvent.deleteMany({ where: { centreId: centre.id } });
     await prisma.notice.deleteMany({ where: { centreId: centre.id } });
     await prisma.centre.delete({ where: { id: centre.id } });

@@ -55,6 +55,7 @@ export default function WorkerLayout() {
       <Tabs.Screen name="dashboard" options={{ title:'Dashboard', tabBarIcon: ({color,size}) => <Ionicons name="home-outline"      size={size} color={color as string} /> }} />
       <Tabs.Screen name="stock"     options={{ title:'Stock',     tabBarIcon: ({color,size}) => <Ionicons name="cube-outline"      size={size} color={color as string} /> }} />
       <Tabs.Screen name="services"  options={{ title:'Services',  tabBarIcon: ({color,size}) => <Ionicons name="create-outline"    size={size} color={color as string} /> }} />
+      <Tabs.Screen name="utilities" options={{ title:'Utilities', tabBarIcon: ({color,size}) => <Ionicons name="print-outline"     size={size} color={color as string} /> }} />
       <Tabs.Screen name="notices"   options={{ title:'Notices',   tabBarIcon: ({color,size}) => <BadgeIcon name="megaphone-outline" color={color as string} size={size} badge={unread} /> }} />
     </Tabs>
   );

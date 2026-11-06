@@ -5,11 +5,13 @@
  * POST   /api/workers/                  — register worker
  * GET    /api/workers/:id/              — worker detail + current assignment
  * PATCH  /api/workers/:id/              — update worker profile
+ * PATCH  /api/workers/:id/password/     — set / reset the worker's password
  * POST   /api/workers/:id/assign/       — assign to centre
  * POST   /api/workers/:id/transfer/     — transfer to another centre
  * DELETE /api/workers/:id/              — deactivate worker
  */
 const { Router }       = require('express');
+const bcrypt           = require('bcryptjs');
 const { z }            = require('zod');
 const prisma           = require('../lib/prisma');
 const redis            = require('../lib/redis');
@@ -78,6 +80,7 @@ router.get('/', async (req, res, next) => {
       phone:        w.phone,
       workerCode:   w.workerCode,
       isActive:     w.isActive,
+      hasPassword:  !!w.passwordHash,
       assignedCentre: w.assignments?.[0]?.centre || null,
     })));
   } catch (err) { next(err); }
@@ -87,6 +90,7 @@ router.get('/', async (req, res, next) => {
 const RegisterWorkerSchema = z.object({
   fullName: z.string().min(2).transform(s => s.trim().toUpperCase()),
   phone:    z.string().min(7).max(20),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(72), // __LAIZER_PATCH_V18__
   centreId: z.string().optional(),
 });
 
@@ -96,7 +100,7 @@ router.post('/', async (req, res, next) => {
     if (!parsed.success)
       return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
 
-    const { fullName, phone, centreId } = parsed.data;
+    const { fullName, phone, password, centreId } = parsed.data;
 
     // Phone uniqueness (workers identified by phone)
     const exists = await prisma.user.findUnique({ where: { phone } });
@@ -104,7 +108,8 @@ router.post('/', async (req, res, next) => {
       return res.status(409).json({ error: 'duplicate', detail: 'A worker with this phone number already exists.' });
 
     const worker = await prisma.user.create({
-      data: { fullName, phone, role: 'worker', workerCode: await generateWorkerCode() },
+      data: { fullName, phone, role: 'worker', workerCode: await generateWorkerCode(),
+              passwordHash: await bcrypt.hash(password, 10) },
     });
 
     // If centreId provided, assign immediately
@@ -156,6 +161,35 @@ router.patch('/:id/', async (req, res, next) => {
     });
     await redis.cacheDel(redis.CacheKey.user(worker.id), redis.CacheKey.workers(req.user.id));
     return res.json({ detail: 'Worker updated.' });
+  } catch (err) { next(err); }
+});
+
+// ── PATCH /api/workers/:id/password/ ─────────────────────────────────────────
+// __LAIZER_PATCH_V18__ — owner sets / resets a worker's login password (also how
+// workers registered before passwords existed get one).
+const SetPasswordSchema = z.object({ password: z.string().min(6, 'Password must be at least 6 characters').max(72) });
+
+router.patch('/:id/password/', async (req, res, next) => {
+  try {
+    const parsed = SetPasswordSchema.safeParse(req.body);
+    if (!parsed.success)
+      return res.status(400).json({ error: 'validation_error', detail: parsed.error.flatten() });
+
+    // Only a worker assigned (now or before) to one of THIS owner's centres.
+    const owned = await prisma.user.findFirst({
+      where: { id: req.params.id, role: 'worker',
+               assignments: { some: { centre: { ownerId: req.user.id } } } },
+      select: { id: true },
+    });
+    if (!owned) return res.status(404).json({ error: 'not_found', detail: 'Worker not found.' });
+
+    await prisma.user.update({
+      where: { id: owned.id },
+      data:  { passwordHash: await bcrypt.hash(parsed.data.password, 10) },
+    });
+    await redis.cacheDel(redis.CacheKey.workers(req.user.id));
+    await logAction(req.user.id, logAction.ACTIONS.WORKER_PASSWORD_SET, { req, workerId: owned.id });
+    return res.json({ detail: 'Password updated.' });
   } catch (err) { next(err); }
 });
 

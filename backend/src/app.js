@@ -54,6 +54,7 @@ app.use('/api/auth/',      require('./routes/auth'));
 app.use('/api/centres/',   require('./routes/centres'));
 app.use('/api/workers/',   require('./routes/workers'));
 app.use('/api/stock/',     require('./routes/stock'));
+app.use('/api/utilities/', require('./routes/utilities'));
 app.use('/api/services/',  require('./routes/services'));
 app.use('/api/notices/',   require('./routes/notices'));
 app.use('/api/reports/',   require('./routes/reports'));

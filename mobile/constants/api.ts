@@ -38,7 +38,7 @@ const extraApiUrl: string | undefined =
   (Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl ??
   (Constants.expoConfig?.extra as any)?.eas?.apiUrl;
 
-const PRODUCTION_API_URL = 'https://smss-api.onrender.com';
+const PRODUCTION_API_URL = 'https://laizer-mz7u.onrender.com';
 
 let resolvedFrom = 'production-fallback';
 let rawUrl: string;
@@ -97,11 +97,18 @@ export const API_ROUTES = {
   worker:       (id: string) => `/api/workers/${id}/`,
   assignWorker: (id: string) => `/api/workers/${id}/assign/`,
   transferWorker:(id: string)=> `/api/workers/${id}/transfer/`,
+  workerPassword:(id: string)=> `/api/workers/${id}/password/`, // __LAIZER_PATCH_V18__
 
   // Stock
   stock:        '/api/stock/',
   stockItem:    (id: string) => `/api/stock/${id}/`,
-  stockUse:     (id: string) => `/api/stock/${id}/use/`, // __LAIZER_PATCH_V12__
+  stockSell:    (id: string) => `/api/stock/${id}/sell/`, // __LAIZER_PATCH_V18__
+  stockAdd:     (id: string) => `/api/stock/${id}/add/`,
+
+  // Office utilities
+  utilities:    '/api/utilities/',
+  utility:      (id: string) => `/api/utilities/${id}/`,
+  utilityState: (id: string) => `/api/utilities/${id}/state/`,
 
   // Services
   services:     '/api/services/',

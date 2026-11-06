@@ -20,7 +20,11 @@ export default function WorkersScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showForm,   setShowForm]   = useState(false);
   const [saving,     setSaving]     = useState(false);
-  const [form, setForm] = useState({ fullName:'', phone:'', centreId:'' });
+  const [form, setForm] = useState({ fullName:'', phone:'', password:'', centreId:'' });
+  const [showPw, setShowPw] = useState(false); // __LAIZER_PATCH_V18__
+  const [pwWorker, setPwWorker] = useState<any>(null);
+  const [newPw, setNewPw] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
   const [changingWorker, setChangingWorker] = useState<any>(null);
   const [newCentreId,    setNewCentreId]    = useState('');
   const [transferring,   setTransferring]   = useState(false);
@@ -44,10 +48,13 @@ export default function WorkersScreen() {
     if (!form.fullName || !form.phone || !form.centreId) {
       CustomAlert.alert('Missing fields', 'Please fill in all required fields.'); return;
     }
+    if (form.password.length < 6) {
+      CustomAlert.alert('Password too short', 'The worker password must be at least 6 characters.'); return;
+    }
     setSaving(true);
     try {
-      const { data } = await workerService.register({ fullName: form.fullName.toUpperCase(), phone: form.phone, centreId: form.centreId });
-      setShowForm(false); setForm(p => ({ fullName:'', phone:'', centreId: p.centreId }));
+      const { data } = await workerService.register({ fullName: form.fullName.toUpperCase(), phone: form.phone, password: form.password, centreId: form.centreId });
+      setShowForm(false); setShowPw(false); setForm(p => ({ fullName:'', phone:'', password:'', centreId: p.centreId }));
       await load();
       if (data?.workerCode) { // __LAIZER_PATCH_V9__
         CustomAlert.alert(
@@ -74,6 +81,18 @@ export default function WorkersScreen() {
     setNewCentreId(w.assignedCentre?.id ?? centres[0]?.id ?? '');
   };
 
+  const handleSetPassword = async () => {
+    if (!pwWorker) return;
+    if (newPw.length < 6) { CustomAlert.alert('Password too short', 'The password must be at least 6 characters.'); return; }
+    setPwBusy(true);
+    try {
+      await workerService.setPassword(pwWorker.id, newPw);
+      setPwWorker(null); setNewPw(''); await load();
+      CustomAlert.alert('Password updated', 'Give the new password to the worker.');
+    } catch (e) { CustomAlert.alert('Error', getApiError(e)); }
+    finally { setPwBusy(false); }
+  };
+
   const handleTransfer = async () => {
     if (!newCentreId || !changingWorker) return;
     setTransferring(true);
@@ -98,6 +117,12 @@ export default function WorkersScreen() {
             onChangeText={t => setForm(p => ({ ...p, fullName: t.toUpperCase() }))} autoCapitalize="characters" />
           <Input label="Phone" placeholder="+255 712 345 678" value={form.phone}
             onChangeText={t => setForm(p => ({ ...p, phone: t }))} keyboardType="phone-pad" />
+          <Input label="Password" placeholder="At least 6 characters" value={form.password}
+            onChangeText={t => setForm(p => ({ ...p, password: t }))}
+            secureTextEntry={!showPw} autoCapitalize="none" autoCorrect={false}
+            rightIcon={<Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.textDisabled} />}
+            onPressRightIcon={() => setShowPw(v => !v)}
+            hint="The worker needs this password, their Worker ID and the Centre ID to log in." />
           <Text style={W.fieldLabel}>Assign to Centre <Text style={{ color:Colors.error }}>*</Text></Text>
           {centres.length === 0
             ? <Text style={W.nocentre}>No centres yet. Add one first.</Text>
@@ -126,10 +151,14 @@ export default function WorkersScreen() {
                   <Text style={W.sub}>{item.phone}</Text>
                   {item.workerCode ? <Text style={W.sub}>ID: {item.workerCode}</Text> : null}
                   <Text style={W.branch}>{item.assignedCentre ? `📍 ${item.assignedCentre.name}` : '⚠️  Unassigned'}</Text>
+                  {item.hasPassword === false ? <Text style={W.noPw}>⚠️  No password set — tap the key icon</Text> : null}
                 </View>
                 <View style={W.cardRight}>
                   <StatusBadge type={item.isActive ? 'active' : 'inactive'} size="sm" />
                   <View style={W.iconRow}>
+                    <TouchableOpacity onPress={() => { setPwWorker(item); setNewPw(''); }} hitSlop={{ top:8,bottom:8,left:8,right:8 }}>
+                      <Ionicons name="key-outline" size={22} color={Colors.primary} />
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => openChangeBranch(item)} hitSlop={{ top:8,bottom:8,left:8,right:8 }}>
                       <Ionicons name="swap-horizontal-outline" size={22} color={Colors.primary} />
                     </TouchableOpacity>
@@ -143,6 +172,17 @@ export default function WorkersScreen() {
           )}
         />
       )}
+
+      <FormModal visible={!!pwWorker} onClose={() => setPwWorker(null)}>
+        <Text style={W.formTitle}>Set Password</Text>
+        <Text style={W.sheetSub}>For: <Text style={{ fontWeight:FontWeight.bold }}>{pwWorker?.fullName}</Text></Text>
+        <Input label="New password" placeholder="At least 6 characters" value={newPw}
+          onChangeText={setNewPw} secureTextEntry autoCapitalize="none" autoCorrect={false} />
+        <View style={{ flexDirection:'row', gap:Spacing.sm }}>
+          <Button label="Cancel" variant="secondary" onPress={() => setPwWorker(null)} style={{ flex:1 }} />
+          <Button label="Save" onPress={handleSetPassword} loading={pwBusy} style={{ flex:1 }} />
+        </View>
+      </FormModal>
 
       <Modal visible={!!changingWorker} animationType="slide" transparent onRequestClose={() => setChangingWorker(null)}>
         <View style={W.overlay}>
@@ -192,6 +232,7 @@ const W = StyleSheet.create({
   name:        { fontSize:FontSize.base, fontWeight:FontWeight.bold, color:Colors.textPrimary },
   sub:         { fontSize:FontSize.xs, color:Colors.textSecondary, marginTop:2 },
   branch:      { fontSize:FontSize.xs, color:Colors.primary, marginTop:4 },
+  noPw:        { fontSize:FontSize.xs, color:Colors.warning, marginTop:4 },
   cardRight:   { alignItems:'flex-end', gap:Spacing.xs },
   iconRow:     { flexDirection:'row', gap:Spacing.base, marginTop:4 },
   overlay:     { flex:1, backgroundColor:'rgba(0,0,0,0.45)', justifyContent:'flex-end' },

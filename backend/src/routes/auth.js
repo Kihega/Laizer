@@ -2,7 +2,7 @@
  * SMSS — Auth routes
  *
  * POST /api/auth/owner/login/   — { email, password } → { access, refresh, user }
- * POST /api/auth/worker/login/  — { centreId }        → { access, refresh, user, centreId }
+ * POST /api/auth/worker/login/  — { workerId, centreId, password } → { access, refresh, user, centreInfo }
  * POST /api/auth/refresh/       — { refresh }
  * POST /api/auth/logout/        — { refresh }
  * GET  /api/auth/me/            — current user profile
@@ -158,6 +158,7 @@ router.post('/owner/login/', async (req, res, next) => {
 const WorkerLoginSchema = z.object({
   workerId: z.string().trim().optional(),
   centreId: z.string().min(1, 'Centre ID required').trim(),
+  password: z.string().optional(), // __LAIZER_PATCH_V18__ required with a Worker ID
 });
 
 router.post('/worker/login/', async (req, res, next) => {
@@ -195,6 +196,16 @@ router.post('/worker/login/', async (req, res, next) => {
       if (assignment.centre.centreId.toUpperCase() !== centreIdInput) {
         await logAction(worker.id, 'WORKER_LOGIN_FAILURE', { req, result: 'centre_mismatch', centreId: centreIdInput });
         return res.status(401).json({ error: 'centre_mismatch', detail: 'This Worker ID is not registered to that Centre ID.' });
+      }
+
+      // __LAIZER_PATCH_V18__ — password check (so one worker cannot log in as another).
+      if (!worker.passwordHash) {
+        await logAction(worker.id, 'WORKER_LOGIN_FAILURE', { req, result: 'password_not_set' });
+        return res.status(401).json({ error: 'password_not_set', detail: 'No password is set for this worker yet. Ask your employer to set one.' });
+      }
+      if (!parsed.data.password || !(await bcrypt.compare(parsed.data.password, worker.passwordHash))) {
+        await logAction(worker.id, 'WORKER_LOGIN_FAILURE', { req, result: 'wrong_password' });
+        return res.status(401).json({ error: 'invalid_password', detail: 'Incorrect password.' });
       }
 
       const centre = assignment.centre;

@@ -64,6 +64,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [centreId, setCentreId] = useState('');
   const [workerId, setWorkerId] = useState(''); // __LAIZER_PATCH_V9__
+  const [workerPw, setWorkerPw] = useState(''); // __LAIZER_PATCH_V18__
   const [showPw,   setShowPw]   = useState(false);
 
   const [showReg,  setShowReg]  = useState(false);
@@ -97,7 +98,7 @@ export default function LoginScreen() {
       }
       // workerLogin returns the raw result; the backend may include a `notice`
       // field when authorising a branch that has no assigned workers yet.
-      const result = await workerLogin(workerId.toUpperCase(), centreId.toUpperCase());
+      const result = await workerLogin(workerId.toUpperCase(), centreId.toUpperCase(), workerPw);
       if (!result.success && result.error) CustomAlert.alert(result.error.title, result.error.message);
       else if (result?.notice) setNotice(result.notice as string);
     }
@@ -262,7 +263,12 @@ export default function LoginScreen() {
                   autoCapitalize="characters" autoCorrect={false} returnKeyType="next" />
                 <Input label="Centre ID" placeholder="STN-01"
                   value={centreId} onChangeText={(t:string) => { setCentreId(prev => autoDash(t, prev, 'STN')); clearError(); }}
-                  autoCapitalize="characters" autoCorrect={false} returnKeyType="done" onSubmitEditing={handleLogin} />
+                  autoCapitalize="characters" autoCorrect={false} returnKeyType="next" />
+                <Input label="Password" placeholder="Enter your password"
+                  value={workerPw} onChangeText={(t:string) => { setWorkerPw(t); clearError(); }}
+                  secureTextEntry={!showPw} returnKeyType="done" onSubmitEditing={handleLogin}
+                  rightIcon={<Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.textDisabled} />}
+                  onPressRightIcon={() => setShowPw(v => !v)} />
               </>
             )}
 

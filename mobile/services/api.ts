@@ -196,8 +196,8 @@ export const authService = {
     apiClient.post(API_ROUTES.ownerLogin,  { email, password }),
   register: (body: { fullName: string; brandName: string; phone: string }) =>
     apiClient.post(API_ROUTES.ownerRegister, body),
-  workerLogin: (workerId: string, centreId: string) => // __LAIZER_PATCH_V9__
-    apiClient.post(API_ROUTES.workerLogin, { workerId: workerId || undefined, centreId }),
+  workerLogin: (workerId: string, centreId: string, password?: string) => // __LAIZER_PATCH_V18__
+    apiClient.post(API_ROUTES.workerLogin, { workerId: workerId || undefined, centreId, password: password || undefined }),
   // Best-effort server-side revoke; never keep the user waiting on it.
   logout:      (refresh: string) =>
     apiClient.post(API_ROUTES.logout, { refresh }, { timeout: 8000 }), // __LAIZER_PATCH_V17__
@@ -223,6 +223,7 @@ export const workerService = {
   assign:   (id: string, centreId: string) => apiClient.post(API_ROUTES.assignWorker(id), { centreId }),
   transfer: (id: string, centreId: string) => apiClient.post(API_ROUTES.transferWorker(id), { centreId }),
   remove:   (id: string)                 => apiClient.delete(API_ROUTES.worker(id)),
+  setPassword: (id: string, password: string) => apiClient.patch(API_ROUTES.workerPassword(id), { password }), // __LAIZER_PATCH_V18__
 };
 
 // ── Stock service ──────────────────────────────────────────────────────────────
@@ -232,8 +233,20 @@ export const stockService = {
   create: (body: object)             => apiClient.post(API_ROUTES.stock, body),
   update: (id: string, body: object) => apiClient.patch(API_ROUTES.stockItem(id), body),
   delete: (id: string)               => apiClient.delete(API_ROUTES.stockItem(id)),
-  // __LAIZER_PATCH_V12__ — consume pcs; the item is removed automatically at 0
-  use:    (id: string, quantity: number) => apiClient.post(API_ROUTES.stockUse(id), { quantity }),
+  // __LAIZER_PATCH_V18__ — sell pcs at a price each (card is removed automatically at 0)
+  sell:   (id: string, quantity: number, unitPriceTshs: number) =>
+    apiClient.post(API_ROUTES.stockSell(id), { quantity, unitPriceTshs }),
+  // add pcs to an existing card
+  add:    (id: string, quantity: number) => apiClient.post(API_ROUTES.stockAdd(id), { quantity }),
+};
+
+// ── Office utilities ───────────────────────────────────────────────────────────
+export const utilityService = {
+  list:     (centreId?: string) =>
+    apiClient.get(API_ROUTES.utilities + (centreId ? `?centreId=${centreId}` : '')),
+  create:   (name: string)                       => apiClient.post(API_ROUTES.utilities, { name }),
+  setState: (id: string, state: 'good' | 'defect') => apiClient.patch(API_ROUTES.utilityState(id), { state }),
+  remove:   (id: string)                         => apiClient.delete(API_ROUTES.utility(id)),
 };
 
 // ── Service events ─────────────────────────────────────────────────────────────
