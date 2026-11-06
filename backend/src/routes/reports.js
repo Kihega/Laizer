@@ -132,7 +132,8 @@ router.get('/days/', async (req, res, next) => {
     }
     for (const d of Object.values(byDay)) d.totalRevenueTshs = round2(d.totalRevenueTshs);
 
-    const newestFirst = Object.values(byDay).sort((a, b) => (a.date < b.date ? 1 : -1));
+    // Only days that actually have records get a card (no empty cards).
+    const newestFirst = Object.values(byDay).filter(d => d.totalEvents > 0).sort((a, b) => (a.date < b.date ? 1 : -1));
     const days = all ? newestFirst : newestFirst.slice(0, 7);
 
     return res.json({ centre, today, all, days });
@@ -161,7 +162,7 @@ router.get('/detail/', async (req, res, next) => {
       events = await prisma.serviceEvent.findMany({
         where:  { centreId: centre.id, ownerDeletedAt: null, createdAt: { gte: start, lt: end } },
         select: { id:true, serviceType:true, serviceSubtype:true, pages:true,
-                  pricePerPageTshs:true, totalAmountTshs:true, createdAt:true,
+                  pricePerPageTshs:true, totalAmountTshs:true, createdAt:true, workerName:true,
                   worker: { select: { fullName:true } } },
         orderBy: { createdAt: 'asc' },
       });

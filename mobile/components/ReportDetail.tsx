@@ -30,6 +30,7 @@ interface DayReport {
     pages?: number | null; pricePerPageTshs?: number | null; totalAmountTshs: number;
     createdAt: string;
     worker?: { fullName: string } | null;
+    workerName?: string | null;
   }>;
   sales: Array<{ id: string; itemName: string; quantity: number; unitPriceTshs: number; totalTshs: number; createdAt: string }>;
   stock: Array<{ itemName: string; quantity: number; unit?: string }>;
@@ -166,7 +167,7 @@ export function ReportDetail({ centreId, date, name, centreNo: centreNoProp, onC
                       {ev.pages} pages{ev.pricePerPageTshs != null ? ` @ ${fmtMoney(Number(ev.pricePerPageTshs))}` : ''}
                     </Text>
                   )}
-                  {!!ev.worker && <Text style={D.evtMeta}>By {ev.worker.fullName}</Text>}
+                  {!!(ev.worker?.fullName || ev.workerName) && <Text style={D.evtMeta}>By {ev.worker?.fullName ?? ev.workerName}</Text>}
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={D.evtAmt}>{fmtMoney(Number(ev.totalAmountTshs))}</Text>
